@@ -183,15 +183,18 @@ html, body {
 .theme-btn[data-theme="lesserafim"] .theme-icon { background: linear-gradient(135deg, #ff0000, #111111); }
 
 /* ── Bingo Board ── */
-.bingo-wrapper { width: 100%; display: flex; flex-direction: column; }
+.bingo-wrapper {
+  width: 100%; display: flex; flex-direction: column;
+  overflow-x: hidden; padding-bottom: 12px;
+}
 
 .bingo-headers {
-  display: grid; grid-template-columns: repeat(5, 1fr); gap: 2%;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.2%;
   margin-bottom: 1.5%;
 }
 .bingo-letter {
   text-align: center; font-family: 'Black Han Sans', sans-serif;
-  font-size: clamp(22px, 4vw, 32px); font-weight: 900; letter-spacing: 3px;
+  font-size: clamp(20px, 3.5vw, 32px); font-weight: 900; letter-spacing: 3px;
   transition: color 0.6s ease, text-shadow 0.6s ease;
 }
 .bl-b { color: var(--pink); text-shadow: 0 0 15px var(--pink); }
@@ -201,16 +204,17 @@ html, body {
 .bl-o { color: var(--cyan); text-shadow: 0 0 15px var(--cyan); }
 
 .bingo-grid {
-  display: grid; grid-template-columns: repeat(5, 1fr); gap: 2%;
-  width: 100%; container-type: inline-size;
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-auto-rows: minmax(80px, auto); gap: clamp(5px, 0.9vw, 10px);
+  width: 100%; min-width: 0;
 }
 
 .cell {
   background: var(--card); border: 2px solid var(--border);
   border-radius: var(--cell-radius);
-  /* Adjusted aspect ratio to make cells wider instead of perfectly square */
-  aspect-ratio: 1 / 0.85; 
-  padding: 2.5cqw 1.5cqw; text-align: center; cursor: pointer;
+  aspect-ratio: 1 / 1;
+  min-height: 80px;
+  padding: clamp(0.5rem, 1vw, 0.8rem) clamp(0.5rem, 1.2vw, 0.8rem); text-align: center; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   position: relative; overflow: hidden; user-select: none;
   transition: background-color 0.5s ease, border-color 0.5s ease, border-radius 0.5s ease, transform 0.2s ease, box-shadow 0.5s ease;
@@ -236,11 +240,11 @@ html, body {
 @keyframes bingoPop { 0% {transform:scale(1)} 40% {transform:scale(1.12)} 100% {transform:scale(1)} }
 
 /* Scaled up fonts and icons */
-.cell-icon { font-size: 5.5cqw; line-height: 1; margin-bottom: 1.5cqw; display: block; transition: transform 0.15s; }
+.cell-icon { font-size: clamp(24px, 5vw, 40px); line-height: 1; margin-bottom: 0.8rem; display: block; transition: transform 0.15s; }
 .cell:hover:not(.free) .cell-icon { transform: scale(1.15) translateY(-2px); }
 .cell-text {
-  font-size: clamp(9px, 3.2cqw, 18px); font-weight: 700; color: var(--text); line-height: 1.3;
-  word-break: break-word; max-width: 100%; transition: color 0.5s;
+  font-size: clamp(10px, 2vw, 15px); font-weight: 700; color: var(--text); line-height: 1.2;
+  word-break: break-word; overflow-wrap: anywhere; white-space: normal; max-width: 100%; transition: color 0.5s;
 }
 
 /* ── Controls ── */
@@ -248,12 +252,13 @@ html, body {
   display: flex; align-items: center; justify-content: space-between;
   margin-top: 3vh; flex-wrap: wrap; gap: 12px;
 }
-.btn-group { display: flex; gap: 12px; }
+.btn-group { display: flex; gap: 12px; flex-wrap: wrap; }
 .btn {
   background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 24px;
   padding: 1.5vh 3vh; font-size: clamp(11px, 2vw, 13px); font-weight: 700;
   color: var(--text); cursor: pointer; text-transform: uppercase; letter-spacing: 2px;
   transition: all 0.3s ease; white-space: nowrap; font-family: inherit;
+  min-width: 120px;
 }
 .btn:hover {
   background: var(--purple); border-color: var(--purple);
@@ -268,6 +273,41 @@ html, body {
   border-radius: 24px; padding: 1.5vh 3vh; font-size: clamp(11px, 2vw, 13px);
   font-weight: 700; color: var(--cyan); letter-spacing: 1px; white-space: nowrap;
   transition: all 0.6s ease;
+}
+
+@media (max-width: 720px) {
+  .game-view { padding: 3vh 10px 6vh; }
+  .container { max-width: 100%; }
+  .editor-view { padding: 24px 12px 50px; }
+  .editor-panel { padding: 18px; }
+  .badge { padding: 5px 14px; font-size: 10px; letter-spacing: 2px; }
+  .subtitle { font-size: 11px; letter-spacing: 4px; }
+  .idol-strip { gap: 10px; }
+  .theme-icon { width: clamp(36px, 11vw, 48px); height: clamp(36px, 11vw, 48px); font-size: clamp(14px, 3vw, 20px); }
+  .bingo-headers { gap: 6px; margin-bottom: 10px; }
+  .bingo-grid { width: 100%; min-width: 0; gap: 6px; }
+  .cell { aspect-ratio: 1 / 1; padding: 0.9rem 0.7rem; min-height: 80px; }
+  .cell-icon { font-size: clamp(22px, 5vw, 32px); margin-bottom: 0.75rem; }
+  .cell-text { font-size: clamp(9px, 1.9vw, 14px); }
+  .controls { flex-direction: column; align-items: stretch; gap: 12px; }
+  .btn-group { width: 100%; justify-content: space-between; }
+  .btn { width: 100%; min-width: 0; padding: 14px 16px; font-size: 13px; }
+  .score-pill { width: 100%; text-align: center; padding: 14px 16px; }
+  .cards-input { min-height: 240px; }
+  .toast { padding: 22px 28px; }
+  .toast-title { font-size: clamp(42px, 13vw, 60px); letter-spacing: 4px; }
+  .theme-watermark { font-size: clamp(60px, 35vw, 140px); }
+  .orb-1 { width: 320px; height: 320px; top: -140px; left: -110px; }
+  .orb-2 { width: 280px; height: 280px; bottom: -120px; right: -110px; }
+  .orb-3 { width: 240px; height: 240px; top: 35%; left: 50%; }
+}
+@media (max-width: 560px) {
+  .bingo-headers { gap: 4px; }
+  .bingo-letter { font-size: clamp(16px, 4vw, 20px); }
+  .bingo-grid { gap: 4px; }
+  .cell { padding: 0.55rem 0.55rem; min-height: 70px; aspect-ratio: auto; justify-content: flex-start; }
+  .cell-icon { font-size: clamp(18px, 6vw, 26px); margin-bottom: 0.5rem; }
+  .cell-text { font-size: clamp(9px, 1.6vw, 13px); line-height: 1.15; }
 }
 
 /* ── Editor ── */
