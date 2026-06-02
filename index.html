@@ -386,7 +386,6 @@ html, body {
 
       <div class="controls">
         <div class="btn-group">
-          <button class="btn" id="shuffleBtn">🔀 Shuffle</button>
           <button class="btn pink" id="resetBtn">↺ Reset</button>
         </div>
         <div class="score-pill" id="score">0 marked · 0 BINGO</div>
@@ -574,19 +573,6 @@ function renderBoard(allowCelebrate = true) {
   if (allowCelebrate) celebrate(newKeys);
   updateScore();
 }
-
-document.getElementById('shuffleBtn').onclick = () => {
-  const items = currentCards().slice(0, gridSize());
-  for (let i = items.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [items[i], items[j]] = [items[j], items[i]];
-  }
-  state.cards = items.concat(state.cards.slice(gridSize()));
-  saveState();
-  document.getElementById('cardsInput').value = state.cards.join('\n');
-  state.lastCompletedKeys = completedLineKeys();
-  renderBoard(false);
-};
 
 document.getElementById('resetBtn').onclick = () => {
   state.marks.fill(false); saveState(); state.lastCompletedKeys = new Set(); renderBoard(false);
