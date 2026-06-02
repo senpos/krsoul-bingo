@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🎮 KRSoul Bingo 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Black+Han+Sans&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  /* Fallback/Base variables */
+  --pink: #ff10a0;
+  --purple: #a020ff;
+  --cyan: #00d4ff;
+  --dark: #04000c;
+  --card: rgba(255,255,255,0.04);
+  --border: rgba(160,32,255,0.3);
+  --text: #ffffff;
+  --dim: rgba(200,160,255,0.6);
+  --bg-pattern: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  --bg-size: 44px 44px;
+  --cell-radius: 10px;
+}
+
+/* ── Ultra-Vibrant Theme Definitions ── */
+body[data-theme="twice"] {
+  --pink: #ff007f; --purple: #ff7f00; --cyan: #ffbbee; --dark: #120308;
+  --card: rgba(255,0,127,0.06); --border: rgba(255,0,127,0.5); --text: #ffffff; --dim: rgba(255,127,0,0.8);
+  --bg-pattern: radial-gradient(circle, rgba(255, 127, 0, 0.15) 3px, transparent 3px);
+  --bg-size: 35px 35px; --cell-radius: 18px;
+}
+body[data-theme="aespa"] {
+  --pink: #d900ff; --purple: #5500ff; --cyan: #00ffff; --dark: #050011;
+  --card: rgba(85,0,255,0.05); --border: rgba(0,255,255,0.4); --text: #e0f0ff; --dim: rgba(217,0,255,0.7);
+  --bg-pattern: linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(217, 0, 255, 0.1) 1px, transparent 1px);
+  --bg-size: 50px 50px; --cell-radius: 4px;
+}
+body[data-theme="nmixx"] {
+  --pink: #ff0055; --purple: #0033ff; --cyan: #00ffcc; --dark: #020612;
+  --card: rgba(0,51,255,0.06); --border: rgba(255,0,85,0.5); --text: #ffffff; --dim: rgba(0,255,204,0.7);
+  --bg-pattern: repeating-radial-gradient(circle at 0 0, rgba(255,0,85,0.08) 0, rgba(0,51,255,0.08) 25px);
+  --bg-size: 120px 120px; --cell-radius: 16px 4px 16px 4px;
+}
+body[data-theme="newjeans"] {
+  --pink: #0055ff; --purple: #ff00cc; --cyan: #ffee00; --dark: #00102a;
+  --card: rgba(0,85,255,0.08); --border: rgba(255,238,0,0.4); --text: #ffffff; --dim: rgba(255,0,204,0.8);
+  --bg-pattern: radial-gradient(circle, rgba(255, 238, 0, 0.15) 4px, transparent 4px);
+  --bg-size: 25px 25px; --cell-radius: 25px;
+}
+body[data-theme="lesserafim"] {
+  --pink: #ff0000; --purple: #440000; --cyan: #ffffff; --dark: #080000;
+  --card: rgba(255,0,0,0.04); --border: rgba(255,0,0,0.6); --text: #ffffff; --dim: rgba(255,255,255,0.6);
+  --bg-pattern: repeating-linear-gradient(45deg, rgba(255,0,0,0.05) 0, rgba(255,0,0,0.05) 2px, transparent 2px, transparent 25px);
+  --bg-size: 100% 100%; --cell-radius: 0px;
+}
+
+html, body {
+  min-height: 100%;
+  background: var(--dark);
+  color: var(--text);
+  font-family: 'Noto Sans KR', sans-serif;
+  overflow-x: hidden;
+  transition: background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  scroll-behavior: smooth;
+}
+
+/* ── Layout ── */
+.app-wrapper {
+  position: relative;
+  z-index: 1;
+}
+
+.game-view {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3vh 16px 6vh;
+  position: relative;
+}
+
+/* Container is wider now */
+.container {
+  width: 100%;
+  max-width: 800px; /* Increased from 600px */
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 2;
+}
+
+.editor-view {
+  background: rgba(0, 0, 0, 0.6);
+  border-top: 2px solid var(--border);
+  padding: 40px 16px 80px;
+  display: flex;
+  justify-content: center;
+  transition: border-color 0.6s ease;
+}
+.editor-view .container { width: 100%; max-width: 800px; }
+
+/* ── Background Elements ── */
+.bg-grid {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image: var(--bg-pattern);
+  background-size: var(--bg-size);
+  transition: all 0.6s ease;
+}
+.orb {
+  position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
+  filter: blur(80px); opacity: 0.2; transition: background 0.8s ease;
+}
+.orb-1 { width: 600px; height: 600px; top: -200px; left: -150px; background: radial-gradient(circle, var(--pink) 0%, transparent 70%); }
+.orb-2 { width: 500px; height: 500px; bottom: -150px; right: -150px; background: radial-gradient(circle, var(--purple) 0%, transparent 70%); }
+.orb-3 { width: 450px; height: 450px; top: 35%; left: 50%; transform: translate(-50%, -50%); background: radial-gradient(circle, var(--cyan) 0%, transparent 70%); }
+
+.theme-watermark {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Black Han Sans', sans-serif; font-size: clamp(80px, 25vw, 300px);
+  letter-spacing: 0.05em; opacity: .03; transform: translateY(2vh);
+  mix-blend-mode: screen; white-space: nowrap; transition: color 0.6s ease;
+  color: var(--cyan);
+}
+
+/* ── Header ── */
+.header { text-align: center; margin-bottom: 2.5vh; }
+.badge {
+  display: inline-flex; align-items: center;
+  background: linear-gradient(90deg, var(--pink), var(--purple), var(--cyan));
+  border-radius: 30px; padding: 6px 20px;
+  font-size: 11px; font-weight: 700; color: #fff;
+  letter-spacing: 3px; text-transform: uppercase; margin-bottom: 10px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+.title {
+  font-family: 'Black Han Sans', sans-serif;
+  font-size: clamp(48px, 9vw, 85px);
+  font-weight: 900; letter-spacing: 12px; line-height: 1;
+  background: linear-gradient(90deg, var(--pink), var(--purple), var(--cyan), var(--pink));
+  background-size: 200% auto;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  animation: titleShimmer 5s linear infinite;
+}
+@keyframes titleShimmer { 0%{background-position:0% center} 100%{background-position:200% center} }
+.subtitle { font-size: 12px; color: var(--dim); letter-spacing: 5px; text-transform: uppercase; margin-top: 8px; transition: color 0.6s ease; }
+
+/* ── Theme Switcher ── */
+.idol-strip {
+  display: flex; justify-content: center; gap: clamp(10px, 3vw, 24px); margin-bottom: 3vh; flex-wrap: wrap;
+}
+.theme-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  background: transparent; border: none; cursor: pointer;
+  opacity: 0.5; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+.theme-btn:hover { opacity: 0.8; transform: translateY(-3px); }
+.theme-btn.active { opacity: 1; transform: translateY(-6px) scale(1.15); }
+.theme-icon {
+  width: clamp(45px, 6vw, 60px); height: clamp(45px, 6vw, 60px);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-family: 'Black Han Sans', sans-serif; font-size: clamp(16px, 2.5vw, 22px);
+  color: #fff; box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+  transition: all 0.3s ease; position: relative;
+}
+.theme-icon::after {
+  content: ''; position: absolute; inset: -4px; border-radius: inherit;
+  border: 2px solid rgba(255,255,255,0.4); opacity: 0; transition: opacity 0.3s;
+}
+.theme-btn.active .theme-icon::after { opacity: 1; }
+.theme-name {
+  font-size: clamp(9px, 1.5vw, 11px); font-weight: 700; color: var(--text);
+  letter-spacing: 1px; text-transform: uppercase; transition: color 0.6s;
+}
+
+.theme-btn[data-theme="twice"] .theme-icon { background: linear-gradient(135deg, #ff007f, #ff7f00); }
+.theme-btn[data-theme="aespa"] .theme-icon { background: linear-gradient(135deg, #5500ff, #d900ff); }
+.theme-btn[data-theme="nmixx"] .theme-icon { background: linear-gradient(135deg, #ff0055, #0033ff); }
+.theme-btn[data-theme="newjeans"] .theme-icon { background: linear-gradient(135deg, #0055ff, #ffee00); color: #000; }
+.theme-btn[data-theme="lesserafim"] .theme-icon { background: linear-gradient(135deg, #ff0000, #111111); }
+
+/* ── Bingo Board ── */
+.bingo-wrapper { width: 100%; display: flex; flex-direction: column; }
+
+.bingo-headers {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 2%;
+  margin-bottom: 1.5%;
+}
+.bingo-letter {
+  text-align: center; font-family: 'Black Han Sans', sans-serif;
+  font-size: clamp(22px, 4vw, 32px); font-weight: 900; letter-spacing: 3px;
+  transition: color 0.6s ease, text-shadow 0.6s ease;
+}
+.bl-b { color: var(--pink); text-shadow: 0 0 15px var(--pink); }
+.bl-i { color: var(--purple); text-shadow: 0 0 15px var(--purple); }
+.bl-n { color: #8060ff; text-shadow: 0 0 15px #8060ff; }
+.bl-g { color: #30b0ff; text-shadow: 0 0 15px #30b0ff; }
+.bl-o { color: var(--cyan); text-shadow: 0 0 15px var(--cyan); }
+
+.bingo-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 2%;
+  width: 100%; container-type: inline-size;
+}
+
+.cell {
+  background: var(--card); border: 2px solid var(--border);
+  border-radius: var(--cell-radius);
+  /* Adjusted aspect ratio to make cells wider instead of perfectly square */
+  aspect-ratio: 1 / 0.85; 
+  padding: 2.5cqw 1.5cqw; text-align: center; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  position: relative; overflow: hidden; user-select: none;
+  transition: background-color 0.5s ease, border-color 0.5s ease, border-radius 0.5s ease, transform 0.2s ease, box-shadow 0.5s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.cell::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 60%);
+}
+.cell:hover:not(.free) {
+  border-color: var(--pink); background: rgba(255,255,255,0.1);
+  transform: scale(1.05); box-shadow: 0 0 25px var(--pink); z-index: 5;
+}
+.cell.marked {
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
+  border-color: var(--pink); box-shadow: 0 0 25px var(--pink), inset 0 0 15px var(--pink);
+}
+.cell.bingo-active {
+  border-color: var(--cyan); box-shadow: 0 0 35px var(--cyan), inset 0 0 20px var(--cyan);
+  background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.08));
+}
+.cell.bingo-new { animation: bingoPop 0.5s cubic-bezier(.34,1.56,.64,1); }
+@keyframes bingoPop { 0% {transform:scale(1)} 40% {transform:scale(1.12)} 100% {transform:scale(1)} }
+
+/* Scaled up fonts and icons */
+.cell-icon { font-size: 5.5cqw; line-height: 1; margin-bottom: 1.5cqw; display: block; transition: transform 0.15s; }
+.cell:hover:not(.free) .cell-icon { transform: scale(1.15) translateY(-2px); }
+.cell-text {
+  font-size: clamp(9px, 3.2cqw, 18px); font-weight: 700; color: var(--text); line-height: 1.3;
+  word-break: break-word; max-width: 100%; transition: color 0.5s;
+}
+
+/* ── Controls ── */
+.controls {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 3vh; flex-wrap: wrap; gap: 12px;
+}
+.btn-group { display: flex; gap: 12px; }
+.btn {
+  background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 24px;
+  padding: 1.5vh 3vh; font-size: clamp(11px, 2vw, 13px); font-weight: 700;
+  color: var(--text); cursor: pointer; text-transform: uppercase; letter-spacing: 2px;
+  transition: all 0.3s ease; white-space: nowrap; font-family: inherit;
+}
+.btn:hover {
+  background: var(--purple); border-color: var(--purple);
+  box-shadow: 0 0 20px var(--purple); color: #fff; transform: translateY(-2px);
+}
+.btn.pink { border-color: var(--pink); color: var(--pink); }
+.btn.pink:hover { background: var(--pink); color: #fff; box-shadow: 0 0 20px var(--pink); }
+.btn:active { transform: scale(.95); }
+
+.score-pill {
+  background: rgba(0,0,0,0.5); border: 1px solid var(--border);
+  border-radius: 24px; padding: 1.5vh 3vh; font-size: clamp(11px, 2vw, 13px);
+  font-weight: 700; color: var(--cyan); letter-spacing: 1px; white-space: nowrap;
+  transition: all 0.6s ease;
+}
+
+/* ── Editor ── */
+.editor-panel {
+  background: rgba(0,0,0,0.4); border: 2px solid var(--border);
+  border-radius: 20px; padding: 24px; box-shadow: 0 0 40px rgba(0,0,0,0.5);
+  backdrop-filter: blur(12px); transition: border-color 0.6s ease;
+}
+.editor-head {
+  display: flex; align-items: end; justify-content: space-between; gap: 16px;
+  flex-wrap: wrap; margin-bottom: 16px;
+}
+.editor-title { font-family: 'Black Han Sans', sans-serif; letter-spacing: 2px; font-size: 20px; color: #fff; }
+.editor-note { font-size: 12px; color: var(--dim); margin-top: 4px; transition: color 0.6s; }
+.editor-controls { display: flex; align-items: center; gap: 12px; }
+.editor-controls label { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--dim); transition: color 0.6s; }
+.board-size-select {
+  appearance: none; background: rgba(0,0,0,0.5); color: #fff;
+  border: 1px solid var(--border); border-radius: 12px; padding: 8px 16px; font: inherit; font-size: 13px; cursor: pointer;
+  transition: border-color 0.6s;
+}
+.board-size-select:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,212,255,0.3); }
+.cards-input {
+  width: 100%; min-height: 320px; resize: vertical; border-radius: 12px;
+  border: 1px solid var(--border); background: rgba(0,0,0,0.6); color: #fff;
+  padding: 16px; font-size: 14px; line-height: 1.6; font-family: monospace; outline: none;
+  transition: border-color 0.6s;
+}
+.cards-input:focus { border-color: var(--pink); box-shadow: 0 0 0 3px rgba(255,16,160,0.3); }
+.editor-meta { display: flex; justify-content: space-between; margin-top: 12px; font-size: 12px; color: var(--dim); transition: color 0.6s; }
+
+/* ── Toast & Confetti ── */
+.toast {
+  position: fixed; top: 50%; left: 50%; z-index: 9999; transform: translate(-50%,-50%) scale(0);
+  background: rgba(0,0,0,0.9); border: 3px solid var(--pink); border-radius: 24px;
+  padding: 30px 60px; text-align: center; box-shadow: 0 0 80px var(--pink), 0 0 150px var(--purple);
+  pointer-events: none; transition: transform 0.4s cubic-bezier(.34,1.56,.64,1); backdrop-filter: blur(10px);
+}
+.toast.show { transform: translate(-50%,-50%) scale(1); }
+.toast-title {
+  font-family: 'Black Han Sans', sans-serif; font-size: 64px; letter-spacing: 10px;
+  background: linear-gradient(90deg, var(--pink), var(--cyan));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: block;
+}
+.toast-sub { font-size: 14px; color: var(--dim); letter-spacing: 4px; margin-top: 8px; text-transform: uppercase;}
+.toast-count { font-size: 16px; font-weight: 900; color: #fff; margin-top: 6px; letter-spacing: 2px; }
+
+.confetti-piece {
+  position: fixed; top: -20px; pointer-events: none; z-index: 9998;
+  animation: cFall linear forwards; border-radius: 4px;
+}
+@keyframes cFall {
+  0% { transform: translateY(0) rotate(0deg) scaleX(1); opacity: 1 }
+  100% { transform: translateY(110vh) rotate(800deg) scaleX(-1); opacity: 0 }
+}
+</style>
+</head>
+<body data-theme="twice">
+
+<div class="bg-grid"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+<div class="theme-watermark">KRSoul</div>
+
+<div class="toast" id="toast">
+  <span class="toast-title">BINGO!</span>
+  <p class="toast-sub">Congratulations! 🎉</p>
+  <p class="toast-count" id="toastCount"></p>
+</div>
+
+<div class="app-wrapper">
+  
+  <div class="game-view">
+    <div class="container">
+      
+      <div class="header">
+        <div class="badge">KRSoul ✦ GAME BINGO ✦ 2026</div>
+        <h1 class="title">BINGO</h1>
+        <p class="subtitle">Live interactive board</p>
+      </div>
+
+      <div class="idol-strip" aria-label="Theme selectors">
+        <button class="theme-btn active" data-theme="twice">
+          <div class="theme-icon">TW</div>
+          <span class="theme-name">Twice</span>
+        </button>
+        <button class="theme-btn" data-theme="aespa">
+          <div class="theme-icon">æ</div>
+          <span class="theme-name">aespa</span>
+        </button>
+        <button class="theme-btn" data-theme="nmixx">
+          <div class="theme-icon">NM</div>
+          <span class="theme-name">NMIXX</span>
+        </button>
+        <button class="theme-btn" data-theme="newjeans">
+          <div class="theme-icon">NJ</div>
+          <span class="theme-name">NewJeans</span>
+        </button>
+        <button class="theme-btn" data-theme="lesserafim">
+          <div class="theme-icon">LS</div>
+          <span class="theme-name">Le Sserafim</span>
+        </button>
+      </div>
+
+      <div class="bingo-wrapper">
+        <div class="bingo-headers">
+          <div class="bingo-letter bl-b">B</div>
+          <div class="bingo-letter bl-i">I</div>
+          <div class="bingo-letter bl-n">N</div>
+          <div class="bingo-letter bl-g">G</div>
+          <div class="bingo-letter bl-o">O</div>
+        </div>
+        <div class="bingo-grid" id="bingoGrid"></div>
+      </div>
+
+      <div class="controls">
+        <div class="btn-group">
+          <button class="btn" id="shuffleBtn">🔀 Shuffle</button>
+          <button class="btn pink" id="resetBtn">↺ Reset</button>
+        </div>
+        <div class="score-pill" id="score">0 marked · 0 BINGO</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="editor-view" id="editorSection">
+    <div class="container">
+      <div class="editor-panel">
+        <div class="editor-head">
+          <div>
+            <div class="editor-title">KRSoul Card Editor</div>
+            <div class="editor-note">One item per line. Paste emojis at the start to set custom icons.</div>
+          </div>
+          <div class="editor-controls">
+            <label for="boardSize">Size</label>
+            <select id="boardSize" class="board-size-select">
+              <option value="3">3×3</option>
+              <option value="5" selected>5×5</option>
+            </select>
+          </div>
+        </div>
+        <textarea id="cardsInput" class="cards-input" spellcheck="false"></textarea>
+        <div class="editor-meta">
+          <span id="cardsCount"></span>
+          <span id="cardsHint">Scroll up to see changes.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const STORAGE_KEYS = { cards: 'krsoul-bingo-cards-v2', size: 'krsoul-bingo-size-v2', marks: 'krsoul-bingo-marks-v2', theme: 'krsoul-bingo-theme-v2' };
+
+// Restored Original Cards
+const DEFAULT_CARDS = [
+  '💀 DeS on PC', '🩸 Bloodborne', '⚡ GoW 3', '🔥 New Fromsoft Game', '🗡️ DS2/3 Remaster',
+  '⚔️ FFVII Part 3', '🚗 GTA 6', '🎭 Persona 6', '🏹 Warhorse New Game', '🎲 Divinity',
+  '🪄 Hogwarts?', '🌸 Stellar Blade 2', '🗑️ 1st Party Live Service SLOP', '🌊 Horizon 3', '👫 Friend Slop Game',
+  '📈 Incremental Game', '🗣️ Japanese Speaking Person', '🚀 Intergalactic Gameplay?', '🐉 Dragon\'s Dogma 2 DLC', '✨ New JRPG',
+  '🤖 Astrobot 2', '🧱 Lego Slop', '🏎️ GT8', '😈 DMC', '🦕 Dino Crisis'
+];
+
+const state = {
+  size: 5, cards: [...DEFAULT_CARDS], marks: Array(25).fill(false), theme: 'twice', lastCompletedKeys: new Set()
+};
+
+function loadJson(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEYS.size, state.size);
+  localStorage.setItem(STORAGE_KEYS.cards, JSON.stringify(state.cards));
+  localStorage.setItem(STORAGE_KEYS.marks, JSON.stringify(state.marks));
+  localStorage.setItem(STORAGE_KEYS.theme, state.theme);
+}
+
+function loadState() {
+  const storedSize = Number(localStorage.getItem(STORAGE_KEYS.size));
+  if (storedSize === 3 || storedSize === 5) state.size = storedSize;
+
+  const storedCards = loadJson(STORAGE_KEYS.cards, null);
+  if (Array.isArray(storedCards) && storedCards.length) state.cards = storedCards.map(v => String(v).trim());
+
+  const storedMarks = loadJson(STORAGE_KEYS.marks, null);
+  if (Array.isArray(storedMarks)) state.marks = storedMarks.map(Boolean);
+
+  const storedTheme = localStorage.getItem(STORAGE_KEYS.theme);
+  if (storedTheme) state.theme = storedTheme;
+
+  while(state.cards.length < 25) state.cards.push('');
+  state.cards = state.cards.slice(0, 25);
+  while(state.marks.length < 25) state.marks.push(false);
+  state.marks = state.marks.slice(0, 25);
+}
+
+function setTheme(name) {
+  state.theme = name;
+  document.body.setAttribute('data-theme', name);
+  
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === name);
+  });
+  saveState();
+}
+
+function parseCardsText() {
+  const lines = document.getElementById('cardsInput').value.replace(/\r/g, '').split('\n');
+  while (lines.length < 25) lines.push('');
+  state.cards = lines.slice(0, 25).map(l => l.trimEnd());
+  saveState();
+}
+
+function looksLikeEmoji(ch) {
+  return ch && ( /[\u2600-\u27BF]/.test(ch) || /\p{Extended_Pictographic}/u.test(ch) );
+}
+
+function splitCard(line) {
+  const text = String(line || '').replace(/\s+/g, ' ').trim();
+  if (!text) return { icon: '✦', label: 'Empty' };
+  const first = Array.from(text)[0];
+  const rest = text.slice(first.length).trim();
+  if (looksLikeEmoji(first) && rest) return { icon: first, label: rest };
+  return { icon: '✦', label: text };
+}
+
+function gridSize() { return state.size * state.size; }
+function currentCards() { return state.cards.slice(0, gridSize()).concat(Array(gridSize()).fill('')); }
+
+function completedLineKeys() {
+  const s = state.size, m = state.marks;
+  const lines = [];
+  for(let i=0; i<s; i++) {
+    lines.push(Array.from({length: s}, (_, j) => i*s + j)); // Rows
+    lines.push(Array.from({length: s}, (_, j) => j*s + i)); // Cols
+  }
+  lines.push(Array.from({length: s}, (_, i) => i*s + i)); // Diag 1
+  lines.push(Array.from({length: s}, (_, i) => i*s + (s-1-i))); // Diag 2
+  
+  return new Set(lines.filter(l => l.every(idx => m[idx])).map(l => l.join(',')));
+}
+
+function updateScore() {
+  const marked = state.marks.slice(0, gridSize()).filter(Boolean).length;
+  const bingos = completedLineKeys().size;
+  document.getElementById('score').textContent = `${marked} marked · ${bingos} BINGO${bingos !== 1 ? 's' : ''}`;
+  document.getElementById('cardsCount').textContent = `${Math.min(state.cards.filter(Boolean).length, 25)} lines total`;
+}
+
+function launchConfetti() {
+  const colors = ['#ff007f', '#00ffff', '#ffee00', '#5500ff', '#ffffff', '#ff0055'];
+  for (let i = 0; i < 70; i++) {
+    setTimeout(() => {
+      const c = document.createElement('div');
+      c.className = 'confetti-piece';
+      c.style.cssText = `left:${Math.random()*100}vw; width:${6+Math.random()*8}px; height:${6+Math.random()*8}px; background:${colors[Math.floor(Math.random()*colors.length)]}; animation-duration:${1.5+Math.random()*2.5}s;`;
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 4000);
+    }, i * 15);
+  }
+}
+
+function celebrate(newKeys) {
+  if (!newKeys.length) return;
+  const toast = document.getElementById('toast');
+  document.getElementById('toastCount').textContent = newKeys.length === 1 ? 'New line matched!' : `${newKeys.length} lines matched!`;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+  launchConfetti();
+}
+
+function renderBoard(allowCelebrate = true) {
+  const grid = document.getElementById('bingoGrid');
+  const cards = currentCards();
+  const currentKeys = completedLineKeys();
+  const previousKeys = state.lastCompletedKeys || new Set();
+  const newKeys = allowCelebrate ? [...currentKeys].filter(k => !previousKeys.has(k)) : [];
+  
+  const activeCells = new Set();
+  const newCells = new Set();
+  currentKeys.forEach(k => k.split(',').forEach(n => activeCells.add(Number(n))));
+  newKeys.forEach(k => k.split(',').forEach(n => newCells.add(Number(n))));
+
+  grid.innerHTML = '';
+  grid.style.gridTemplateColumns = `repeat(${state.size}, 1fr)`;
+  document.querySelector('.bingo-headers').style.gridTemplateColumns = `repeat(${state.size}, 1fr)`;
+
+  cards.slice(0, gridSize()).forEach((entry, i) => {
+    const { icon, label } = splitCard(entry);
+    const marked = state.marks[i];
+    
+    const cell = document.createElement('div');
+    cell.className = `cell ${marked?'marked':''} ${activeCells.has(i)?'bingo-active':''} ${newCells.has(i)?'bingo-new':''}`;
+    cell.innerHTML = `<span class="cell-icon">${icon}</span><span class="cell-text">${label}</span>`;
+    
+    cell.addEventListener('click', () => { state.marks[i] = !state.marks[i]; saveState(); renderBoard(true); });
+    grid.appendChild(cell);
+  });
+
+  state.lastCompletedKeys = currentKeys;
+  if (allowCelebrate) celebrate(newKeys);
+  updateScore();
+}
+
+document.getElementById('shuffleBtn').onclick = () => {
+  const items = currentCards().slice(0, gridSize());
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+  state.cards = items.concat(state.cards.slice(gridSize()));
+  saveState();
+  document.getElementById('cardsInput').value = state.cards.join('\n');
+  state.lastCompletedKeys = completedLineKeys();
+  renderBoard(false);
+};
+
+document.getElementById('resetBtn').onclick = () => {
+  state.marks.fill(false); saveState(); state.lastCompletedKeys = new Set(); renderBoard(false);
+};
+
+document.getElementById('cardsInput').oninput = () => { parseCardsText(); state.lastCompletedKeys = completedLineKeys(); renderBoard(false); };
+document.getElementById('boardSize').onchange = (e) => { state.size = Number(e.target.value); saveState(); renderBoard(false); };
+
+document.querySelectorAll('.theme-btn').forEach(btn => {
+  btn.onclick = () => setTheme(btn.dataset.theme);
+});
+
+// Init
+loadState();
+document.getElementById('cardsInput').value = state.cards.join('\n');
+document.getElementById('boardSize').value = state.size;
+setTheme(state.theme);
+state.lastCompletedKeys = completedLineKeys();
+renderBoard(false);
+
+</script>
+</body>
+</html>
