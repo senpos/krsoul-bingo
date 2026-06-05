@@ -612,12 +612,28 @@ function launchConfetti() {
   }
 }
 
+let toastTimeout = null;
+let recentBingosCount = 0;
+
+function hideToast() {
+  document.getElementById('toast').classList.remove('show');
+  recentBingosCount = 0;
+  clearTimeout(toastTimeout);
+}
+
+document.addEventListener('pointerdown', (e) => {
+  if (!e.target.closest('.cell')) hideToast();
+});
+
 function celebrate(newKeys) {
   if (!newKeys.length) return;
+  recentBingosCount += newKeys.length;
   const toast = document.getElementById('toast');
-  document.getElementById('toastCount').textContent = newKeys.length === 1 ? 'New line matched!' : `${newKeys.length} lines matched!`;
+  document.getElementById('toastCount').textContent = recentBingosCount === 1 ? 'New line matched!' : `${recentBingosCount} lines matched!`;
   toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2500);
+  
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(hideToast, 1200);
   launchConfetti();
 }
 
@@ -664,9 +680,67 @@ function renderBoard(allowCelebrate = true) {
   });
 
   state.lastCompletedKeys = currentKeys;
-  if (allowCelebrate) celebrate(newKeys);
+  if (allowCelebrate) {
+    if (newKeys.length > 0) celebrate(newKeys);
+    else hideToast();
+  }
   updateScore();
+  requestAnimationFrame(drawBingoLines);
 }
+
+function drawBingoLines() {
+  const svg = document.getElementById('bingoLines');
+  const grid = document.getElementById('bingoGrid');
+  if (!svg || !grid) return;
+  
+  const keys = completedLineKeys();
+  const cells = grid.querySelectorAll('.cell');
+  if (cells.length === 0) return;
+
+  const wrapperRect = svg.getBoundingClientRect();
+  
+  // Remove lines that are no longer valid
+  Array.from(svg.children).forEach(line => {
+    if (!keys.has(line.dataset.key)) line.remove();
+  });
+  
+  keys.forEach(k => {
+    const indices = k.split(',').map(Number);
+    const firstCell = cells[indices[0]];
+    const lastCell = cells[indices[indices.length - 1]];
+    if (!firstCell || !lastCell) return;
+    
+    const r1 = firstCell.getBoundingClientRect();
+    const r2 = lastCell.getBoundingClientRect();
+    
+    const x1 = r1.left + r1.width / 2 - wrapperRect.left;
+    const y1 = r1.top + r1.height / 2 - wrapperRect.top;
+    const x2 = r2.left + r2.width / 2 - wrapperRect.left;
+    const y2 = r2.top + r2.height / 2 - wrapperRect.top;
+    
+    let line = svg.querySelector(`[data-key="${k}"]`);
+    if (!line) {
+      line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.dataset.key = k;
+      line.setAttribute('class', 'bingo-line');
+      svg.appendChild(line);
+      
+      const length = Math.hypot(x2 - x1, y2 - y1);
+      line.style.strokeDasharray = length;
+      line.style.setProperty('--line-length', length);
+      line.style.animation = 'none'; 
+      void line.offsetWidth;
+      line.style.animation = 'drawLine 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
+    }
+    
+    line.setAttribute('x1', x1);
+    line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2);
+    line.setAttribute('y2', y2);
+  });
+}
+
+window.addEventListener('resize', () => requestAnimationFrame(drawBingoLines));
 
 document.getElementById('resetBtn').onclick = () => {
   state.marks.fill(false); saveState(); state.lastCompletedKeys = new Set(); renderBoard(false);
