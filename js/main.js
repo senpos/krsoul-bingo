@@ -119,6 +119,8 @@ const state = {
   theme: 'twice',
   twitchUserId: DEFAULT_TWITCH_USER_ID,
   lastCompletedKeys: new Set(),
+  history: [],
+  redoHistory: [],
   emotes: {
     loading: false,
     ready: false,
@@ -743,7 +745,81 @@ function drawBingoLines() {
 window.addEventListener('resize', () => requestAnimationFrame(drawBingoLines));
 
 document.getElementById('resetBtn').onclick = () => {
+  saveToHistory();
   state.marks.fill(false); saveState(); state.lastCompletedKeys = new Set(); renderBoard(false);
+};
+
+function updateUndoRedoButtons() {
+  const undoBtn = document.getElementById('undoBtn');
+  const redoBtn = document.getElementById('redoBtn');
+  if (undoBtn) undoBtn.disabled = state.history.length === 0;
+  if (redoBtn) redoBtn.disabled = (!state.redoHistory || state.redoHistory.length === 0);
+}
+
+function saveToHistory() {
+  state.history.push({
+    cards: [...state.cards],
+    marks: [...state.marks]
+  });
+  if (state.history.length > 50) state.history.shift();
+  state.redoHistory = [];
+  updateUndoRedoButtons();
+}
+
+document.getElementById('shuffleBtn').onclick = () => {
+  saveToHistory();
+  const len = gridSize();
+  const pairs = [];
+  for (let i = 0; i < len; i++) {
+    pairs.push({ card: state.cards[i] || '', mark: state.marks[i] });
+  }
+  for (let i = len - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pairs[i], pairs[j]] = [pairs[j], pairs[i]];
+  }
+  for (let i = 0; i < len; i++) {
+    state.cards[i] = pairs[i].card;
+    state.marks[i] = pairs[i].mark;
+  }
+  document.getElementById('cardsInput').value = state.cards.join('\n');
+  saveState();
+  state.lastCompletedKeys = completedLineKeys();
+  renderBoard(false);
+};
+
+document.getElementById('undoBtn').onclick = () => {
+  if (state.history.length === 0) return;
+  if (!state.redoHistory) state.redoHistory = [];
+  state.redoHistory.push({
+    cards: [...state.cards],
+    marks: [...state.marks]
+  });
+  const previous = state.history.pop();
+  state.cards = previous.cards;
+  state.marks = previous.marks;
+  
+  document.getElementById('cardsInput').value = state.cards.join('\n');
+  saveState();
+  state.lastCompletedKeys = completedLineKeys();
+  renderBoard(false);
+  updateUndoRedoButtons();
+};
+
+document.getElementById('redoBtn').onclick = () => {
+  if (!state.redoHistory || state.redoHistory.length === 0) return;
+  state.history.push({
+    cards: [...state.cards],
+    marks: [...state.marks]
+  });
+  const next = state.redoHistory.pop();
+  state.cards = next.cards;
+  state.marks = next.marks;
+  
+  document.getElementById('cardsInput').value = state.cards.join('\n');
+  saveState();
+  state.lastCompletedKeys = completedLineKeys();
+  renderBoard(false);
+  updateUndoRedoButtons();
 };
 
 const channelUserIdInput = document.getElementById('channelUserId');

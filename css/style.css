@@ -375,6 +375,10 @@ html, body {
 }
 .btn.pink { border-color: var(--pink); color: var(--pink); }
 .btn.pink:hover { background: var(--pink); color: #fff; box-shadow: 0 0 20px var(--pink); }
+.btn.cyan { border-color: var(--cyan); color: var(--cyan); }
+.btn.cyan:hover { background: var(--cyan); color: #000; box-shadow: 0 0 20px var(--cyan); }
+.btn.sm { padding: 1vh 2vh; font-size: clamp(9px, 1.5vw, 11px); min-width: 80px; letter-spacing: 1px; border-radius: 18px; }
+.btn:disabled, .btn[disabled] { opacity: 0.3 !important; cursor: not-allowed !important; pointer-events: none !important; }
 .btn:active { transform: scale(.95); }
 
 .score-pill {
