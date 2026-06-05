@@ -824,6 +824,18 @@ async function fetchJson(url) {
   return res.json();
 }
 
+async function fetchJsonWithFallback(urls) {
+  let lastError = null;
+  for (const url of urls) {
+    try {
+      return await fetchJson(url);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new Error('Request failed');
+}
+
 async function loadBttvGlobal() {
   const data = await fetchJson('https://api.betterttv.net/3/cached/emotes/global');
   return flattenEmotes(data, 'bttv', 'global', 10);
@@ -838,12 +850,18 @@ async function loadBttvChannel(twitchUserId) {
 }
 
 async function load7tvGlobal() {
-  const data = await fetchJson('https://7tv.io/v3/emote-sets/global');
+  const data = await fetchJsonWithFallback([
+    'https://api.7tv.app/v3/emote-sets/global',
+    'https://7tv.io/v3/emote-sets/global'
+  ]);
   return flattenEmotes(data, '7tv', 'global', 20);
 }
 
 async function load7tvChannel(twitchUserId) {
-  const data = await fetchJson(`https://7tv.io/v3/users/twitch/${encodeURIComponent(twitchUserId)}`);
+  const data = await fetchJsonWithFallback([
+    `https://api.7tv.app/v3/users/twitch/${encodeURIComponent(twitchUserId)}`,
+    `https://7tv.io/v3/users/twitch/${encodeURIComponent(twitchUserId)}`
+  ]);
   return flattenEmotes(data, '7tv', 'channel', 40);
 }
 
