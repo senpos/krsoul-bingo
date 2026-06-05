@@ -846,5 +846,8 @@ document.getElementById('boardSize').value = state.size;
 channelUserIdInput.value = state.twitchUserId || DEFAULT_TWITCH_USER_ID;
 setTheme(state.theme);
 state.lastCompletedKeys = completedLineKeys();
+state.history = [];
+state.redoHistory = [];
+updateUndoRedoButtons();
 renderBoard(false);
 queueInitialEmoteRefresh();
