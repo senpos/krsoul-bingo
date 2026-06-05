@@ -3,7 +3,7 @@ const STORAGE_KEYS = {
   size: 'krsoul-bingo-size-v2',
   marks: 'krsoul-bingo-marks-v2',
   theme: 'krsoul-bingo-theme-v2',
-  emoteSourceCache: 'krsoul-bingo-emote-source-cache-v1',
+  emoteSourceCache: 'krsoul-bingo-emote-source-cache-v2',
   twitchUserId: 'krsoul-bingo-twitch-user-id-v1'
 };
 const DEFAULT_TWITCH_USER_ID = '55947428';
@@ -357,6 +357,34 @@ function normalizeEmoteArray(entries, provider, scope, priority) {
   return out;
 }
 
+function normalizeFfzEmoteArray(emoticons, scope, priority) {
+  const out = [];
+  for (const entry of emoticons || []) {
+    const id = String(entry?.id || '').trim();
+    const code = String(entry?.name || '').trim();
+    if (!id || !code) continue;
+
+    // FFZ urls object: { "1": url, "2": url, "4": url } — prefer 2x
+    const urls = entry?.urls || {};
+    const url = urls['2'] || urls['4'] || urls['1'] || '';
+    if (!url) continue;
+
+    // Ensure protocol (FFZ sometimes omits it)
+    const resolvedUrl = url.startsWith('//') ? `https:${url}` : url;
+
+    out.push({
+      provider: 'ffz',
+      scope,
+      priority,
+      id,
+      code,
+      url: resolvedUrl,
+      animated: false
+    });
+  }
+  return out;
+}
+
 function collectEmoteArrays(payload) {
   const arrays = [];
   const push = value => {
@@ -490,6 +518,32 @@ async function load7tvChannel(twitchUserId) {
   return fetchCachedEmoteRecords(cacheKey, url, data => flattenEmotes(data, '7tv', 'channel', 40));
 }
 
+async function loadFfzGlobal() {
+  return fetchCachedEmoteRecords(
+    'ffz-global',
+    'https://api.frankerfacez.com/v1/set/global',
+    data => {
+      const records = [];
+      for (const set of Object.values(data?.sets || {})) {
+        records.push(...normalizeFfzEmoteArray(set?.emoticons, 'global', 15));
+      }
+      return records;
+    }
+  );
+}
+
+async function loadFfzChannel(twitchUserId) {
+  const cacheKey = `ffz-channel:${twitchUserId}`;
+  const url = `https://api.frankerfacez.com/v1/room/id/${encodeURIComponent(twitchUserId)}`;
+  return fetchCachedEmoteRecords(cacheKey, url, data => {
+    const records = [];
+    for (const set of Object.values(data?.sets || {})) {
+      records.push(...normalizeFfzEmoteArray(set?.emoticons, 'channel', 35));
+    }
+    return records;
+  });
+}
+
 let emoteRefreshToken = 0;
 let emoteRefreshTimer = null;
 
@@ -498,12 +552,14 @@ function refreshEmotes() {
   const twitchUserId = state.twitchUserId.trim();
   const sources = [
     ['BTTV global', loadBttvGlobal],
-    ['7TV global', load7tvGlobal]
+    ['7TV global', load7tvGlobal],
+    ['FFZ global', loadFfzGlobal]
   ];
 
   if (twitchUserId) {
     sources.push(['BTTV channel', () => loadBttvChannel(twitchUserId)]);
     sources.push(['7TV channel', () => load7tvChannel(twitchUserId)]);
+    sources.push(['FFZ channel', () => loadFfzChannel(twitchUserId)]);
   }
 
   state.emotes.loading = true;
