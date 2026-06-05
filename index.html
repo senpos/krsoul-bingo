@@ -539,13 +539,9 @@ html, body {
           </div>
         </div>
         <div class="emote-controls">
-          <label class="setting-field" for="channelName">
-            <span class="setting-label">Channel</span>
-            <input id="channelName" class="setting-input" type="text" autocomplete="off" spellcheck="false" placeholder="twitch channel">
-          </label>
           <label class="setting-field" for="channelUserId">
             <span class="setting-label">Twitch ID</span>
-            <input id="channelUserId" class="setting-input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="12345678">
+            <input id="channelUserId" class="setting-input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="55947428">
           </label>
         </div>
         <div class="emote-status" id="emoteStatus">Loading emotes...</div>
@@ -566,9 +562,9 @@ const STORAGE_KEYS = {
   size: 'krsoul-bingo-size-v2',
   marks: 'krsoul-bingo-marks-v2',
   theme: 'krsoul-bingo-theme-v2',
-  channelName: 'krsoul-bingo-channel-name-v1',
   twitchUserId: 'krsoul-bingo-twitch-user-id-v1'
 };
+const DEFAULT_TWITCH_USER_ID = '55947428';
 
 // Restored Original Cards
 const DEFAULT_CARDS = [
@@ -584,8 +580,7 @@ const state = {
   cards: [...DEFAULT_CARDS],
   marks: Array(25).fill(false),
   theme: 'twice',
-  channelName: '',
-  twitchUserId: '',
+  twitchUserId: DEFAULT_TWITCH_USER_ID,
   lastCompletedKeys: new Set(),
   emotes: {
     loading: false,
@@ -606,7 +601,6 @@ function saveState() {
   localStorage.setItem(STORAGE_KEYS.cards, JSON.stringify(state.cards));
   localStorage.setItem(STORAGE_KEYS.marks, JSON.stringify(state.marks));
   localStorage.setItem(STORAGE_KEYS.theme, state.theme);
-  localStorage.setItem(STORAGE_KEYS.channelName, state.channelName);
   localStorage.setItem(STORAGE_KEYS.twitchUserId, state.twitchUserId);
 }
 
@@ -623,8 +617,7 @@ function loadState() {
   const storedTheme = localStorage.getItem(STORAGE_KEYS.theme);
   if (storedTheme) state.theme = storedTheme;
 
-  state.channelName = String(localStorage.getItem(STORAGE_KEYS.channelName) || '').trim();
-  state.twitchUserId = String(localStorage.getItem(STORAGE_KEYS.twitchUserId) || '').trim();
+  state.twitchUserId = String(localStorage.getItem(STORAGE_KEYS.twitchUserId) || DEFAULT_TWITCH_USER_ID).replace(/\D/g, '').trim() || DEFAULT_TWITCH_USER_ID;
 
   while(state.cards.length < 25) state.cards.push('');
   state.cards = state.cards.slice(0, 25);
@@ -1066,18 +1059,12 @@ document.getElementById('resetBtn').onclick = () => {
   state.marks.fill(false); saveState(); state.lastCompletedKeys = new Set(); renderBoard(false);
 };
 
-const channelNameInput = document.getElementById('channelName');
 const channelUserIdInput = document.getElementById('channelUserId');
-
-channelNameInput.oninput = () => {
-  state.channelName = channelNameInput.value.trim();
-  saveState();
-};
 
 channelUserIdInput.oninput = () => {
   const nextId = channelUserIdInput.value.replace(/\D/g, '').trim();
   if (channelUserIdInput.value !== nextId) channelUserIdInput.value = nextId;
-  state.twitchUserId = nextId;
+  state.twitchUserId = nextId || DEFAULT_TWITCH_USER_ID;
   saveState();
   scheduleEmoteRefresh();
 };
@@ -1093,8 +1080,7 @@ document.querySelectorAll('.theme-btn').forEach(btn => {
 loadState();
 document.getElementById('cardsInput').value = state.cards.join('\n');
 document.getElementById('boardSize').value = state.size;
-channelNameInput.value = state.channelName;
-channelUserIdInput.value = state.twitchUserId;
+channelUserIdInput.value = state.twitchUserId || DEFAULT_TWITCH_USER_ID;
 setTheme(state.theme);
 state.lastCompletedKeys = completedLineKeys();
 renderBoard(false);
