@@ -592,7 +592,8 @@ const state = {
     ready: false,
     error: '',
     lookup: new Map(),
-    assetCache: new Map()
+    assetCache: new Map(),
+    sourceRecords: new Map()
   }
 };
 
@@ -653,15 +654,16 @@ function looksLikeEmoji(ch) {
 }
 
 
+
 function splitCard(line) {
   const text = String(line || '').replace(/\s+/g, ' ').trim();
-  if (!text) return { icon: 'âœ¦', label: 'Empty', iconIsEmote: false };
+  if (!text) return { icon: '\u2726', label: 'Empty', iconIsEmote: false };
   const parts = text.split(' ');
   const first = parts[0];
   const rest = parts.slice(1).join(' ').trim();
   const firstIsEmote = Boolean(getEmoteEntry(first));
   if (looksLikeEmoji(first) || firstIsEmote) return { icon: first, label: rest, iconIsEmote: firstIsEmote };
-  return { icon: 'âœ¦', label: text, iconIsEmote: false };
+  return { icon: '\u2726', label: text, iconIsEmote: false };
 }
 
 function getEmoteEntry(token) {
@@ -672,33 +674,10 @@ function getEmoteAssetStatus(url) {
   return state.emotes.assetCache.get(url)?.status || 'idle';
 }
 
-function loadEmoteAsset(url) {
+function markEmoteAssetStatus(url, status) {
   const cached = state.emotes.assetCache.get(url);
-  if (cached) return cached.promise;
-
-  let resolveAsset;
-  let rejectAsset;
-  const promise = new Promise((resolve, reject) => {
-    resolveAsset = resolve;
-    rejectAsset = reject;
-  });
-
-  state.emotes.assetCache.set(url, { status: 'loading', promise });
-
-  const preloader = new Image();
-  preloader.decoding = 'async';
-  preloader.referrerPolicy = 'no-referrer';
-  preloader.onload = () => {
-    state.emotes.assetCache.set(url, { status: 'loaded', promise });
-    resolveAsset(url);
-  };
-  preloader.onerror = () => {
-    state.emotes.assetCache.set(url, { status: 'error', promise });
-    rejectAsset(new Error(`Failed to load image: ${url}`));
-  };
-  preloader.src = url;
-
-  return promise;
+  if (cached && cached.status === 'loaded' && status !== 'loaded') return;
+  state.emotes.assetCache.set(url, { status });
 }
 
 function createEmoteImage(emote) {
@@ -707,7 +686,7 @@ function createEmoteImage(emote) {
 
   const placeholder = document.createElement('span');
   placeholder.className = 'emote-placeholder';
-  placeholder.textContent = '✦';
+  placeholder.textContent = '\u231B';
 
   const img = document.createElement('img');
   img.className = 'emote';
@@ -719,10 +698,12 @@ function createEmoteImage(emote) {
   img.dataset.src = emote.url;
 
   img.addEventListener('load', () => {
+    markEmoteAssetStatus(emote.url, 'loaded');
     slot.classList.add('emote-ready');
   }, { once: true });
 
   img.addEventListener('error', () => {
+    markEmoteAssetStatus(emote.url, 'error');
     slot.classList.remove('emote-ready');
   }, { once: true });
 
@@ -747,11 +728,7 @@ const emoteObserver = 'IntersectionObserver' in window
           emoteObserver.unobserve(img);
           continue;
         }
-        loadEmoteAsset(url)
-          .then(() => {
-            if (img.isConnected && !img.src) img.src = url;
-          })
-          .catch(() => {});
+        if (getEmoteAssetStatus(url) !== 'error') img.src = url;
         emoteObserver.unobserve(img);
       }
     }, { rootMargin: '120px' })
@@ -759,12 +736,8 @@ const emoteObserver = 'IntersectionObserver' in window
 
 function scheduleEmoteImageLoad(img, url) {
   const start = () => {
-    if (!img.isConnected || img.src || !url) return;
-    loadEmoteAsset(url)
-      .then(() => {
-        if (img.isConnected && !img.src) img.src = url;
-      })
-      .catch(() => {});
+    if (!img.isConnected || img.src || !url || getEmoteAssetStatus(url) === 'error') return;
+    img.src = url;
   };
 
   if (emoteObserver) {
@@ -774,7 +747,6 @@ function scheduleEmoteImageLoad(img, url) {
 
   requestAnimationFrame(start);
 }
-
 function appendRichText(target, text) {
   const parts = String(text || '').split(/(\s+)/);
   for (const part of parts) {
@@ -866,8 +838,23 @@ function mergeEmoteMaps(records) {
   return lookup;
 }
 
-async function fetchJson(url) {
-  const res = await fetch(url, { cache: 'no-store' });
+function rebuildEmoteLookup() {
+  const allRecords = [];
+  for (const records of state.emotes.sourceRecords.values()) {
+    allRecords.push(...records);
+  }
+  state.emotes.lookup = mergeEmoteMaps(allRecords);
+}
+
+async function fetchJson(url, timeoutMs = 6000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let res;
+  try {
+    res = await fetch(url, { cache: 'no-store', signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return res.json();
 }
@@ -898,56 +885,78 @@ async function load7tvChannel(twitchUserId) {
 let emoteRefreshToken = 0;
 let emoteRefreshTimer = null;
 
-async function refreshEmotes() {
+function refreshEmotes() {
   const token = ++emoteRefreshToken;
   const twitchUserId = state.twitchUserId.trim();
   const sources = [
-    ['BTTV global', loadBttvGlobal()],
-    ['7TV global', load7tvGlobal()]
+    ['BTTV global', loadBttvGlobal],
+    ['7TV global', load7tvGlobal]
   ];
 
   if (twitchUserId) {
-    sources.push(['BTTV channel', loadBttvChannel(twitchUserId)]);
-    sources.push(['7TV channel', load7tvChannel(twitchUserId)]);
+    sources.push(['BTTV channel', () => loadBttvChannel(twitchUserId)]);
+    sources.push(['7TV channel', () => load7tvChannel(twitchUserId)]);
   }
 
   state.emotes.loading = true;
   state.emotes.ready = false;
   state.emotes.error = '';
+  state.emotes.sourceRecords = new Map();
+  state.emotes.lookup = new Map();
   setEmoteStatus(twitchUserId ? 'Loading emotes...' : 'Loading global emotes...');
-
-  const settled = await Promise.allSettled(sources.map(([, promise]) => promise));
-  if (token !== emoteRefreshToken) return;
-
-  const records = [];
-  const loadedSources = [];
-  const failedSources = [];
-
-  settled.forEach((result, index) => {
-    const [label] = sources[index];
-    if (result.status === 'fulfilled') {
-      loadedSources.push(label);
-      records.push(...result.value);
-    } else {
-      failedSources.push(label);
-    }
-  });
-
-  state.emotes.lookup = mergeEmoteMaps(records);
-  state.emotes.loading = false;
-  state.emotes.ready = true;
-  state.emotes.error = failedSources.join(', ');
-
-  if (loadedSources.length) {
-    const status = failedSources.length
-      ? `Loaded ${loadedSources.join(', ')}; failed ${failedSources.join(', ')}`
-      : `Loaded ${loadedSources.join(', ')}`;
-    setEmoteStatus(status, failedSources.length ? 'partial' : 'ready');
-  } else {
-    setEmoteStatus('Emote loading failed. Board text will stay plain.', 'error');
-  }
-
   renderBoard(false);
+
+  const sourceState = new Map(sources.map(([label]) => [label, 'pending']));
+
+  const syncStatus = () => {
+    const loaded = [];
+    const pending = [];
+    const failed = [];
+
+    for (const [label, status] of sourceState.entries()) {
+      if (status === 'loaded') loaded.push(label);
+      else if (status === 'failed') failed.push(label);
+      else pending.push(label);
+    }
+
+    state.emotes.loading = pending.length > 0;
+    state.emotes.ready = pending.length === 0;
+    state.emotes.error = failed.join(', ');
+
+    if (!loaded.length && pending.length) {
+      setEmoteStatus(`Loading ${pending.join(', ')}...`);
+    } else if (loaded.length && pending.length) {
+      setEmoteStatus(`Loaded ${loaded.join(', ')}; loading ${pending.join(', ')}...`, 'partial');
+    } else if (loaded.length && failed.length) {
+      setEmoteStatus(`Loaded ${loaded.join(', ')}; failed ${failed.join(', ')}`, 'partial');
+    } else if (loaded.length) {
+      setEmoteStatus(`Loaded ${loaded.join(', ')}`, 'ready');
+    } else if (failed.length) {
+      setEmoteStatus('Emote loading failed. Board text will stay plain.', 'error');
+    }
+  };
+
+  const applySource = (label, records) => {
+    if (token !== emoteRefreshToken) return;
+    sourceState.set(label, 'loaded');
+    state.emotes.sourceRecords.set(label, records);
+    rebuildEmoteLookup();
+    syncStatus();
+    renderBoard(false);
+  };
+
+  const failSource = (label) => {
+    if (token !== emoteRefreshToken) return;
+    sourceState.set(label, 'failed');
+    syncStatus();
+  };
+
+  for (const [label, loader] of sources) {
+    Promise.resolve()
+      .then(() => loader())
+      .then(records => applySource(label, records))
+      .catch(() => failSource(label));
+  }
 }
 
 function scheduleEmoteRefresh() {
