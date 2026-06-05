@@ -591,7 +591,8 @@ const state = {
     loading: false,
     ready: false,
     error: '',
-    lookup: new Map()
+    lookup: new Map(),
+    assetCache: new Map()
   }
 };
 
@@ -667,6 +668,39 @@ function getEmoteEntry(token) {
   return state.emotes.lookup.get(String(token || '').trim()) || null;
 }
 
+function getEmoteAssetStatus(url) {
+  return state.emotes.assetCache.get(url)?.status || 'idle';
+}
+
+function loadEmoteAsset(url) {
+  const cached = state.emotes.assetCache.get(url);
+  if (cached) return cached.promise;
+
+  let resolveAsset;
+  let rejectAsset;
+  const promise = new Promise((resolve, reject) => {
+    resolveAsset = resolve;
+    rejectAsset = reject;
+  });
+
+  state.emotes.assetCache.set(url, { status: 'loading', promise });
+
+  const preloader = new Image();
+  preloader.decoding = 'async';
+  preloader.referrerPolicy = 'no-referrer';
+  preloader.onload = () => {
+    state.emotes.assetCache.set(url, { status: 'loaded', promise });
+    resolveAsset(url);
+  };
+  preloader.onerror = () => {
+    state.emotes.assetCache.set(url, { status: 'error', promise });
+    rejectAsset(new Error(`Failed to load image: ${url}`));
+  };
+  preloader.src = url;
+
+  return promise;
+}
+
 function createEmoteImage(emote) {
   const slot = document.createElement('span');
   slot.className = 'emote-slot';
@@ -680,7 +714,7 @@ function createEmoteImage(emote) {
   img.alt = emote.code;
   img.title = `${emote.code}${emote.provider ? ` (${emote.provider.toUpperCase()})` : ''}`;
   img.decoding = 'async';
-  img.loading = 'lazy';
+  img.loading = 'eager';
   img.referrerPolicy = 'no-referrer';
   img.dataset.src = emote.url;
 
@@ -694,7 +728,12 @@ function createEmoteImage(emote) {
 
   slot.appendChild(placeholder);
   slot.appendChild(img);
-  scheduleEmoteImageLoad(img);
+  if (getEmoteAssetStatus(emote.url) === 'loaded') {
+    img.src = emote.url;
+    slot.classList.add('emote-ready');
+  } else {
+    scheduleEmoteImageLoad(img, emote.url);
+  }
   return slot;
 }
 
@@ -703,20 +742,29 @@ const emoteObserver = 'IntersectionObserver' in window
       for (const entry of entries) {
         if (!entry.isIntersecting) continue;
         const img = entry.target;
-        if (!img.dataset.src || img.src) {
+        const url = img.dataset.src;
+        if (!url || img.src) {
           emoteObserver.unobserve(img);
           continue;
         }
-        img.src = img.dataset.src;
+        loadEmoteAsset(url)
+          .then(() => {
+            if (img.isConnected && !img.src) img.src = url;
+          })
+          .catch(() => {});
         emoteObserver.unobserve(img);
       }
     }, { rootMargin: '120px' })
   : null;
 
-function scheduleEmoteImageLoad(img) {
+function scheduleEmoteImageLoad(img, url) {
   const start = () => {
-    if (!img.isConnected || img.src || !img.dataset.src) return;
-    img.src = img.dataset.src;
+    if (!img.isConnected || img.src || !url) return;
+    loadEmoteAsset(url)
+      .then(() => {
+        if (img.isConnected && !img.src) img.src = url;
+      })
+      .catch(() => {});
   };
 
   if (emoteObserver) {
@@ -910,10 +958,6 @@ function scheduleEmoteRefresh() {
 }
 
 function queueInitialEmoteRefresh() {
-  if ('requestIdleCallback' in window) {
-    window.requestIdleCallback(() => refreshEmotes(), { timeout: 1500 });
-    return;
-  }
   setTimeout(() => refreshEmotes(), 0);
 }
 
