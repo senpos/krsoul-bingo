@@ -260,6 +260,34 @@ html, body {
   height: 1.35em;
   vertical-align: middle;
 }
+.emote-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5em;
+  height: 1.5em;
+  position: relative;
+  vertical-align: text-bottom;
+}
+.emote-slot .emote-placeholder {
+  display: inline-block;
+  font-size: 1em;
+  line-height: 1;
+}
+.emote-slot img.emote {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.emote-slot.emote-ready img.emote {
+  opacity: 1;
+}
+.emote-slot.emote-ready .emote-placeholder {
+  opacity: 0;
+}
 .cell-text {
   font-size: clamp(10px, 2vw, 15px); font-weight: 700; color: var(--text); line-height: 1.2;
   word-break: break-word; overflow-wrap: anywhere; white-space: normal; max-width: 100%; transition: color 0.5s;
@@ -623,14 +651,6 @@ function looksLikeEmoji(ch) {
   return ch && ( /[\u2600-\u27BF]/.test(ch) || /\p{Extended_Pictographic}/u.test(ch) );
 }
 
-function splitCard(line) {
-  const text = String(line || '').replace(/\s+/g, ' ').trim();
-  if (!text) return { icon: '✦', label: 'Empty' };
-  const first = Array.from(text)[0];
-  const rest = text.slice(first.length).trim();
-  if (looksLikeEmoji(first) && rest) return { icon: first, label: rest };
-  return { icon: '✦', label: text };
-}
 
 function splitCard(line) {
   const text = String(line || '').replace(/\s+/g, ' ').trim();
@@ -648,6 +668,13 @@ function getEmoteEntry(token) {
 }
 
 function createEmoteImage(emote) {
+  const slot = document.createElement('span');
+  slot.className = 'emote-slot';
+
+  const placeholder = document.createElement('span');
+  placeholder.className = 'emote-placeholder';
+  placeholder.textContent = '✦';
+
   const img = document.createElement('img');
   img.className = 'emote';
   img.alt = emote.code;
@@ -655,8 +682,49 @@ function createEmoteImage(emote) {
   img.decoding = 'async';
   img.loading = 'lazy';
   img.referrerPolicy = 'no-referrer';
-  img.src = emote.url;
-  return img;
+  img.dataset.src = emote.url;
+
+  img.addEventListener('load', () => {
+    slot.classList.add('emote-ready');
+  }, { once: true });
+
+  img.addEventListener('error', () => {
+    slot.classList.remove('emote-ready');
+  }, { once: true });
+
+  slot.appendChild(placeholder);
+  slot.appendChild(img);
+  scheduleEmoteImageLoad(img);
+  return slot;
+}
+
+const emoteObserver = 'IntersectionObserver' in window
+  ? new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const img = entry.target;
+        if (!img.dataset.src || img.src) {
+          emoteObserver.unobserve(img);
+          continue;
+        }
+        img.src = img.dataset.src;
+        emoteObserver.unobserve(img);
+      }
+    }, { rootMargin: '120px' })
+  : null;
+
+function scheduleEmoteImageLoad(img) {
+  const start = () => {
+    if (!img.isConnected || img.src || !img.dataset.src) return;
+    img.src = img.dataset.src;
+  };
+
+  if (emoteObserver) {
+    emoteObserver.observe(img);
+    return;
+  }
+
+  requestAnimationFrame(start);
 }
 
 function appendRichText(target, text) {
@@ -841,6 +909,14 @@ function scheduleEmoteRefresh() {
   }, 300);
 }
 
+function queueInitialEmoteRefresh() {
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(() => refreshEmotes(), { timeout: 1500 });
+    return;
+  }
+  setTimeout(() => refreshEmotes(), 0);
+}
+
 function gridSize() { return state.size * state.size; }
 function currentCards() { return state.cards.slice(0, gridSize()).concat(Array(gridSize()).fill('')); }
 
@@ -969,7 +1045,7 @@ channelUserIdInput.value = state.twitchUserId;
 setTheme(state.theme);
 state.lastCompletedKeys = completedLineKeys();
 renderBoard(false);
-refreshEmotes();
+queueInitialEmoteRefresh();
 
 </script>
 </body>
