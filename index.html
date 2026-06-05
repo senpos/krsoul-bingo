@@ -57,6 +57,7 @@ body[data-theme="lesserafim"] {
 
 html, body {
   min-height: 100%;
+  min-height: 100vh;
   background: var(--dark);
   color: var(--text);
   font-family: 'Noto Sans KR', sans-serif;
@@ -67,18 +68,24 @@ html, body {
 
 /* ── Layout ── */
 .app-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   position: relative;
   z-index: 1;
 }
 
 .game-view {
-  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 3vh 16px 6vh;
   position: relative;
+}
+
+.editor-view {
+  margin-top: auto;
 }
 
 /* Container is wider now */
@@ -242,6 +249,17 @@ html, body {
 /* Scaled up fonts and icons */
 .cell-icon { font-size: clamp(24px, 5vw, 40px); line-height: 1; margin-bottom: 0.8rem; display: block; transition: transform 0.15s; }
 .cell:hover:not(.free) .cell-icon { transform: scale(1.15) translateY(-2px); }
+.cell-icon .emote,
+.emote {
+  display: inline-block;
+  height: 1.5em;
+  width: auto;
+  vertical-align: text-bottom;
+}
+.cell-icon .emote {
+  height: 1.35em;
+  vertical-align: middle;
+}
 .cell-text {
   font-size: clamp(10px, 2vw, 15px); font-weight: 700; color: var(--text); line-height: 1.2;
   word-break: break-word; overflow-wrap: anywhere; white-space: normal; max-width: 100%; transition: color 0.5s;
@@ -280,6 +298,7 @@ html, body {
   .container { max-width: 100%; }
   .editor-view { padding: 24px 12px 50px; }
   .editor-panel { padding: 18px; }
+  .emote-controls { grid-template-columns: 1fr; }
   .badge { padding: 5px 14px; font-size: 10px; letter-spacing: 2px; }
   .subtitle { font-size: 11px; letter-spacing: 4px; }
   .idol-strip { gap: 10px; }
@@ -330,6 +349,48 @@ html, body {
   transition: border-color 0.6s;
 }
 .board-size-select:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,212,255,0.3); }
+.emote-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.setting-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.setting-label {
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--dim);
+  transition: color 0.6s;
+}
+.setting-input {
+  width: 100%;
+  appearance: none;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.6s, box-shadow 0.2s ease;
+}
+.setting-input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,212,255,0.3); }
+.emote-status {
+  margin-bottom: 14px;
+  font-size: 12px;
+  color: var(--dim);
+  transition: color 0.6s;
+  min-height: 1em;
+}
+.emote-status[data-state="error"] { color: #ff9dbb; }
+.emote-status[data-state="partial"] { color: var(--cyan); }
 .cards-input {
   width: 100%; min-height: 320px; resize: vertical; border-radius: 12px;
   border: 1px solid var(--border); background: rgba(0,0,0,0.6); color: #fff;
@@ -439,7 +500,7 @@ html, body {
         <div class="editor-head">
           <div>
             <div class="editor-title">KRSoul Card Editor</div>
-            <div class="editor-note">One item per line. Paste emojis at the start to set custom icons.</div>
+            <div class="editor-note">One item per line. Emoji or emote at the start becomes the icon.</div>
           </div>
           <div class="editor-controls">
             <label for="boardSize">Size</label>
@@ -449,6 +510,17 @@ html, body {
             </select>
           </div>
         </div>
+        <div class="emote-controls">
+          <label class="setting-field" for="channelName">
+            <span class="setting-label">Channel</span>
+            <input id="channelName" class="setting-input" type="text" autocomplete="off" spellcheck="false" placeholder="twitch channel">
+          </label>
+          <label class="setting-field" for="channelUserId">
+            <span class="setting-label">Twitch ID</span>
+            <input id="channelUserId" class="setting-input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="12345678">
+          </label>
+        </div>
+        <div class="emote-status" id="emoteStatus">Loading emotes...</div>
         <textarea id="cardsInput" class="cards-input" spellcheck="false"></textarea>
         <div class="editor-meta">
           <span id="cardsCount"></span>
@@ -461,7 +533,14 @@ html, body {
 </div>
 
 <script>
-const STORAGE_KEYS = { cards: 'krsoul-bingo-cards-v2', size: 'krsoul-bingo-size-v2', marks: 'krsoul-bingo-marks-v2', theme: 'krsoul-bingo-theme-v2' };
+const STORAGE_KEYS = {
+  cards: 'krsoul-bingo-cards-v2',
+  size: 'krsoul-bingo-size-v2',
+  marks: 'krsoul-bingo-marks-v2',
+  theme: 'krsoul-bingo-theme-v2',
+  channelName: 'krsoul-bingo-channel-name-v1',
+  twitchUserId: 'krsoul-bingo-twitch-user-id-v1'
+};
 
 // Restored Original Cards
 const DEFAULT_CARDS = [
@@ -473,7 +552,19 @@ const DEFAULT_CARDS = [
 ];
 
 const state = {
-  size: 5, cards: [...DEFAULT_CARDS], marks: Array(25).fill(false), theme: 'twice', lastCompletedKeys: new Set()
+  size: 5,
+  cards: [...DEFAULT_CARDS],
+  marks: Array(25).fill(false),
+  theme: 'twice',
+  channelName: '',
+  twitchUserId: '',
+  lastCompletedKeys: new Set(),
+  emotes: {
+    loading: false,
+    ready: false,
+    error: '',
+    lookup: new Map()
+  }
 };
 
 function loadJson(key, fallback) {
@@ -485,6 +576,8 @@ function saveState() {
   localStorage.setItem(STORAGE_KEYS.cards, JSON.stringify(state.cards));
   localStorage.setItem(STORAGE_KEYS.marks, JSON.stringify(state.marks));
   localStorage.setItem(STORAGE_KEYS.theme, state.theme);
+  localStorage.setItem(STORAGE_KEYS.channelName, state.channelName);
+  localStorage.setItem(STORAGE_KEYS.twitchUserId, state.twitchUserId);
 }
 
 function loadState() {
@@ -499,6 +592,9 @@ function loadState() {
 
   const storedTheme = localStorage.getItem(STORAGE_KEYS.theme);
   if (storedTheme) state.theme = storedTheme;
+
+  state.channelName = String(localStorage.getItem(STORAGE_KEYS.channelName) || '').trim();
+  state.twitchUserId = String(localStorage.getItem(STORAGE_KEYS.twitchUserId) || '').trim();
 
   while(state.cards.length < 25) state.cards.push('');
   state.cards = state.cards.slice(0, 25);
@@ -534,6 +630,215 @@ function splitCard(line) {
   const rest = text.slice(first.length).trim();
   if (looksLikeEmoji(first) && rest) return { icon: first, label: rest };
   return { icon: '✦', label: text };
+}
+
+function splitCard(line) {
+  const text = String(line || '').replace(/\s+/g, ' ').trim();
+  if (!text) return { icon: 'âœ¦', label: 'Empty', iconIsEmote: false };
+  const parts = text.split(' ');
+  const first = parts[0];
+  const rest = parts.slice(1).join(' ').trim();
+  const firstIsEmote = Boolean(getEmoteEntry(first));
+  if (looksLikeEmoji(first) || firstIsEmote) return { icon: first, label: rest, iconIsEmote: firstIsEmote };
+  return { icon: 'âœ¦', label: text, iconIsEmote: false };
+}
+
+function getEmoteEntry(token) {
+  return state.emotes.lookup.get(String(token || '').trim()) || null;
+}
+
+function createEmoteImage(emote) {
+  const img = document.createElement('img');
+  img.className = 'emote';
+  img.alt = emote.code;
+  img.title = `${emote.code}${emote.provider ? ` (${emote.provider.toUpperCase()})` : ''}`;
+  img.decoding = 'async';
+  img.loading = 'lazy';
+  img.referrerPolicy = 'no-referrer';
+  img.src = emote.url;
+  return img;
+}
+
+function appendRichText(target, text) {
+  const parts = String(text || '').split(/(\s+)/);
+  for (const part of parts) {
+    if (!part) continue;
+    if (/^\s+$/.test(part)) {
+      target.appendChild(document.createTextNode(part));
+      continue;
+    }
+    const emote = getEmoteEntry(part);
+    target.appendChild(emote ? createEmoteImage(emote) : document.createTextNode(part));
+  }
+}
+
+function normalizeEmoteArray(entries, provider, scope, priority) {
+  const out = [];
+  for (const entry of entries || []) {
+    const id = String(entry?.id || '').trim();
+    const code = String(entry?.code || entry?.name || '').trim();
+    if (!id || !code) continue;
+
+    const imageType = String(entry?.imageType || '').toLowerCase();
+    let url = '';
+
+    if (provider === 'bttv') {
+      const ext = imageType === 'gif' ? 'gif' : imageType === 'png' ? 'png' : 'webp';
+      url = `https://cdn.betterttv.net/emote/${id}/2x.${ext}`;
+    } else if (provider === '7tv') {
+      url = `https://cdn.7tv.app/emote/${id}/2x.webp`;
+    }
+
+    if (!url) continue;
+
+    out.push({
+      provider,
+      scope,
+      priority,
+      id,
+      code,
+      url,
+      animated: Boolean(entry?.animated)
+    });
+  }
+  return out;
+}
+
+function collectEmoteArrays(payload) {
+  const arrays = [];
+  const push = value => {
+    if (Array.isArray(value) && value.length) arrays.push(value);
+  };
+
+  if (!payload) return arrays;
+  if (Array.isArray(payload)) return [payload];
+
+  push(payload.emotes);
+  push(payload.channelEmotes);
+  push(payload.sharedEmotes);
+  push(payload.data?.emotes);
+  push(payload.emote_set?.emotes);
+  push(payload.emoteSet?.emotes);
+  if (Array.isArray(payload.emote_sets)) {
+    for (const set of payload.emote_sets) push(set?.emotes);
+  }
+
+  return arrays;
+}
+
+function flattenEmotes(payload, provider, scope, priority) {
+  const emotes = [];
+  for (const arr of collectEmoteArrays(payload)) {
+    emotes.push(...normalizeEmoteArray(arr, provider, scope, priority));
+  }
+  return emotes;
+}
+
+function setEmoteStatus(message, kind = '') {
+  const el = document.getElementById('emoteStatus');
+  if (!el) return;
+  el.textContent = message;
+  el.dataset.state = kind;
+}
+
+function mergeEmoteMaps(records) {
+  const lookup = new Map();
+  for (const emote of records) {
+    const existing = lookup.get(emote.code);
+    if (!existing || emote.priority >= existing.priority) lookup.set(emote.code, emote);
+  }
+  return lookup;
+}
+
+async function fetchJson(url) {
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json();
+}
+
+async function loadBttvGlobal() {
+  const data = await fetchJson('https://api.betterttv.net/3/cached/emotes/global');
+  return flattenEmotes(data, 'bttv', 'global', 10);
+}
+
+async function loadBttvChannel(twitchUserId) {
+  const data = await fetchJson(`https://api.betterttv.net/3/cached/users/twitch/${encodeURIComponent(twitchUserId)}`);
+  return [
+    ...flattenEmotes(data?.sharedEmotes, 'bttv', 'channel', 30),
+    ...flattenEmotes(data?.channelEmotes, 'bttv', 'channel', 30)
+  ];
+}
+
+async function load7tvGlobal() {
+  const data = await fetchJson('https://7tv.io/v3/emote-sets/global');
+  return flattenEmotes(data, '7tv', 'global', 20);
+}
+
+async function load7tvChannel(twitchUserId) {
+  const data = await fetchJson(`https://7tv.io/v3/users/twitch/${encodeURIComponent(twitchUserId)}`);
+  return flattenEmotes(data, '7tv', 'channel', 40);
+}
+
+let emoteRefreshToken = 0;
+let emoteRefreshTimer = null;
+
+async function refreshEmotes() {
+  const token = ++emoteRefreshToken;
+  const twitchUserId = state.twitchUserId.trim();
+  const sources = [
+    ['BTTV global', loadBttvGlobal()],
+    ['7TV global', load7tvGlobal()]
+  ];
+
+  if (twitchUserId) {
+    sources.push(['BTTV channel', loadBttvChannel(twitchUserId)]);
+    sources.push(['7TV channel', load7tvChannel(twitchUserId)]);
+  }
+
+  state.emotes.loading = true;
+  state.emotes.ready = false;
+  state.emotes.error = '';
+  setEmoteStatus(twitchUserId ? 'Loading emotes...' : 'Loading global emotes...');
+
+  const settled = await Promise.allSettled(sources.map(([, promise]) => promise));
+  if (token !== emoteRefreshToken) return;
+
+  const records = [];
+  const loadedSources = [];
+  const failedSources = [];
+
+  settled.forEach((result, index) => {
+    const [label] = sources[index];
+    if (result.status === 'fulfilled') {
+      loadedSources.push(label);
+      records.push(...result.value);
+    } else {
+      failedSources.push(label);
+    }
+  });
+
+  state.emotes.lookup = mergeEmoteMaps(records);
+  state.emotes.loading = false;
+  state.emotes.ready = true;
+  state.emotes.error = failedSources.join(', ');
+
+  if (loadedSources.length) {
+    const status = failedSources.length
+      ? `Loaded ${loadedSources.join(', ')}; failed ${failedSources.join(', ')}`
+      : `Loaded ${loadedSources.join(', ')}`;
+    setEmoteStatus(status, failedSources.length ? 'partial' : 'ready');
+  } else {
+    setEmoteStatus('Emote loading failed. Board text will stay plain.', 'error');
+  }
+
+  renderBoard(false);
+}
+
+function scheduleEmoteRefresh() {
+  clearTimeout(emoteRefreshTimer);
+  emoteRefreshTimer = setTimeout(() => {
+    refreshEmotes();
+  }, 300);
 }
 
 function gridSize() { return state.size * state.size; }
@@ -598,12 +903,26 @@ function renderBoard(allowCelebrate = true) {
   document.querySelector('.bingo-headers').style.gridTemplateColumns = `repeat(${state.size}, 1fr)`;
 
   cards.slice(0, gridSize()).forEach((entry, i) => {
-    const { icon, label } = splitCard(entry);
+    const { icon, label, iconIsEmote } = splitCard(entry);
     const marked = state.marks[i];
     
     const cell = document.createElement('div');
     cell.className = `cell ${marked?'marked':''} ${activeCells.has(i)?'bingo-active':''} ${newCells.has(i)?'bingo-new':''}`;
-    cell.innerHTML = `<span class="cell-icon">${icon}</span><span class="cell-text">${label}</span>`;
+    const iconEl = document.createElement('span');
+    iconEl.className = 'cell-icon';
+    if (iconIsEmote) {
+      const emote = getEmoteEntry(icon);
+      iconEl.appendChild(emote ? createEmoteImage(emote) : document.createTextNode(icon));
+    } else {
+      iconEl.textContent = icon;
+    }
+
+    const textEl = document.createElement('span');
+    textEl.className = 'cell-text';
+    appendRichText(textEl, label || '');
+
+    cell.appendChild(iconEl);
+    cell.appendChild(textEl);
     
     cell.addEventListener('click', () => { state.marks[i] = !state.marks[i]; saveState(); renderBoard(true); });
     grid.appendChild(cell);
@@ -618,6 +937,22 @@ document.getElementById('resetBtn').onclick = () => {
   state.marks.fill(false); saveState(); state.lastCompletedKeys = new Set(); renderBoard(false);
 };
 
+const channelNameInput = document.getElementById('channelName');
+const channelUserIdInput = document.getElementById('channelUserId');
+
+channelNameInput.oninput = () => {
+  state.channelName = channelNameInput.value.trim();
+  saveState();
+};
+
+channelUserIdInput.oninput = () => {
+  const nextId = channelUserIdInput.value.replace(/\D/g, '').trim();
+  if (channelUserIdInput.value !== nextId) channelUserIdInput.value = nextId;
+  state.twitchUserId = nextId;
+  saveState();
+  scheduleEmoteRefresh();
+};
+
 document.getElementById('cardsInput').oninput = () => { parseCardsText(); state.lastCompletedKeys = completedLineKeys(); renderBoard(false); };
 document.getElementById('boardSize').onchange = (e) => { state.size = Number(e.target.value); saveState(); renderBoard(false); };
 
@@ -629,9 +964,12 @@ document.querySelectorAll('.theme-btn').forEach(btn => {
 loadState();
 document.getElementById('cardsInput').value = state.cards.join('\n');
 document.getElementById('boardSize').value = state.size;
+channelNameInput.value = state.channelName;
+channelUserIdInput.value = state.twitchUserId;
 setTheme(state.theme);
 state.lastCompletedKeys = completedLineKeys();
 renderBoard(false);
+refreshEmotes();
 
 </script>
 </body>
