@@ -562,9 +562,12 @@ const STORAGE_KEYS = {
   size: 'krsoul-bingo-size-v2',
   marks: 'krsoul-bingo-marks-v2',
   theme: 'krsoul-bingo-theme-v2',
+  emoteSourceCache: 'krsoul-bingo-emote-source-cache-v1',
   twitchUserId: 'krsoul-bingo-twitch-user-id-v1'
 };
 const DEFAULT_TWITCH_USER_ID = '55947428';
+const EMOTE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const EMOTE_CACHE_FAIL_TTL_MS = 10 * 60 * 1000;
 
 // Restored Original Cards
 const DEFAULT_CARDS = [
@@ -594,6 +597,17 @@ const state = {
 
 function loadJson(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }
+}
+
+function loadEmoteSourceCache() {
+  const cache = loadJson(STORAGE_KEYS.emoteSourceCache, null);
+  return cache && typeof cache === 'object' && !Array.isArray(cache) ? cache : {};
+}
+
+function saveEmoteSourceCache(cache) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.emoteSourceCache, JSON.stringify(cache));
+  } catch {}
 }
 
 function saveState() {
@@ -839,6 +853,8 @@ function rebuildEmoteLookup() {
   state.emotes.lookup = mergeEmoteMaps(allRecords);
 }
 
+const emoteRequestCache = new Map();
+
 async function fetchJson(url, timeoutMs = 6000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -852,27 +868,68 @@ async function fetchJson(url, timeoutMs = 6000) {
   return res.json();
 }
 
+async function fetchCachedEmoteRecords(cacheKey, url, mapper, timeoutMs = 6000) {
+  const now = Date.now();
+  const cache = loadEmoteSourceCache();
+  const cachedEntry = cache[cacheKey];
+  if (cachedEntry && cachedEntry.ok && now - cachedEntry.at < EMOTE_CACHE_TTL_MS && Array.isArray(cachedEntry.records)) {
+    return cachedEntry.records;
+  }
+  if (cachedEntry && !cachedEntry.ok && now - cachedEntry.at < EMOTE_CACHE_FAIL_TTL_MS) {
+    throw new Error(cachedEntry.error || 'cached failure');
+  }
+
+  if (emoteRequestCache.has(cacheKey)) return emoteRequestCache.get(cacheKey);
+
+  const request = (async () => {
+    try {
+      const data = await fetchJson(url, timeoutMs);
+      const records = mapper(data);
+      cache[cacheKey] = { ok: true, at: Date.now(), records };
+      saveEmoteSourceCache(cache);
+      return records;
+    } catch (err) {
+      cache[cacheKey] = { ok: false, at: Date.now(), error: String(err?.message || err) };
+      saveEmoteSourceCache(cache);
+      throw err;
+    } finally {
+      emoteRequestCache.delete(cacheKey);
+    }
+  })();
+
+  emoteRequestCache.set(cacheKey, request);
+  return request;
+}
+
 async function loadBttvGlobal() {
-  const data = await fetchJson('https://api.betterttv.net/3/cached/emotes/global');
-  return flattenEmotes(data, 'bttv', 'global', 10);
+  return fetchCachedEmoteRecords(
+    'bttv-global',
+    'https://api.betterttv.net/3/cached/emotes/global',
+    data => flattenEmotes(data, 'bttv', 'global', 10)
+  );
 }
 
 async function loadBttvChannel(twitchUserId) {
-  const data = await fetchJson(`https://api.betterttv.net/3/cached/users/twitch/${encodeURIComponent(twitchUserId)}`);
-  return [
+  const cacheKey = `bttv-channel:${twitchUserId}`;
+  const url = `https://api.betterttv.net/3/cached/users/twitch/${encodeURIComponent(twitchUserId)}`;
+  return fetchCachedEmoteRecords(cacheKey, url, data => [
     ...flattenEmotes(data?.sharedEmotes, 'bttv', 'channel', 30),
     ...flattenEmotes(data?.channelEmotes, 'bttv', 'channel', 30)
-  ];
+  ]);
 }
 
 async function load7tvGlobal() {
-  const data = await fetchJson('https://api.7tv.app/v3/emote-sets/global');
-  return flattenEmotes(data, '7tv', 'global', 20);
+  return fetchCachedEmoteRecords(
+    '7tv-global',
+    'https://api.7tv.app/v3/emote-sets/global',
+    data => flattenEmotes(data, '7tv', 'global', 20)
+  );
 }
 
 async function load7tvChannel(twitchUserId) {
-  const data = await fetchJson(`https://api.7tv.app/v3/users/twitch/${encodeURIComponent(twitchUserId)}`);
-  return flattenEmotes(data, '7tv', 'channel', 40);
+  const cacheKey = `7tv-channel:${twitchUserId}`;
+  const url = `https://api.7tv.app/v3/users/twitch/${encodeURIComponent(twitchUserId)}`;
+  return fetchCachedEmoteRecords(cacheKey, url, data => flattenEmotes(data, '7tv', 'channel', 40));
 }
 
 let emoteRefreshToken = 0;
