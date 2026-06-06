@@ -1454,6 +1454,30 @@ html, body {
   .picker-category-label { padding: 4px 10px; font-size: 10px; }
 }
 
+/* ── Disclaimer ── */
+.disclaimer {
+  max-width: 800px;
+  margin: 40px auto 60px;
+  padding: 20px 16px;
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  line-height: 1.6;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.disclaimer a {
+  color: var(--cyan);
+  text-decoration: none;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.disclaimer a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
 /* ── Audio Player ── */
 .audio-player {
   position: fixed;
