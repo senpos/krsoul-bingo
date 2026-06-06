@@ -2,7 +2,7 @@ import { STORAGE_KEYS, DEFAULT_TWITCH_USER_IDS, DEFAULT_CARDS, TWITCH_CLIENT_ID,
 import { state, loadBoards, saveBoards, saveActiveBoardId, saveState } from './state.js';
 import { getEmoteEntry, splitCard, getAllEmotes, getEmotesBySource, scheduleEmoteRefresh, queueInitialEmoteRefresh, onEmoteRefresh, onEmoteStatus } from './emotes.js';
 import { loginWithTwitch, logout as authLogout, initAuth } from './auth.js';
-import { completedLineKeys, drawBingoLines, launchConfetti, applyParticleTheme } from './game.js';
+import { completedLineKeys, drawBingoLines, launchConfetti, applyParticleTheme, bingoCellBurst, setBingoMode } from './game.js';
 
 export function createApp() {
   return {
@@ -678,6 +678,11 @@ export function createApp() {
       const currentKeys = this.bingoKeys;
       const newKeys = [...currentKeys].filter(k => !this.lastCompletedKeys.has(k));
       this.lastCompletedKeys = currentKeys;
+
+      // Collect all cell indices in new bingo lines
+      const newIndices = new Set();
+      newKeys.forEach(k => k.split(',').forEach(n => newIndices.add(Number(n))));
+
       if (newKeys.length > 0) {
         this.toastCount = currentKeys.size;
         this.toastLabel = this.toastCount === 1 ? 'Новий рядок!' : `${this.toastCount} рядків знайдено!`;
@@ -685,7 +690,11 @@ export function createApp() {
         clearTimeout(this._toastTimer);
         this._toastTimer = setTimeout(() => { this.toastVisible = false; }, 1200);
         launchConfetti();
+        bingoCellBurst([...newIndices]);
       }
+
+      // Toggle background particle intensity
+      setBingoMode(currentKeys.size > 0);
     },
 
     hideToast() {
@@ -704,6 +713,7 @@ export function createApp() {
       this.marks = Array(this.cellCount).fill(false);
       this.lastCompletedKeys = new Set();
       this.persist();
+      setBingoMode(false);
     },
 
     shuffle() {
@@ -729,6 +739,7 @@ export function createApp() {
       this.marks = prev.marks;
       this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
       this.persist();
+      setBingoMode(this.lastCompletedKeys.size > 0);
     },
 
     redo() {
@@ -739,6 +750,7 @@ export function createApp() {
       this.marks = next.marks;
       this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
       this.persist();
+      setBingoMode(this.lastCompletedKeys.size > 0);
     },
 
     setTheme(name) {

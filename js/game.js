@@ -12,6 +12,8 @@ export function completedLineKeys(size, marks) {
   return new Set(lines.filter(l => l.every(idx => marks[idx])).map(l => l.join(',')));
 }
 
+let _lastDrawnKeys = [];
+
 export function drawBingoLines(keys) {
   const svg = document.getElementById('bingoLines');
   const grid = document.getElementById('bingoGrid');
@@ -19,6 +21,12 @@ export function drawBingoLines(keys) {
 
   const cells = grid.querySelectorAll('.cell');
   if (cells.length === 0) return;
+
+  const sortedKeys = [...keys].sort();
+  if (sortedKeys.length === _lastDrawnKeys.length && sortedKeys.every((k, i) => k === _lastDrawnKeys[i])) {
+    return;
+  }
+  _lastDrawnKeys = sortedKeys;
 
   const wrapperRect = svg.getBoundingClientRect();
   while (svg.firstChild) svg.removeChild(svg.firstChild);
@@ -63,6 +71,144 @@ export function launchConfetti() {
       document.body.appendChild(c);
       setTimeout(() => c.remove(), 4000);
     }, i * 15);
+  }
+}
+
+/**
+ * Spawn a burst of particles at the center of each bingo cell.
+ * Creates a temporary canvas overlay that is removed after animation.
+ */
+export function bingoCellBurst(indices) {
+  const grid = document.getElementById('bingoGrid');
+  if (!grid) return;
+
+  const cells = grid.querySelectorAll('.cell');
+  const origins = [];
+  indices.forEach(i => {
+    const cell = cells[i];
+    if (!cell) return;
+    const r = cell.getBoundingClientRect();
+    origins.push({
+      x: r.left + r.width / 2,
+      y: r.top + r.height / 2,
+      size: Math.min(r.width, r.height)
+    });
+  });
+
+  if (origins.length === 0) return;
+
+  // Get theme bingo color from computed style
+  const bingoColor = getComputedStyle(document.body).getPropertyValue('--bingo').trim() || '#ffee00';
+  const colors = [bingoColor, '#ffffff', '#ff007f', '#00ffff', '#a020ff'];
+
+  const canvas = document.createElement('canvas');
+  canvas.style.cssText = 'position:fixed;inset:0;z-index:9998;pointer-events:none;';
+  document.body.appendChild(canvas);
+
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = window.innerWidth * dpr;
+  canvas.height = window.innerHeight * dpr;
+  ctx.scale(dpr, dpr);
+
+  const particles = [];
+  const PARTICLES_PER_CELL = 40;
+  const GRAVITY = 0.25;
+  const FRICTION = 0.96;
+
+  origins.forEach(o => {
+    for (let i = 0; i < PARTICLES_PER_CELL; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2 + Math.random() * 6;
+      particles.push({
+        x: o.x + (Math.random() - 0.5) * o.size * 0.5,
+        y: o.y + (Math.random() - 0.5) * o.size * 0.5,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 2,
+        size: 2 + Math.random() * 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        alpha: 0.8 + Math.random() * 0.2,
+        decay: 0.008 + Math.random() * 0.012,
+        shape: Math.random() > 0.5 ? 'circle' : 'square'
+      });
+    }
+  });
+
+  let running = true;
+  function draw() {
+    if (!running) return;
+    ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+
+    let alive = false;
+    for (const p of particles) {
+      if (p.alpha <= 0) continue;
+      alive = true;
+
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += GRAVITY;
+      p.vx *= FRICTION;
+      p.vy *= FRICTION;
+      p.alpha -= p.decay;
+      p.size *= 0.995;
+
+      ctx.globalAlpha = Math.max(0, p.alpha);
+      ctx.fillStyle = p.color;
+
+      if (p.shape === 'circle') {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+      }
+    }
+
+    ctx.globalAlpha = 1;
+
+    if (alive) {
+      requestAnimationFrame(draw);
+    } else {
+      running = false;
+      canvas.remove();
+    }
+  }
+
+  requestAnimationFrame(draw);
+
+  // Safety cleanup
+  setTimeout(() => {
+    if (running) {
+      running = false;
+      canvas.remove();
+    }
+  }, 4000);
+}
+
+let _bingoMode = false;
+
+/**
+ * Toggle background particles.js intensity for bingo mode.
+ * When active, increases particle count and speed.
+ */
+export function setBingoMode(active) {
+  if (_bingoMode === active) return;
+  _bingoMode = active;
+
+  if (!window.pJSDom || !window.pJSDom.length) return;
+  const pJS = window.pJSDom[0].pJS;
+  if (!pJS) return;
+
+  if (active) {
+    // Boost particles
+    pJS.particles.number.value = Math.min(pJS.particles.number.value * 2.5, 300);
+    pJS.particles.move.speed = pJS.particles.move.speed * 1.8;
+    pJS.particles.size.value = pJS.particles.size.value * 1.3;
+    pJS.particles.opacity.value = Math.min(pJS.particles.opacity.value * 1.4, 0.9);
+  } else {
+    // Re-apply normal theme to restore defaults
+    const theme = document.body.getAttribute('data-theme') || 'twice';
+    applyParticleTheme(theme);
   }
 }
 

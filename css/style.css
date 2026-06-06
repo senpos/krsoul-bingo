@@ -14,6 +14,8 @@
   --bg-pattern: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
   --bg-size: 44px 44px;
   --cell-radius: 10px;
+  --bingo: #ffee00;
+  --bingo-rgb: 255, 238, 0;
 }
 
 /* ── Ultra-Vibrant Theme Definitions ── */
@@ -22,30 +24,40 @@ body[data-theme="twice"] {
   --card: rgba(255,0,127,0.06); --border: rgba(255,0,127,0.5); --text: #ffffff; --dim: rgba(255,127,0,0.8);
   --bg-pattern: radial-gradient(circle, rgba(255, 127, 0, 0.15) 3px, transparent 3px);
   --bg-size: 35px 35px; --cell-radius: 18px;
+  --bingo: #ffee00;
+  --bingo-rgb: 255, 238, 0;
 }
 body[data-theme="aespa"] {
   --pink: #d900ff; --purple: #5500ff; --cyan: #00ffff; --dark: #050011;
   --card: rgba(85,0,255,0.05); --border: rgba(0,255,255,0.4); --text: #e0f0ff; --dim: rgba(217,0,255,0.7);
   --bg-pattern: linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(217, 0, 255, 0.1) 1px, transparent 1px);
   --bg-size: 50px 50px; --cell-radius: 4px;
+  --bingo: #00ffff;
+  --bingo-rgb: 0, 255, 255;
 }
 body[data-theme="nmixx"] {
   --pink: #ff0055; --purple: #0033ff; --cyan: #00ffcc; --dark: #020612;
   --card: rgba(0,51,255,0.06); --border: rgba(255,0,85,0.5); --text: #ffffff; --dim: rgba(0,255,204,0.7);
   --bg-pattern: repeating-radial-gradient(circle at 0 0, rgba(255,0,85,0.08) 0, rgba(0,51,255,0.08) 25px);
   --bg-size: 120px 120px; --cell-radius: 16px 4px 16px 4px;
+  --bingo: #ffee00;
+  --bingo-rgb: 255, 238, 0;
 }
 body[data-theme="newjeans"] {
   --pink: #0055ff; --purple: #ff00cc; --cyan: #ffee00; --dark: #00102a;
   --card: rgba(0,85,255,0.08); --border: rgba(255,238,0,0.4); --text: #ffffff; --dim: rgba(255,0,204,0.8);
   --bg-pattern: radial-gradient(circle, rgba(255, 238, 0, 0.15) 4px, transparent 4px);
   --bg-size: 25px 25px; --cell-radius: 25px;
+  --bingo: #ffee00;
+  --bingo-rgb: 255, 238, 0;
 }
 body[data-theme="lesserafim"] {
   --pink: #ff0000; --purple: #440000; --cyan: #ffffff; --dark: #080000;
   --card: rgba(255,0,0,0.04); --border: rgba(255,0,0,0.6); --text: #ffffff; --dim: rgba(255,255,255,0.6);
   --bg-pattern: repeating-linear-gradient(45deg, rgba(255,0,0,0.05) 0, rgba(255,0,0,0.05) 2px, transparent 2px, transparent 25px);
   --bg-size: 100% 100%; --cell-radius: 0px;
+  --bingo: #ff0000;
+  --bingo-rgb: 255, 0, 0;
 }
 
 html, body {
@@ -472,24 +484,116 @@ html, body {
   -webkit-tap-highlight-color: transparent;
   opacity: 0.85;
 }
-.cell::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 60%);
-  border-radius: inherit;
+/* ── Base particles layer (hidden by default) ── */
+.cell::before {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  top: 12%; left: 82%;
+  pointer-events: none;
+  z-index: 7;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
-.cell:hover:not(.free) {
-  border-color: var(--pink); background: rgba(255,255,255,0.1);
-  transform: scale(1.05); box-shadow: 0 0 25px var(--pink); z-index: 5;
+
+/* ── 1. Default (dim) ── */
+.cell {
+  opacity: 0.85;
+  border-color: rgba(150, 150, 150, 0.4);
+}
+
+/* ── 2. Hover (plain cell only — not marked, not bingo, not free) ── */
+.cell:not(.marked):not(.bingo-active):hover:not(.free) {
+  border-color: var(--cyan);
+  background: rgba(0, 212, 255, 0.06);
+  box-shadow: inset 0 0 10px rgba(0, 212, 255, 0.2);
+  opacity: 1;
+  z-index: 5;
+}
+
+/* ── 3. Selected (marked) ── */
+.cell.marked {
+  border-color: var(--purple);
+  background: linear-gradient(135deg, rgba(160, 32, 255, 0.1), rgba(255, 255, 255, 0.04));
+  box-shadow: inset 0 0 14px rgba(160, 32, 255, 0.35);
+  opacity: 1;
+  z-index: 2;
+  animation: markPulse 3s infinite alternate ease-in-out;
+}
+.cell.marked::before {
+  background: rgba(160, 32, 255, 0.6);
+  box-shadow:
+    -18px 12px 0 0 rgba(160, 32, 255, 0.4),
+    -8px 22px 0 0 rgba(160, 32, 255, 0.25),
+    4px 18px 0 0 rgba(160, 32, 255, 0.3),
+    -14px 20px 0 0 rgba(160, 32, 255, 0.2),
+    10px 14px 0 0 rgba(160, 32, 255, 0.15),
+    -4px 8px 0 0 rgba(160, 32, 255, 0.18);
+  opacity: 0.35;
+  animation: sparkleTwinkle 2s infinite ease-in-out;
+}
+
+/* ── 4. Selected + hover ── */
+.cell.marked:hover {
+  border-color: var(--cyan);
+  box-shadow: inset 0 0 10px rgba(0, 212, 255, 0.12), inset 0 0 14px rgba(160, 32, 255, 0.4);
+  z-index: 5;
+}
+.cell.marked:hover::before {
+  opacity: 0.6;
+}
+
+/* ── 5. Bingo (active) ── */
+.cell.bingo-active {
+  border-color: var(--bingo);
+  background: linear-gradient(135deg, rgba(var(--bingo-rgb), 0.12), rgba(255, 255, 255, 0.06));
+  box-shadow: inset 0 0 24px rgba(var(--bingo-rgb), 0.6);
+  opacity: 1;
+  z-index: 6;
+  animation: bingoFlash 0.8s infinite alternate ease-in-out;
+}
+.cell.bingo-active::before {
+  background: var(--bingo);
+  box-shadow:
+    -20px 15px 0 0 var(--bingo),
+    -10px 25px 0 0 rgba(var(--bingo-rgb), 0.7),
+    5px 20px 0 0 rgba(var(--bingo-rgb), 0.5),
+    12px 8px 0 0 rgba(var(--bingo-rgb), 0.4),
+    -5px 18px 0 0 rgba(var(--bingo-rgb), 0.35),
+    8px 28px 0 0 rgba(var(--bingo-rgb), 0.3),
+    -15px 5px 0 0 rgba(var(--bingo-rgb), 0.45);
+  opacity: 1;
+  animation: sparkleTwinkle 1.2s infinite ease-in-out;
+}
+
+/* ── 6. Bingo + hover ── */
+.cell.bingo-active:hover {
+  border-color: var(--cyan);
+  box-shadow: inset 0 0 26px rgba(var(--bingo-rgb), 0.65), inset 0 0 8px rgba(0, 212, 255, 0.08);
+  z-index: 6;
   opacity: 1;
 }
-.cell.marked {
-  background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.15));
-  border-color: var(--pink);
-  opacity: 1; z-index: 2;
-  animation: markPulse 2s infinite alternate ease-in-out;
+.cell.bingo-active:hover::before {
+  opacity: 1;
 }
-.cell.bingo-new { animation: bingoPop 0.5s cubic-bezier(.34,1.56,.64,1); }
-@keyframes bingoPop { 0% {transform:scale(1)} 40% {transform:scale(1.12)} 100% {transform:scale(1)} }
+
+.cell.bingo-new {
+  animation: bingoPop 0.5s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+@keyframes bingoPop {
+  0% { transform: scale(1) } 40% { transform: scale(1.02) } 100% { transform: scale(1) }
+}
+@keyframes bingoFlash {
+  0% { box-shadow: inset 0 0 14px rgba(var(--bingo-rgb), 0.45); }
+  100% { box-shadow: inset 0 0 30px rgba(var(--bingo-rgb), 0.8); }
+}
+@keyframes sparkleTwinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
 
 .bingo-lines-overlay {
   position: absolute;
@@ -499,10 +603,10 @@ html, body {
   overflow: visible;
 }
 .bingo-line {
-  stroke: rgba(255, 50, 50, 0.4);
+  stroke: rgba(var(--bingo-rgb), 0.5);
   stroke-width: clamp(4px, 0.8vw, 8px);
   stroke-linecap: round;
-  filter: drop-shadow(0 0 4px rgba(255, 50, 50, 0.3));
+  filter: drop-shadow(0 0 6px rgba(var(--bingo-rgb), 0.4));
   animation: drawLine 0.5s ease-out forwards;
 }
 @keyframes drawLine {
@@ -510,42 +614,9 @@ html, body {
   to { stroke-dashoffset: 0; }
 }
 
-@keyframes bingoParticleGlow {
-  0% {
-    box-shadow: 
-      0 0 10px var(--pink), inset 0 0 8px var(--pink),
-      -4px -10px 2px -1px var(--cyan),
-      10px -6px 2px 0px var(--purple),
-      14px 4px 2px -1px var(--pink),
-      6px 14px 2px 0px var(--cyan),
-      -10px 10px 2px -1px var(--purple),
-      -14px -4px 2px 0px var(--pink);
-  }
-  100% {
-    box-shadow: 
-      0 0 15px var(--pink), inset 0 0 10px var(--pink),
-      -8px -14px 2px 0px var(--cyan),
-      14px -8px 2px -1px var(--purple),
-      18px 6px 2px 0px var(--pink),
-      8px 18px 2px -1px var(--cyan),
-      -14px 14px 2px 0px var(--purple),
-      -18px -6px 2px -1px var(--pink);
-  }
-}
-
 @keyframes markPulse {
-  0% {
-    box-shadow: 
-      0 0 10px var(--pink), inset 0 0 8px var(--pink),
-      0 0 0px 2px var(--pink);
-    transform: scale(1.01);
-  }
-  100% {
-    box-shadow: 
-      0 0 20px var(--pink), inset 0 0 12px var(--pink),
-      0 0 0px 3px rgba(255, 16, 160, 0.4);
-    transform: scale(1.04);
-  }
+  0% { box-shadow: inset 0 0 10px rgba(160, 32, 255, 0.25); }
+  100% { box-shadow: inset 0 0 18px rgba(160, 32, 255, 0.55); }
 }
 
 /* ── Cell Emotes ── */
@@ -556,7 +627,9 @@ html, body {
   margin-bottom: 3px;
   transition: transform 0.15s;
 }
-.cell:hover:not(.free) .cell-icon { transform: scale(1.15) translateY(-2px); }
+.cell:not(.marked):not(.bingo-active):hover:not(.free) .cell-icon { transform: scale(1.05); }
+.cell.marked:hover .cell-icon { transform: scale(1.05); }
+.cell.bingo-active:hover .cell-icon { transform: scale(1.05); }
 .cell-icon > span {
   display: flex;
   align-items: center;
