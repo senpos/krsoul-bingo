@@ -78,7 +78,7 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0.5vh 16px;
+  padding: 1.2vh 16px;
   position: relative;
   box-sizing: border-box;
 }
@@ -147,7 +147,7 @@ html, body {
 }
 
 /* ── Header ── */
-.header { flex-shrink: 0; text-align: center; margin-bottom: 0.5vh; }
+.header { flex-shrink: 0; text-align: center; margin-bottom: 1.2vh; }
 .badge {
   display: inline-flex; align-items: center;
   background: linear-gradient(90deg, var(--pink), var(--purple), var(--cyan));
@@ -173,7 +173,7 @@ html, body {
   display: grid;
   grid-template-columns: 130px 14px 1fr;
   grid-template-rows: 1fr auto;
-  gap: 6px 0;
+  gap: 12px 0;
   flex: 1;
   min-height: 0;
   width: 100%;
@@ -408,12 +408,13 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 100%;
 }
 
 /* ── Theme Switcher ── */
 .idol-strip {
   flex-shrink: 0;
-  display: flex; justify-content: center; gap: clamp(6px, 2vw, 14px); margin-bottom: 0.5vh; flex-wrap: wrap;
+  display: flex; justify-content: center; gap: clamp(6px, 2vw, 14px); margin-bottom: 1.2vh; flex-wrap: wrap;
 }
 .theme-btn {
   display: flex; flex-direction: column; align-items: center; gap: 8px;
@@ -453,8 +454,10 @@ html, body {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   grid-template-rows: repeat(5, minmax(0, 1fr));
   gap: clamp(6px, 1.2vw, 14px);
-  width: 100%;
+  height: 100%;
+  width: auto;
   aspect-ratio: 1;
+  max-width: 100%;
 }
 
 .cell {
@@ -666,7 +669,7 @@ html, body {
   flex-shrink: 0;
   display: flex; align-items: center; justify-content: space-between;
   flex-wrap: wrap; gap: 8px;
-  padding-top: 0.5vh;
+  padding-top: 1.2vh;
 }
 .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
 .btn {
@@ -1242,4 +1245,37 @@ html, body {
   .picker-img { width: 34px; height: 34px; }
   .picker-head { padding: 8px 10px; }
   .picker-category-label { padding: 4px 10px; font-size: 10px; }
+}
+
+/* ── Large screens (2K / 4K) ── */
+@media (min-width: 1920px) {
+  .game-view { padding: 2vh 24px; }
+  .container { max-width: 1000px; }
+  .board-layout { grid-template-columns: 150px 18px 1fr; }
+  .board-sidebar { width: 150px; }
+  .title { font-size: clamp(28px, 5.5vw, 64px); }
+  .theme-icon { width: clamp(30px, 4vw, 56px); height: clamp(30px, 4vw, 56px); }
+  .theme-name { font-size: clamp(7px, 1vw, 12px); }
+  .btn { font-size: clamp(10px, 1.5vw, 14px); padding: 1vh 2vh; }
+  .score-pill { font-size: clamp(10px, 1.5vw, 14px); padding: 0.8vh 1.5vh; }
+  .sidebar-share { font-size: 14px; padding: 10px 12px; }
+  .sidebar-tab-name { font-size: 14px; }
+  .sidebar-add { font-size: 14px; }
+  .size-select { font-size: 14px; padding: 6px 10px; }
+}
+
+@media (min-width: 2560px) {
+  .game-view { padding: 2.5vh 32px; }
+  .container { max-width: 1200px; }
+  .board-layout { grid-template-columns: 170px 24px 1fr; }
+  .board-sidebar { width: 170px; }
+  .title { font-size: clamp(28px, 5.5vw, 78px); }
+  .theme-icon { width: clamp(30px, 4vw, 64px); height: clamp(30px, 4vw, 64px); }
+  .theme-name { font-size: clamp(7px, 1vw, 13px); }
+  .btn { font-size: clamp(10px, 1.5vw, 16px); padding: 1.2vh 2.5vh; }
+  .score-pill { font-size: clamp(10px, 1.5vw, 16px); padding: 1vh 2vh; }
+  .sidebar-share { font-size: 16px; padding: 12px 14px; }
+  .sidebar-tab-name { font-size: 16px; }
+  .sidebar-add { font-size: 16px; }
+  .size-select { font-size: 16px; padding: 8px 12px; }
 }
