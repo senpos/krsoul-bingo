@@ -1,4 +1,3 @@
 node_modules/
 .wrangler/
-.agents/
 skills-lock.json
