@@ -292,8 +292,8 @@ export function refreshEmotes() {
   state.emotes.sourceRecords = new Map();
   state.emotes.lookup = new Map();
   setEmoteStatus(channelIds.length
-    ? `Loading emotes for ${channelIds.length} channel(s)...`
-    : 'Loading global emotes...');
+    ? `Завантаження емоцій для ${channelIds.length} каналів...`
+    : 'Завантаження глобальних емоцій...');
 
   state.emotes.sourceStatus = new Map(sources.map(([label]) => [label, 'pending']));
 
@@ -315,15 +315,15 @@ export function refreshEmotes() {
     if (_emoteRefreshCb) _emoteRefreshCb();
 
     if (!loaded.length && pending.length) {
-      setEmoteStatus(`Loading ${pending.join(', ')}...`);
+      setEmoteStatus(`Завантаження ${pending.join(', ')}...`);
     } else if (loaded.length && pending.length) {
-      setEmoteStatus(`Loaded ${loaded.join(', ')}; loading ${pending.join(', ')}...`, 'partial');
+      setEmoteStatus(`Завантажено ${loaded.join(', ')}; завантаження ${pending.join(', ')}...`, 'partial');
     } else if (loaded.length && failed.length) {
-      setEmoteStatus(`Loaded ${loaded.join(', ')}; failed ${failed.join(', ')}`, 'partial');
+      setEmoteStatus(`Завантажено ${loaded.join(', ')}; помилка ${failed.join(', ')}`, 'partial');
     } else if (loaded.length) {
-      setEmoteStatus(`Loaded ${loaded.join(', ')}`, 'ready');
+      setEmoteStatus(`Завантажено ${loaded.join(', ')}`, 'ready');
     } else if (failed.length) {
-      setEmoteStatus('Emote loading failed. Board text will stay plain.', 'error');
+      setEmoteStatus('Помилка завантаження емоцій. Текст залишиться без змін.', 'error');
     }
   };
 

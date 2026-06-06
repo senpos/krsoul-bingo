@@ -80,7 +80,7 @@ export function createApp() {
       if (!val) return;
       if (/^\d+$/.test(val)) {
         if (state.twitchUserIds.includes(val)) {
-          this.emoteStatusMsg = `Channel ${val} already added`;
+          this.emoteStatusMsg = `Канал ${val} вже додано`;
           this.emoteStatusKind = 'error';
           return;
         }
@@ -90,14 +90,14 @@ export function createApp() {
         return;
       }
       if (!this.twitchToken) {
-        this.emoteStatusMsg = 'Login to Twitch to use username lookup';
+        this.emoteStatusMsg = 'Увійдіть в Twitch, щоб шукати за іменем';
         this.emoteStatusKind = 'error';
         return;
       }
       clearTimeout(this._resolveTimer);
       this._resolveTimer = setTimeout(async () => {
         try {
-          this.emoteStatusMsg = `Looking up "${val}"...`;
+          this.emoteStatusMsg = `Пошук "${val}"...`;
           this.emoteStatusKind = '';
           const res = await fetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(val)}`, {
             headers: { 'Authorization': `Bearer ${this.twitchToken}`, 'Client-ID': TWITCH_CLIENT_ID }
@@ -105,11 +105,11 @@ export function createApp() {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const body = await res.json();
           const users = body?.data;
-          if (!users?.length) { this.emoteStatusMsg = `Twitch user "${val}" not found`; this.emoteStatusKind = 'error'; return; }
+          if (!users?.length) { this.emoteStatusMsg = `Користувач Twitch "${val}" не знайдений`; this.emoteStatusKind = 'error'; return; }
           const id = users[0].id;
           const login = users[0].login;
           if (state.twitchUserIds.includes(id)) {
-            this.emoteStatusMsg = `Channel ${id} (${val}) already added`;
+            this.emoteStatusMsg = `Канал ${id} (${val}) вже додано`;
             this.emoteStatusKind = 'error';
             return;
           }
@@ -119,7 +119,7 @@ export function createApp() {
           if (!this.twitchUser) this.twitchUser = users[0];
           scheduleEmoteRefresh();
         } catch (err) {
-          this.emoteStatusMsg = `Lookup failed: ${err.message}`;
+          this.emoteStatusMsg = `Помилка пошуку: ${err.message}`;
           this.emoteStatusKind = 'error';
         }
       }, 600);
@@ -181,7 +181,7 @@ export function createApp() {
 
     // ── Emote Status ──
     emoteVersion: 0,
-    emoteStatusMsg: 'Loading emotes...',
+    emoteStatusMsg: 'Завантаження емоцій...',
     emoteStatusKind: '',
     shareCopied: false,
     _cardsMigrated: false,
@@ -229,7 +229,7 @@ export function createApp() {
 
     get scoreText() {
       const n = this.bingoCount;
-      return `${this.markedCount} marked \u00B7 ${n} BINGO${n !== 1 ? 's' : ''}`;
+      return `${this.markedCount} відмічено \u00B7 ${n} бінго`;
     },
 
     // ── Collapsible emote log ──
@@ -250,8 +250,8 @@ export function createApp() {
           status,
           icon: icons[status] || '\u23F3',
           statusText: status === 'loaded'
-            ? `${state.emotes.sourceRecords.get(label)?.length || 0} emotes`
-            : status === 'failed' ? 'error' : 'loading...'
+            ? `${state.emotes.sourceRecords.get(label)?.length || 0} емоцій`
+            : status === 'failed' ? 'помилка' : 'завантаження...'
         });
       }
       return list;
@@ -269,7 +269,7 @@ export function createApp() {
       if (loaded) parts.push(`${loaded} \u2705`);
       if (failed) parts.push(`${failed} \u274C`);
       if (pending) parts.push(`${pending} \u23F3`);
-      return parts.join(' \u00B7 ') || 'no sources';
+      return parts.join(' \u00B7 ') || 'немає джерел';
     },
 
     // ── Emotes for picker ──
@@ -284,7 +284,7 @@ export function createApp() {
       const groups = getEmotesBySource();
 
       sources.push({
-        id: 'all', label: '\u2605 All sources',
+        id: 'all', label: '\u2605 Всі джерела',
         count: this.allEmotes.length, iconText: '\u2605', color: '#666', scope: ''
       });
 
@@ -322,7 +322,7 @@ export function createApp() {
     },
 
     get pickerCategoryLabel() {
-      if (this.pickerCategory === 'all') return 'All sources';
+      if (this.pickerCategory === 'all') return 'Всі джерела';
       const src = this.pickerSources.find(s => s.id === this.pickerCategory);
       return src?.label || this.pickerCategory;
     },
@@ -468,7 +468,7 @@ export function createApp() {
     editBoardName(id) {
       const board = this.boards.find(b => b.id === id);
       if (!board) return;
-      const result = prompt('Rename board:', board.name);
+      const result = prompt('Перейменувати дошку:', board.name);
       if (result && result.trim()) {
         board.name = result.trim().slice(0, 50);
         this.persist();
@@ -487,7 +487,7 @@ export function createApp() {
       );
       let num = 1;
       while (existingNumbers.has(num)) num++;
-      const name = `Board ${num}`;
+      const name = `Дошка ${num}`;
       const newBoard = {
         id: generateBoardId(),
         name,
@@ -594,7 +594,7 @@ export function createApp() {
     },
 
     async importBoardFromText() {
-      const text = prompt('Paste board data (base64 or JSON):');
+      const text = prompt('Вставте дані дошки (base64 або JSON):');
       if (!text || text.length > 50000) return;
       let payload;
       try { payload = JSON.parse(await decompress(text)); } catch {
@@ -641,7 +641,7 @@ export function createApp() {
     },
 
     _importBoardPayload(payload) {
-      const name = String(payload.name || 'Imported').slice(0, 50);
+      const name = String(payload.name || 'Імпортовано').slice(0, 50);
       const size = Number(payload.size) || 5;
       const theme = (payload.theme && /^[a-z]+$/.test(payload.theme)) ? payload.theme : 'twice';
       const total = size * size;
@@ -680,7 +680,7 @@ export function createApp() {
       this.lastCompletedKeys = currentKeys;
       if (newKeys.length > 0) {
         this.toastCount = currentKeys.size;
-        this.toastLabel = this.toastCount === 1 ? 'New line matched!' : `${this.toastCount} lines matched!`;
+        this.toastLabel = this.toastCount === 1 ? 'Новий рядок!' : `${this.toastCount} рядків знайдено!`;
         this.toastVisible = true;
         clearTimeout(this._toastTimer);
         this._toastTimer = setTimeout(() => { this.toastVisible = false; }, 1200);
@@ -760,7 +760,7 @@ export function createApp() {
       setTimeout(() => {
         const { icon, label, iconIsEmote } = splitCard(this.cards[i]);
         const hasIcon = iconIsEmote || icon !== '\u2726';
-        const result = prompt('Edit card:', hasIcon && label ? label : this.cards[i]);
+        const result = prompt('Редагувати картку:', hasIcon && label ? label : this.cards[i]);
         if (result !== null) {
           const v = hasIcon ? `${icon || ''} | ${result}` : (result || '');
           const nc = this.cards.slice();

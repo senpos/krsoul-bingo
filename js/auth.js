@@ -108,7 +108,7 @@ export async function initAuth(app) {
       storeToken(accessToken);
 
       try {
-        setEmoteStatus('Fetching user info...');
+        setEmoteStatus('Отримання інформації...');
         const user = await fetchUserInfo(accessToken);
         if (user) {
           state.twitch.user = user;

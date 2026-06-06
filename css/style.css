@@ -730,6 +730,9 @@ html, body {
   .editor-panel { padding: 18px; }
   .emote-controls { grid-template-columns: 1fr; }
   .auth-controls { justify-content: flex-start; }
+  .twitch-user-card { flex-direction: column; gap: 10px; padding: 12px; }
+  .twitch-user-info { align-items: center; }
+  .twitch-user-name { font-size: 13px; }
   .cards-input { min-height: 200px; }
   .toast { padding: 22px 28px; }
   .toast-title { font-size: clamp(36px, 12vw, 60px); letter-spacing: 4px; }
@@ -1085,23 +1088,52 @@ html, body {
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 .btn.twitch-logout {
-  border-color: rgba(255,255,255,0.2);
-  color: var(--dim);
+  border-color: rgba(255,100,100,0.3);
+  color: rgba(255,150,150,0.8);
+  background: rgba(255,50,50,0.08);
   min-width: 0;
-  padding: 8px 14px;
+  padding: 8px 16px;
   font-size: 11px;
+  font-weight: 700;
   letter-spacing: 1px;
+  border-radius: 14px;
+  transition: all 0.2s ease;
 }
 .btn.twitch-logout:hover {
-  border-color: var(--pink);
-  color: var(--pink);
+  background: rgba(255,50,50,0.2);
+  border-color: rgba(255,100,100,0.6);
+  color: #ff9999;
+  box-shadow: 0 0 12px rgba(255,80,80,0.3);
+  transform: translateY(-1px);
 }
-.twitch-user-badge {
-  font-size: 12px;
+.twitch-user-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(145,70,255,0.06);
+  border: 1px solid rgba(145,70,255,0.2);
+  border-radius: 14px;
+}
+.twitch-user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.twitch-user-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #9146ff;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.twitch-user-name {
+  font-size: 14px;
   font-weight: 700;
   color: #fff;
-  padding: 4px 8px;
-  white-space: nowrap;
 }
 .emote-status {
   margin-bottom: 14px;
@@ -1181,7 +1213,7 @@ html, body {
 
 /* ── Auth Row ── */
 .auth-row {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;
 }
 
 /* ── Context Menu ── */

@@ -47,7 +47,7 @@ function migrateV2ToV3() {
 
   const board = {
     id: generateBoardId(),
-    name: 'Board 1',
+    name: 'Дошка 1',
     size,
     cards,
     marks,
@@ -77,7 +77,7 @@ export function loadBoards() {
   if (!Array.isArray(boards) || boards.length === 0) {
     boards = [{
       id: generateBoardId(),
-      name: 'Board 1',
+    name: 'Дошка 1',
       size: 5,
       cards: [...DEFAULT_CARDS],
       marks: Array(25).fill(false),

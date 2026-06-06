@@ -19,7 +19,7 @@
 <div x-data="app" x-init="init()" x-cloak>
   <div class="toast" id="toast" :class="{ show: toastVisible }" @click="hideToast()">
     <span class="toast-title">BINGO!</span>
-    <p class="toast-sub">Congratulations! 🎉</p>
+    <p class="toast-sub">Вітаємо! 🎉</p>
     <p class="toast-count" x-text="toastLabel"></p>
   </div>
 
@@ -27,9 +27,9 @@
     <div class="game-view">
       <div class="container">
         <div class="header">
-          <div class="badge">KRSoul ✦ GAME BINGO ✦ 2026</div>
-          <h1 class="title">BINGO</h1>
-          <p class="subtitle">Live interactive board</p>
+           <div class="badge">KRSoul ✦ BINGO 2026</div>
+           <h1 class="title">BINGO</h1>
+            <p class="subtitle">Ігрове поле</p>
         </div>
 
         <div class="idol-strip" aria-label="Theme selectors">
@@ -46,13 +46,13 @@
             <div class="board-sidebar">
               <div class="sidebar-share-wrap">
                 <button class="sidebar-share" @click="copyShareUrl()">
-                  <span class="sidebar-share-icon">📋</span> Share
+                  <span class="sidebar-share-icon">📋</span> Поділитися
                 </button>
                 <div class="share-toast" :class="{ show: shareCopied }">
-                  <span>Link copied!</span>
+                  <span>Посилання скопійовано!</span>
                 </div>
               </div>
-              <button class="sidebar-add" @click="addBoard()">+ Add board</button>
+              <button class="sidebar-add" @click="addBoard()">+ Нова дошка</button>
               <div class="sidebar-divider"></div>
               <div class="sidebar-boards" x-ref="boardScroll">
                 <template x-for="board in boards" :key="board.id">
@@ -63,7 +63,7 @@
                     }"
                     @click="pendingDeleteBoardId === board.id ? deleteBoard(board.id) : switchBoard(board.id)"
                     @contextmenu.prevent="editBoardName(board.id)">
-                    <span class="sidebar-tab-name" x-text="pendingDeleteBoardId === board.id ? 'Delete?' : board.name"></span>
+                    <span class="sidebar-tab-name" x-text="pendingDeleteBoardId === board.id ? 'Видалити?' : board.name"></span>
                     <button class="tab-close"
                       @click.stop="deleteBoard(board.id)"
                       :disabled="boards.length <= 1"
@@ -103,10 +103,10 @@
 
           <div class="controls">
             <div class="btn-group">
-              <button class="btn pink" @click="reset()">↺ Reset</button>
-              <button class="btn cyan sm" @click="shuffle()">🔀 Shuffle</button>
-              <button class="btn cyan sm" @click="undo()" :disabled="!canUndo">↩ Undo</button>
-              <button class="btn cyan sm" @click="redo()" :disabled="!canRedo">↪ Redo</button>
+              <button class="btn pink" @click="reset()">↺ Скинути</button>
+              <button class="btn cyan sm" @click="shuffle()">🔀 Перемішати</button>
+              <button class="btn cyan sm" @click="undo()" :disabled="!canUndo">↩ Назад</button>
+              <button class="btn cyan sm" @click="redo()" :disabled="!canRedo">↪ Вперед</button>
             </div>
             <div class="score-pill" x-text="scoreText"></div>
             <div class="sidebar-size">
@@ -146,30 +146,33 @@
           <!-- ═══ Section: Emotes & Channels ═══ -->
           <div class="editor-section">
             <div class="editor-section-head">
-              <div class="editor-section-title">😀 Emotes &amp; Channels</div>
+              <div class="editor-section-title">😀 Емоції та канали</div>
             </div>
 
             <div class="emote-controls">
               <div class="auth-row">
                 <template x-if="isLoggedIn">
-                  <span class="twitch-user-badge" x-text="twitchUser?.display_name || twitchUser?.login"></span>
-                </template>
-                <template x-if="isLoggedIn">
-                  <button class="btn twitch-logout" @click="logout()">Logout</button>
+                  <div class="twitch-user-card">
+                    <div class="twitch-user-info">
+                      <span class="twitch-user-label">Підключено до Twitch</span>
+                      <span class="twitch-user-name" x-text="twitchUser?.display_name || twitchUser?.login"></span>
+                    </div>
+                     <button class="btn twitch-logout" @click="logout()">Вийти</button>
+                  </div>
                 </template>
                 <template x-if="!isLoggedIn">
                   <div class="twitch-login-wrap">
-                    <button class="btn twitch-login" @click="login()">
-                      <span class="twitch-login-icon">🔗</span> Підключити Twitch
+                      <button class="btn twitch-login" @click="login()">
+                      <span class="twitch-login-icon">🔗</span> Увійти через Twitch
                     </button>
                     <div class="twitch-help" x-data="{ open: false }" @click.away="open = false">
                       <button class="twitch-help-btn" @click="open = !open" title="Що це дає?">?</button>
                       <div class="twitch-help-tooltip" x-show="open" x-cloak>
-                        <p>Підключення Twitch дозволяє:</p>
+                        <p>З Twitch-аккаунтом можна:</p>
                         <ul>
-                          <li>Завантажувати ваші персональні емоції</li>
-                          <li>Додавати канали за іменем (не тільки ID)</li>
-                          <li>Автоматично додавати ваш канал у список</li>
+                          <li>Використовувати власні емоції з чату</li>
+                          <li>Додавати канали за нікнеймом замість ID</li>
+                          <li>Автоматично підтягнути свій канал</li>
                         </ul>
                       </div>
                     </div>
@@ -196,7 +199,7 @@
                   </div>
                 </template>
                 <div class="channel-add-row">
-                  <input type="text" class="channel-add-input" placeholder="ID або назва каналу"
+                  <input type="text" class="channel-add-input" placeholder="ID або ім'я каналу"
                     x-model="channelInput"
                     @keydown.enter="addChannel(channelInput); channelInput = ''">
                   <button class="channel-add-btn" @click="addChannel(channelInput); channelInput = ''">+</button>
@@ -208,7 +211,7 @@
             <div class="emote-log">
               <button class="emote-log-toggle" @click="emoteLogOpen = !emoteLogOpen">
                 <span class="emote-log-toggle-icon" x-text="emoteLogOpen ? '\u25BC' : '\u25B6'"></span>
-                <span>Emote sources</span>
+                <span>Статус провайдерів емоцій</span>
                 <span class="emote-log-summary" x-text="emoteSourcesSummary"></span>
               </button>
               <div x-show="emoteLogOpen" class="emote-log-body">
@@ -233,8 +236,8 @@
     :style="{ left: ctxMenu.x + 'px', top: ctxMenu.y + 'px' }"
     @click.away="ctxMenu.show = false"
     @keydown.escape.window="ctxMenu.show = false">
-    <button class="ctx-item" @click="editCellText()">✎ Edit text</button>
-    <button class="ctx-item" @click="insertEmote()">😀 Insert emote...</button>
+    <button class="ctx-item" @click="editCellText()">✎ Редагувати текст</button>
+    <button class="ctx-item" @click="insertEmote()">😀 Вставити емоцію...</button>
   </div>
 
   <!-- Emote Picker -->
@@ -254,7 +257,7 @@
       </div>
       <div class="picker-main">
         <div class="picker-head">
-          <input type="text" x-model="pickerSearch" placeholder="Search emotes..." class="picker-search"
+          <input type="text" x-model="pickerSearch" placeholder="Пошук емоцій..." class="picker-search"
             @keydown.escape="closePicker()">
           <button class="picker-close-btn" @click="closePicker()">✕</button>
         </div>
@@ -268,7 +271,7 @@
               <span class="picker-channel" x-show="emote.channelId" x-text="channelNameForId(emote.channelId)"></span>
             </button>
           </template>
-          <div x-show="hasMoreEmotes" class="picker-sentinel">Loading...</div>
+          <div x-show="hasMoreEmotes" class="picker-sentinel">Завантаження...</div>
         </div>
       </div>
     </div>
