@@ -990,13 +990,99 @@ html, body {
   color: #fff;
   background: linear-gradient(135deg, var(--purple), var(--pink));
   min-width: 0;
-  padding: 8px 14px;
-  font-size: 11px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 700;
   letter-spacing: 1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 24px;
 }
 .btn.twitch-login:hover {
   box-shadow: 0 0 20px var(--purple);
   transform: translateY(-2px);
+}
+.twitch-login-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+.twitch-login-icon {
+  font-size: 16px;
+}
+.twitch-help {
+  position: relative;
+}
+.twitch-help-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--dim);
+  background: transparent;
+  color: var(--dim);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+.twitch-help-btn:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+}
+.twitch-help-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240px;
+  background: rgba(10, 0, 20, 0.95);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.5;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  z-index: 100;
+  pointer-events: none;
+  animation: tooltipIn 0.2s ease;
+}
+.twitch-help-tooltip p {
+  margin-bottom: 8px;
+  font-weight: 700;
+  color: var(--cyan);
+}
+.twitch-help-tooltip ul {
+  margin: 0;
+  padding-left: 16px;
+}
+.twitch-help-tooltip li {
+  margin-bottom: 4px;
+}
+.twitch-help-tooltip li:last-child {
+  margin-bottom: 0;
+}
+.twitch-help-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--border);
+}
+@keyframes tooltipIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 .btn.twitch-logout {
   border-color: rgba(255,255,255,0.2);

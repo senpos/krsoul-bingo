@@ -26,12 +26,12 @@ function generateRandomString(length = 32) {
 }
 
 function storeToken(token) {
-  sessionStorage.setItem('twitch-access-token', token);
+  localStorage.setItem('twitch-access-token', token);
   state.twitch.token = token;
 }
 
 function clearToken() {
-  sessionStorage.removeItem('twitch-access-token');
+  localStorage.removeItem('twitch-access-token');
   state.twitch.token = null;
   state.twitch.user = null;
 }
@@ -42,7 +42,7 @@ export function isLoggedIn() {
 
 export function getAccessToken() {
   if (!state.twitch.token) {
-    const stored = sessionStorage.getItem('twitch-access-token');
+    const stored = localStorage.getItem('twitch-access-token');
     if (stored) state.twitch.token = stored;
   }
   return state.twitch.token;
@@ -130,8 +130,8 @@ export async function initAuth(app) {
     }
   }
 
-  // Check for existing stored token from sessionStorage
-  const token = sessionStorage.getItem('twitch-access-token');
+  // Check for existing stored token from localStorage
+  const token = localStorage.getItem('twitch-access-token');
   if (token) {
     try {
       state.twitch.token = token;

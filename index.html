@@ -158,7 +158,22 @@
                   <button class="btn twitch-logout" @click="logout()">Logout</button>
                 </template>
                 <template x-if="!isLoggedIn">
-                  <button class="btn twitch-login" @click="login()">Login with Twitch</button>
+                  <div class="twitch-login-wrap">
+                    <button class="btn twitch-login" @click="login()">
+                      <span class="twitch-login-icon">🔗</span> Підключити Twitch
+                    </button>
+                    <div class="twitch-help" x-data="{ open: false }" @click.away="open = false">
+                      <button class="twitch-help-btn" @click="open = !open" title="Що це дає?">?</button>
+                      <div class="twitch-help-tooltip" x-show="open" x-cloak>
+                        <p>Підключення Twitch дозволяє:</p>
+                        <ul>
+                          <li>Завантажувати ваші персональні емоції</li>
+                          <li>Додавати канали за іменем (не тільки ID)</li>
+                          <li>Автоматично додавати ваш канал у список</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
                 </template>
               </div>
 
