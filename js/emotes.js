@@ -23,7 +23,7 @@ export function looksLikeEmoji(ch) {
 
 // ── Normalizers ──────────────────────────────────
 
-function normalizeEmoteArray(entries, provider, scope, priority) {
+function normalizeEmoteArray(entries, provider, scope, priority, channelId) {
   const out = [];
   for (const entry of entries || []) {
     const id = String(entry?.id || '').trim();
@@ -42,12 +42,12 @@ function normalizeEmoteArray(entries, provider, scope, priority) {
 
     if (!url) continue;
 
-    out.push({ provider, scope, priority, id, code, url, animated: Boolean(entry?.animated) });
+    out.push({ provider, scope, priority, id, code, url, animated: Boolean(entry?.animated), channelId });
   }
   return out;
 }
 
-function normalizeFfzEmoteArray(emoticons, scope, priority) {
+function normalizeFfzEmoteArray(emoticons, scope, priority, channelId) {
   const out = [];
   for (const entry of emoticons || []) {
     const id = String(entry?.id || '').trim();
@@ -57,12 +57,12 @@ function normalizeFfzEmoteArray(emoticons, scope, priority) {
     const url = urls['2'] || urls['4'] || urls['1'] || '';
     if (!url) continue;
     const resolvedUrl = url.startsWith('//') ? `https:${url}` : url;
-    out.push({ provider: 'ffz', scope, priority, id, code, url: resolvedUrl, animated: false });
+    out.push({ provider: 'ffz', scope, priority, id, code, url: resolvedUrl, animated: false, channelId });
   }
   return out;
 }
 
-export function normalizeTwitchEmoteArray(entries, scope, priority) {
+export function normalizeTwitchEmoteArray(entries, scope, priority, channelId) {
   const out = [];
   for (const entry of entries || []) {
     const id = String(entry?.id || '').trim();
@@ -79,7 +79,7 @@ export function normalizeTwitchEmoteArray(entries, scope, priority) {
       .replace('{{theme_mode}}', themeMode)
       .replace('{{scale}}', scale);
 
-    out.push({ provider: 'twitch', scope, priority, id, code, url, animated: format === 'animated' });
+    out.push({ provider: 'twitch', scope, priority, id, code, url, animated: format === 'animated', channelId });
   }
   return out;
 }
@@ -101,10 +101,10 @@ function collectEmoteArrays(payload) {
   return arrays;
 }
 
-function flattenEmotes(payload, provider, scope, priority) {
+function flattenEmotes(payload, provider, scope, priority, channelId) {
   const emotes = [];
   for (const arr of collectEmoteArrays(payload)) {
-    emotes.push(...normalizeEmoteArray(arr, provider, scope, priority));
+    emotes.push(...normalizeEmoteArray(arr, provider, scope, priority, channelId));
   }
   return emotes;
 }
@@ -182,8 +182,8 @@ async function loadBttvChannel(twitchUserId) {
   const cacheKey = `bttv-channel:${twitchUserId}`;
   const url = `https://api.betterttv.net/3/cached/users/twitch/${encodeURIComponent(twitchUserId)}`;
   return fetchCachedEmoteRecords(cacheKey, url, data => [
-    ...flattenEmotes(data?.sharedEmotes, 'bttv', 'channel', 30),
-    ...flattenEmotes(data?.channelEmotes, 'bttv', 'channel', 30)
+    ...flattenEmotes(data?.sharedEmotes, 'bttv', 'channel', 30, twitchUserId),
+    ...flattenEmotes(data?.channelEmotes, 'bttv', 'channel', 30, twitchUserId)
   ]);
 }
 
@@ -198,7 +198,7 @@ async function load7tvGlobal() {
 async function load7tvChannel(twitchUserId) {
   const cacheKey = `7tv-channel:${twitchUserId}`;
   const url = `https://api.7tv.app/v3/users/twitch/${encodeURIComponent(twitchUserId)}`;
-  return fetchCachedEmoteRecords(cacheKey, url, data => flattenEmotes(data, '7tv', 'channel', 40));
+  return fetchCachedEmoteRecords(cacheKey, url, data => flattenEmotes(data, '7tv', 'channel', 40, twitchUserId));
 }
 
 async function loadFfzGlobal() {
@@ -221,7 +221,7 @@ async function loadFfzChannel(twitchUserId) {
   return fetchCachedEmoteRecords(cacheKey, url, data => {
     const records = [];
     for (const set of Object.values(data?.sets || {})) {
-      records.push(...normalizeFfzEmoteArray(set?.emoticons, 'channel', 35));
+      records.push(...normalizeFfzEmoteArray(set?.emoticons, 'channel', 35, twitchUserId));
     }
     return records;
   });
@@ -244,7 +244,7 @@ async function loadTwitchChannel(twitchUserId) {
   if (!headers.Authorization) return [];
   const cacheKey = `twitch-channel:${twitchUserId}`;
   const url = `https://api.twitch.tv/helix/chat/emotes?broadcaster_id=${encodeURIComponent(twitchUserId)}`;
-  return fetchCachedEmoteRecords(cacheKey, url, data => normalizeTwitchEmoteArray(data?.data, 'channel', 25), 6000, headers);
+  return fetchCachedEmoteRecords(cacheKey, url, data => normalizeTwitchEmoteArray(data?.data, 'channel', 25, twitchUserId), 6000, headers);
 }
 
 // ── Refresh ──────────────────────────────────────
@@ -271,7 +271,7 @@ function rebuildEmoteLookup() {
 
 export function refreshEmotes() {
   const token = ++emoteRefreshToken;
-  const twitchUserId = state.twitchUserId.trim();
+  const channelIds = state.twitchUserIds.filter(Boolean);
   const sources = [
     ['Twitch global', loadTwitchGlobal],
     ['BTTV global', loadBttvGlobal],
@@ -279,11 +279,11 @@ export function refreshEmotes() {
     ['7TV global', load7tvGlobal]
   ];
 
-  if (twitchUserId) {
-    sources.push(['Twitch channel', () => loadTwitchChannel(twitchUserId)]);
-    sources.push(['BTTV channel', () => loadBttvChannel(twitchUserId)]);
-    sources.push(['7TV channel', () => load7tvChannel(twitchUserId)]);
-    sources.push(['FFZ channel', () => loadFfzChannel(twitchUserId)]);
+  for (const channelId of channelIds) {
+    sources.push([`Twitch channel (${channelId})`, () => loadTwitchChannel(channelId)]);
+    sources.push([`BTTV channel (${channelId})`, () => loadBttvChannel(channelId)]);
+    sources.push([`7TV channel (${channelId})`, () => load7tvChannel(channelId)]);
+    sources.push([`FFZ channel (${channelId})`, () => loadFfzChannel(channelId)]);
   }
 
   state.emotes.loading = true;
@@ -291,7 +291,9 @@ export function refreshEmotes() {
   state.emotes.error = '';
   state.emotes.sourceRecords = new Map();
   state.emotes.lookup = new Map();
-  setEmoteStatus(twitchUserId ? 'Loading emotes...' : 'Loading global emotes...');
+  setEmoteStatus(channelIds.length
+    ? `Loading emotes for ${channelIds.length} channel(s)...`
+    : 'Loading global emotes...');
 
   const sourceState = new Map(sources.map(([label]) => [label, 'pending']));
 

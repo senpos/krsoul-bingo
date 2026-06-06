@@ -1,4 +1,4 @@
-import { STORAGE_KEYS, DEFAULT_TWITCH_USER_ID, DEFAULT_CARDS, TWITCH_CLIENT_ID, generateBoardId, toBase64, fromBase64, compress, decompress } from './config.js';
+import { STORAGE_KEYS, DEFAULT_TWITCH_USER_IDS, DEFAULT_CARDS, TWITCH_CLIENT_ID, generateBoardId, toBase64, fromBase64, compress, decompress } from './config.js';
 import { state, loadBoards, saveBoards, saveActiveBoardId } from './state.js';
 import { getEmoteEntry, splitCard, getAllEmotes, getEmotesBySource, scheduleEmoteRefresh, queueInitialEmoteRefresh, onEmoteRefresh, onEmoteStatus } from './emotes.js';
 import { loginWithTwitch, logout as authLogout, initAuth } from './auth.js';
@@ -38,11 +38,121 @@ export function createApp() {
       if (b) b.marks = val;
     },
 
-    // ── Global state ──
-    get twitchUserId() { return state.twitchUserId; },
-    set twitchUserId(val) {
-      state.twitchUserId = val;
-      try { localStorage.setItem(STORAGE_KEYS.twitchUserId, val); } catch {}
+    // ── Channel management ──
+    channelInput: '',
+
+    get twitchUserIds() { return state.twitchUserIds; },
+    set twitchUserIds(val) {
+      state.twitchUserIds = val;
+      try { localStorage.setItem(STORAGE_KEYS.twitchUserIds, JSON.stringify(val)); } catch {}
+    },
+
+    get defaultTwitchUserIds() { return DEFAULT_TWITCH_USER_IDS; },
+
+    isDefaultChannel(id) { return DEFAULT_TWITCH_USER_IDS.includes(id); },
+
+    removeChannel(id) {
+      if (DEFAULT_TWITCH_USER_IDS.includes(id)) return;
+      if (!state.twitchUserIds.includes(id)) return;
+      this.twitchUserIds = state.twitchUserIds.filter(i => i !== id);
+      scheduleEmoteRefresh();
+    },
+
+    async _lookupAndStoreName(id) {
+      if (!this.twitchToken || state.twitchChannelNames[id]) return;
+      try {
+        const res = await fetch(`https://api.twitch.tv/helix/users?id=${encodeURIComponent(id)}`, {
+          headers: { 'Authorization': `Bearer ${this.twitchToken}`, 'Client-ID': TWITCH_CLIENT_ID }
+        });
+        if (!res.ok) return;
+        const body = await res.json();
+        const user = body?.data?.[0];
+        if (user?.login) {
+          state.twitchChannelNames[id] = user.login;
+          try { localStorage.setItem(STORAGE_KEYS.twitchChannelNames, JSON.stringify(state.twitchChannelNames)); } catch {}
+        }
+      } catch {}
+    },
+
+    addChannel(raw) {
+      const val = String(raw || '').trim();
+      if (!val) return;
+      if (/^\d+$/.test(val)) {
+        if (state.twitchUserIds.includes(val)) {
+          this.emoteStatusMsg = `Channel ${val} already added`;
+          this.emoteStatusKind = 'error';
+          return;
+        }
+        this.twitchUserIds = [...state.twitchUserIds, val];
+        this._lookupAndStoreName(val);
+        scheduleEmoteRefresh();
+        return;
+      }
+      if (!this.twitchToken) {
+        this.emoteStatusMsg = 'Login to Twitch to use username lookup';
+        this.emoteStatusKind = 'error';
+        return;
+      }
+      clearTimeout(this._resolveTimer);
+      this._resolveTimer = setTimeout(async () => {
+        try {
+          this.emoteStatusMsg = `Looking up "${val}"...`;
+          this.emoteStatusKind = '';
+          const res = await fetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(val)}`, {
+            headers: { 'Authorization': `Bearer ${this.twitchToken}`, 'Client-ID': TWITCH_CLIENT_ID }
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const body = await res.json();
+          const users = body?.data;
+          if (!users?.length) { this.emoteStatusMsg = `Twitch user "${val}" not found`; this.emoteStatusKind = 'error'; return; }
+          const id = users[0].id;
+          const login = users[0].login;
+          if (state.twitchUserIds.includes(id)) {
+            this.emoteStatusMsg = `Channel ${id} (${val}) already added`;
+            this.emoteStatusKind = 'error';
+            return;
+          }
+          state.twitchChannelNames[id] = login;
+          try { localStorage.setItem(STORAGE_KEYS.twitchChannelNames, JSON.stringify(state.twitchChannelNames)); } catch {}
+          this.twitchUserIds = [...state.twitchUserIds, id];
+          if (!this.twitchUser) this.twitchUser = users[0];
+          scheduleEmoteRefresh();
+        } catch (err) {
+          this.emoteStatusMsg = `Lookup failed: ${err.message}`;
+          this.emoteStatusKind = 'error';
+        }
+      }, 600);
+    },
+
+    markEmoteError(url) {
+      if (!url) return;
+      state.emotes.assetCache.set(url, { status: 'error' });
+      this.emoteVersion++;
+    },
+
+    channelNameForId(id) {
+      return state.twitchChannelNames[id] || id;
+    },
+
+    async resolveChannelNames() {
+      const ids = state.twitchUserIds.filter(id => !state.twitchChannelNames[id]);
+      if (!ids.length || !this.twitchToken) return;
+      const chunks = [];
+      for (let i = 0; i < ids.length; i += 100) chunks.push(ids.slice(i, i + 100));
+      for (const chunk of chunks) {
+        try {
+          const q = chunk.map(id => `id=${encodeURIComponent(id)}`).join('&');
+          const res = await fetch(`https://api.twitch.tv/helix/users?${q}`, {
+            headers: { 'Authorization': `Bearer ${this.twitchToken}`, 'Client-ID': TWITCH_CLIENT_ID }
+          });
+          if (!res.ok) continue;
+          const body = await res.json();
+          for (const user of body?.data || []) {
+            state.twitchChannelNames[user.id] = user.login;
+          }
+        } catch {}
+      }
+      try { localStorage.setItem(STORAGE_KEYS.twitchChannelNames, JSON.stringify(state.twitchChannelNames)); } catch {}
     },
 
     // ── Auth ──
@@ -153,31 +263,47 @@ export function createApp() {
       const groups = getEmotesBySource();
 
       sources.push({
-        id: 'all', label: 'All sources',
+        id: 'all', label: '\u2605 All sources',
         count: this.allEmotes.length, iconText: '\u2605', color: '#666', scope: ''
       });
 
-      const defs = [
-        { id: 'Twitch global', iconText: 'T', color: '#9146ff', scope: 'global' },
-        { id: 'Twitch channel', iconText: 'T', color: '#9146ff', scope: 'channel' },
-        { id: 'BTTV global', iconText: 'B', color: '#3bf', scope: 'global' },
-        { id: 'BTTV channel', iconText: 'B', color: '#3bf', scope: 'channel' },
-        { id: '7TV global', iconText: '7', color: '#ff6b35', scope: 'global' },
-        { id: '7TV channel', iconText: '7', color: '#ff6b35', scope: 'channel' },
-        { id: 'FFZ global', iconText: 'F', color: '#ffd700', scope: 'global' },
-        { id: 'FFZ channel', iconText: 'F', color: '#ffd700', scope: 'channel' },
-      ];
+      const providerMeta = {
+        'Twitch': { iconText: 'T', color: '#9146ff' },
+        'BTTV': { iconText: 'B', color: '#3bf' },
+        '7TV': { iconText: '7', color: '#ff6b35' },
+        'FFZ': { iconText: 'F', color: '#ffd700' },
+      };
 
-      for (const def of defs) {
-        if (groups.has(def.id)) {
-          sources.push({ ...def, label: def.id, count: groups.get(def.id).length });
+      for (const [label, records] of groups) {
+        const providerName = label.split(' ')[0];
+        const meta = providerMeta[providerName] || { iconText: '?', color: '#888' };
+        const channelMatch = label.match(/\((\d+)\)/);
+        let shortLabel;
+        if (channelMatch) {
+          const cid = channelMatch[1];
+          const name = this.channelNameForId(cid);
+          shortLabel = `${providerName} (${name})`;
+        } else if (label.endsWith(' global')) {
+          shortLabel = `${providerName} (Global)`;
+        } else {
+          shortLabel = label;
         }
+        sources.push({
+          id: label,
+          label: shortLabel,
+          count: records.length,
+          iconText: meta.iconText,
+          color: meta.color,
+          scope: channelMatch ? 'channel' : 'global'
+        });
       }
       return sources;
     },
 
     get pickerCategoryLabel() {
-      return this.pickerCategory === 'all' ? 'All sources' : this.pickerCategory;
+      if (this.pickerCategory === 'all') return 'All sources';
+      const src = this.pickerSources.find(s => s.id === this.pickerCategory);
+      return src?.label || this.pickerCategory;
     },
 
     get filteredCategoryEmotes() {
@@ -235,9 +361,11 @@ export function createApp() {
           iconParts.push({ text: '\u2726', isEmote: false, url: '' });
         }
         const firstEmote = iconParts.find(p => p.isEmote);
+        const firstUrl = firstEmote?.url || '';
+        const isErrored = firstUrl ? state.emotes.assetCache.get(firstUrl)?.status === 'error' : false;
         return {
           icon, label, iconIsEmote, iconParts,
-          emoteUrl: firstEmote?.url || '',
+          emoteUrl: isErrored ? '' : firstUrl,
           marked: this.marks[i],
           bingoActive: activeSet.has(i),
           bingoNew: newSet.has(i),
@@ -287,6 +415,7 @@ export function createApp() {
       window.addEventListener('resize', () => requestAnimationFrame(() => drawBingoLines([...this.bingoKeys])));
 
       initAuth(this);
+      this.resolveChannelNames();
       queueInitialEmoteRefresh();
 
       this.checkImportUrl();
@@ -655,37 +784,7 @@ export function createApp() {
 
     closePicker() { this.pickerOpen = false; this.pickerCallback = null; },
 
-    // ── Twitch ID Input ──
-    onTwitchIdInput(e) {
-      clearTimeout(this._resolveTimer);
-      const raw = (e?.target?.value || '').trim();
-      if (!raw) { this.twitchUserId = DEFAULT_TWITCH_USER_ID; scheduleEmoteRefresh(); return; }
-      if (/^\d+$/.test(raw)) { this.twitchUserId = raw; scheduleEmoteRefresh(); return; }
-      if (!this.twitchToken) {
-        this.emoteStatusMsg = 'Login to Twitch to use username lookup';
-        this.emoteStatusKind = 'error';
-        return;
-      }
-      this._resolveTimer = setTimeout(async () => {
-        try {
-          this.emoteStatusMsg = `Looking up "${raw}"...`;
-          this.emoteStatusKind = '';
-          const res = await fetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(raw)}`, {
-            headers: { 'Authorization': `Bearer ${this.twitchToken}`, 'Client-ID': TWITCH_CLIENT_ID }
-          });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const body = await res.json();
-          const users = body?.data;
-          if (!users?.length) { this.emoteStatusMsg = `Twitch user "${raw}" not found`; this.emoteStatusKind = 'error'; return; }
-          this.twitchUserId = users[0].id;
-          if (!this.twitchUser) this.twitchUser = users[0];
-          scheduleEmoteRefresh();
-        } catch (err) {
-          this.emoteStatusMsg = `Lookup failed: ${err.message}`;
-          this.emoteStatusKind = 'error';
-        }
-      }, 600);
-    },
+    // ── Twitch ID Input (replaced by addChannel/removeChannel) ──
     migrateCards() {
       if (this._cardsMigrated) return;
       this._cardsMigrated = true;

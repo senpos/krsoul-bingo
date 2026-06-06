@@ -1,7 +1,8 @@
-import { STORAGE_KEYS, V2_KEYS, DEFAULT_TWITCH_USER_ID, DEFAULT_CARDS, generateBoardId } from './config.js';
+import { STORAGE_KEYS, V2_KEYS, DEFAULT_TWITCH_USER_IDS, DEFAULT_TWITCH_CHANNEL_NAMES, DEFAULT_CARDS, generateBoardId } from './config.js';
 
 export const state = {
-  twitchUserId: DEFAULT_TWITCH_USER_ID,
+  twitchUserIds: [...DEFAULT_TWITCH_USER_IDS],
+  twitchChannelNames: {},
   emotes: {
     loading: false,
     ready: false,
@@ -90,8 +91,29 @@ export function loadBoards() {
     saveActiveBoardId(activeBoardId);
   }
 
-  state.twitchUserId = String(localStorage.getItem(STORAGE_KEYS.twitchUserId) || DEFAULT_TWITCH_USER_ID)
-    .replace(/\D/g, '').trim() || DEFAULT_TWITCH_USER_ID;
+  let storedIds = [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.twitchUserIds);
+    if (raw) {
+      storedIds = JSON.parse(raw);
+    } else {
+      const oldId = localStorage.getItem(STORAGE_KEYS.twitchUserId);
+      if (oldId) {
+        const cleaned = oldId.replace(/\D/g, '').trim();
+        if (cleaned) storedIds = [cleaned];
+      }
+    }
+  } catch {}
+  if (!Array.isArray(storedIds)) storedIds = [];
+  const defaultSet = new Set(DEFAULT_TWITCH_USER_IDS);
+  const merged = new Set([...defaultSet, ...storedIds.filter(Boolean)]);
+  state.twitchUserIds = [...merged];
+
+  try {
+    const rawNames = localStorage.getItem(STORAGE_KEYS.twitchChannelNames);
+    if (rawNames) state.twitchChannelNames = JSON.parse(rawNames);
+  } catch {}
+  Object.assign(state.twitchChannelNames, DEFAULT_TWITCH_CHANNEL_NAMES);
 
   return { boards, activeBoardId };
 }
@@ -105,7 +127,8 @@ export function saveActiveBoardId(id) {
 }
 
 export function saveState() {
-  localStorage.setItem(STORAGE_KEYS.twitchUserId, state.twitchUserId);
+  try { localStorage.setItem(STORAGE_KEYS.twitchUserIds, JSON.stringify(state.twitchUserIds)); } catch {}
+  try { localStorage.setItem(STORAGE_KEYS.twitchChannelNames, JSON.stringify(state.twitchChannelNames)); } catch {}
 }
 
 export function loadEmoteSourceCache() {

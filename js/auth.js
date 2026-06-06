@@ -1,6 +1,17 @@
 import { state, saveState } from './state.js';
-import { TWITCH_CLIENT_ID, DEFAULT_TWITCH_USER_ID, getTwitchRedirectUri } from './config.js';
+import { TWITCH_CLIENT_ID, DEFAULT_TWITCH_USER_IDS, getTwitchRedirectUri } from './config.js';
 import { scheduleEmoteRefresh, setEmoteStatus } from './emotes.js';
+
+function ensureChannelId(user) {
+  if (!user) return;
+  const id = user.id;
+  if (!state.twitchUserIds.includes(id)) {
+    state.twitchUserIds.push(id);
+  }
+  if (user.login) {
+    state.twitchChannelNames[id] = user.login;
+  }
+}
 
 function arrayBufferToBase64(buf) {
   const bytes = new Uint8Array(buf);
@@ -72,13 +83,12 @@ export async function loginWithTwitch() {
 
 export function logout(app) {
   clearToken();
+  state.twitchUserIds = [...DEFAULT_TWITCH_USER_IDS];
+  saveState();
   if (app) {
     app.twitchToken = null;
     app.twitchUser = null;
-    app.twitchUserId = DEFAULT_TWITCH_USER_ID;
   }
-  state.twitchUserId = DEFAULT_TWITCH_USER_ID;
-  saveState();
   scheduleEmoteRefresh();
 }
 
@@ -102,13 +112,12 @@ export async function initAuth(app) {
         const user = await fetchUserInfo(accessToken);
         if (user) {
           state.twitch.user = user;
-          state.twitchUserId = user.id;
+          ensureChannelId(user);
           saveState();
 
           if (app) {
             app.twitchToken = accessToken;
             app.twitchUser = user;
-            app.twitchUserId = user.id;
           }
           scheduleEmoteRefresh();
           return;
@@ -129,13 +138,12 @@ export async function initAuth(app) {
       const user = await fetchUserInfo(token);
       if (user) {
         state.twitch.user = user;
-        state.twitchUserId = user.id;
+        ensureChannelId(user);
         saveState();
 
         if (app) {
           app.twitchToken = token;
           app.twitchUser = user;
-          app.twitchUserId = user.id;
         }
         scheduleEmoteRefresh();
         return;

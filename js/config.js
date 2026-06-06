@@ -2,7 +2,9 @@ export const STORAGE_KEYS = {
   boards: 'krsoul-bingo-boards-v3',
   activeBoard: 'krsoul-bingo-active-board-v3',
   emoteSourceCache: 'krsoul-bingo-emote-source-cache-v2',
-  twitchUserId: 'krsoul-bingo-twitch-user-id-v1'
+  twitchUserId: 'krsoul-bingo-twitch-user-id-v1',
+  twitchUserIds: 'krsoul-bingo-twitch-user-ids-v1',
+  twitchChannelNames: 'krsoul-bingo-channel-names-v1'
 };
 
 export const V2_KEYS = {
@@ -13,7 +15,9 @@ export const V2_KEYS = {
   twitchUserId: 'krsoul-bingo-twitch-user-id-v1'
 };
 
+export const DEFAULT_TWITCH_USER_IDS = ['55947428'];
 export const DEFAULT_TWITCH_USER_ID = '55947428';
+export const DEFAULT_TWITCH_CHANNEL_NAMES = { '55947428': 'krsoul' };
 export const EMOTE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 export const EMOTE_CACHE_FAIL_TTL_MS = 10 * 60 * 1000;
 
