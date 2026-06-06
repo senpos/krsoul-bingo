@@ -232,12 +232,6 @@ export function createApp() {
       return `${this.markedCount} marked \u00B7 ${n} BINGO${n !== 1 ? 's' : ''}`;
     },
 
-    get cardsCountText() {
-      const total = this.cards.filter(Boolean).length;
-      const inGrid = Math.min(total, this.cellCount);
-      return `${total} lines total${total !== inGrid ? ` (${inGrid} in grid)` : ''}`;
-    },
-
     // ── Collapsible emote log ──
     emoteLogOpen: false,
 
@@ -264,6 +258,7 @@ export function createApp() {
     },
 
     get emoteSourcesSummary() {
+      this.emoteVersion;
       let loaded = 0, failed = 0, pending = 0;
       for (const st of state.emotes.sourceStatus.values()) {
         if (st === 'loaded') loaded++;

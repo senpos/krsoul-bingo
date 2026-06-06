@@ -800,12 +800,6 @@ html, body {
   color: #fff;
   white-space: nowrap;
 }
-.editor-section-note {
-  font-size: 11px;
-  color: var(--dim);
-  flex: 1;
-  min-width: 0;
-}
 
 /* ── Emote Collapsible Log ── */
 .emote-log {
@@ -1072,7 +1066,7 @@ html, body {
   outline: none;
   min-height: 300px;
 }
-.editor-meta { display: flex; justify-content: space-between; margin-top: 12px; font-size: 12px; color: var(--dim); transition: color 0.6s; }
+
 
 /* ── Toast & Confetti ── */
 .toast {
