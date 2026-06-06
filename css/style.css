@@ -78,7 +78,7 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2vh 16px;
+  padding: 1vh 16px;
   position: relative;
   box-sizing: border-box;
 }
@@ -143,18 +143,18 @@ html, body {
 }
 
 /* ── Header ── */
-.header { flex-shrink: 0; text-align: center; margin-bottom: 1.5vh; }
+.header { flex-shrink: 0; text-align: center; margin-bottom: 0.5vh; }
 .badge {
   display: inline-flex; align-items: center;
   background: linear-gradient(90deg, var(--pink), var(--purple), var(--cyan));
-  border-radius: 30px; padding: 6px 20px;
-  font-size: 11px; font-weight: 700; color: #fff;
-  letter-spacing: 3px; text-transform: uppercase; margin-bottom: 10px;
+  border-radius: 30px; padding: 3px 14px;
+  font-size: 9px; font-weight: 700; color: #fff;
+  letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 .title {
   font-family: 'Black Han Sans', sans-serif;
-  font-size: clamp(48px, 9vw, 85px);
+  font-size: clamp(28px, 5.5vw, 50px);
   font-weight: 900; letter-spacing: 12px; line-height: 1;
   background: linear-gradient(90deg, var(--pink), var(--purple), var(--cyan), var(--pink));
   background-size: 200% auto;
@@ -162,11 +162,11 @@ html, body {
   animation: titleShimmer 5s linear infinite;
 }
 @keyframes titleShimmer { 0%{background-position:0% center} 100%{background-position:200% center} }
-.subtitle { font-size: 12px; color: var(--dim); letter-spacing: 5px; text-transform: uppercase; margin-top: 8px; transition: color 0.6s ease; }
+.subtitle { font-size: 10px; color: var(--dim); letter-spacing: 3px; text-transform: uppercase; margin-top: 2px; transition: color 0.6s ease; }
 
 /* ── Header Controls ── */
 .header-controls {
-  display: flex; align-items: center; gap: 8px; margin-top: 6px;
+  display: flex; align-items: center; gap: 6px; margin-top: 2px;
 }
 .header-controls label {
   font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--dim);
@@ -185,11 +185,11 @@ html, body {
 .board-tabs {
   flex-shrink: 0;
   display: flex; align-items: center; gap: 4px; overflow-x: auto;
-  padding: 4px 0; margin-bottom: 10px;
+  padding: 2px 0; margin-bottom: 4px;
 }
 .board-tab {
-  display: flex; align-items: center; gap: 4px;
-  padding: 5px 10px;
+  display: flex; align-items: center; gap: 3px;
+  padding: 3px 7px;
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 8px; cursor: pointer; white-space: nowrap;
@@ -203,8 +203,8 @@ html, body {
   box-shadow: 0 0 8px rgba(160,32,255,0.25);
 }
 .tab-name {
-  font-size: 13px; font-weight: 600; color: var(--text);
-  cursor: pointer; max-width: 130px; overflow: hidden; text-overflow: ellipsis;
+  font-size: 11px; font-weight: 600; color: var(--text);
+  cursor: pointer; max-width: 100px; overflow: hidden; text-overflow: ellipsis;
 }
 .tab-close {
   background: none; border: none; color: var(--dim); font-size: 14px;
@@ -250,7 +250,7 @@ html, body {
 /* ── Theme Switcher ── */
 .idol-strip {
   flex-shrink: 0;
-  display: flex; justify-content: center; gap: clamp(10px, 3vw, 24px); margin-bottom: 1.5vh; flex-wrap: wrap;
+  display: flex; justify-content: center; gap: clamp(6px, 2vw, 14px); margin-bottom: 0.5vh; flex-wrap: wrap;
 }
 .theme-btn {
   display: flex; flex-direction: column; align-items: center; gap: 8px;
@@ -261,9 +261,9 @@ html, body {
 .theme-btn:hover { opacity: 0.8; transform: translateY(-3px); }
 .theme-btn.active { opacity: 1; transform: translateY(-6px) scale(1.15); }
 .theme-icon {
-  width: clamp(45px, 6vw, 60px); height: clamp(45px, 6vw, 60px);
+  width: clamp(30px, 4vw, 40px); height: clamp(30px, 4vw, 40px);
   border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  font-family: 'Black Han Sans', sans-serif; font-size: clamp(16px, 2.5vw, 22px);
+  font-family: 'Black Han Sans', sans-serif; font-size: clamp(12px, 2vw, 16px);
   color: #fff; box-shadow: 0 6px 20px rgba(0,0,0,0.5);
   transition: all 0.3s ease; position: relative;
 }
@@ -273,7 +273,7 @@ html, body {
 }
 .theme-btn.active .theme-icon::after { opacity: 1; }
 .theme-name {
-  font-size: clamp(9px, 1.5vw, 11px); font-weight: 700; color: var(--text);
+  font-size: clamp(7px, 1vw, 10px); font-weight: 700; color: var(--text);
   letter-spacing: 1px; text-transform: uppercase; transition: color 0.6s;
 }
 
@@ -285,11 +285,11 @@ html, body {
 
 /* ── Bingo Board ── */
 .bingo-wrapper {
-  width: min(100%, 520px);
+  width: min(100%, 700px);
   display: flex;
   flex-direction: column;
   overflow: visible;
-  padding: 6px 0;
+  padding: 4px 0;
   position: relative;
   margin: 0 auto;
 }
@@ -459,11 +459,11 @@ html, body {
 [data-size="4"] .cell-icon > span { width: clamp(36px, 9vw, 56px); height: clamp(36px, 9vw, 56px); font-size: clamp(24px, 5vw, 40px); }
 [data-size="4"] .cell-icon img.emote { width: clamp(36px, 9vw, 56px); height: clamp(36px, 9vw, 56px); }
 
-[data-size="5"] .cell { padding: clamp(0.25rem, 0.7vw, 0.5rem); }
-[data-size="5"] .cell-text { font-size: clamp(8px, 1.6vw, 12px); -webkit-line-clamp: 2; }
-[data-size="5"] .cell-icon { margin-bottom: 6px; }
-[data-size="5"] .cell-icon > span { width: clamp(30px, 7vw, 44px); height: clamp(30px, 7vw, 44px); font-size: clamp(20px, 4.5vw, 36px); }
-[data-size="5"] .cell-icon img.emote { width: clamp(30px, 7vw, 44px); height: clamp(30px, 7vw, 44px); }
+[data-size="5"] .cell { padding: clamp(0.3rem, 0.8vw, 0.55rem); }
+[data-size="5"] .cell-text { font-size: clamp(8px, 1.4vw, 11px); -webkit-line-clamp: 3; }
+[data-size="5"] .cell-icon { margin-bottom: 4px; }
+[data-size="5"] .cell-icon > span { width: clamp(34px, 6vw, 46px); height: clamp(34px, 6vw, 46px); font-size: clamp(22px, 4vw, 34px); }
+[data-size="5"] .cell-icon img.emote { width: clamp(34px, 6vw, 46px); height: clamp(34px, 6vw, 46px); }
 
 [data-size="6"] .cell { padding: clamp(0.2rem, 0.5vw, 0.4rem); }
 [data-size="6"] .cell-text { font-size: clamp(7px, 1.3vw, 10px); -webkit-line-clamp: 2; }
@@ -527,7 +527,7 @@ html, body {
 .controls {
   flex-shrink: 0;
   display: flex; align-items: center; justify-content: space-between;
-  margin-top: 1.5vh; flex-wrap: wrap; gap: 10px;
+  margin-top: 0.7vh; flex-wrap: wrap; gap: 8px;
 }
 .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
 .btn {
@@ -545,35 +545,35 @@ html, body {
 .btn.pink:hover { background: var(--pink); color: #fff; box-shadow: 0 0 20px var(--pink); }
 .btn.cyan { border-color: var(--cyan); color: var(--cyan); }
 .btn.cyan:hover { background: var(--cyan); color: #000; box-shadow: 0 0 20px var(--cyan); }
-.btn.sm { padding: 1vh 2vh; font-size: clamp(9px, 1.5vw, 11px); min-width: 80px; letter-spacing: 1px; border-radius: 18px; }
+.btn.sm { padding: 0.6vh 1.2vh; font-size: clamp(9px, 1.3vw, 11px); min-width: 60px; letter-spacing: 1px; border-radius: 18px; }
 .btn:disabled, .btn[disabled] { opacity: 0.3 !important; cursor: not-allowed !important; pointer-events: none !important; }
 .btn:active { transform: scale(.95); }
 
 .score-pill {
   background: rgba(0,0,0,0.5); border: 1px solid var(--border);
-  border-radius: 24px; padding: 1.5vh 3vh; font-size: clamp(11px, 2vw, 13px);
+  border-radius: 24px; padding: 0.8vh 1.5vh; font-size: clamp(10px, 1.5vw, 12px);
   font-weight: 700; color: var(--cyan); letter-spacing: 1px; white-space: nowrap;
   transition: all 0.6s ease;
 }
 
 @media (max-width: 720px) {
-  .game-view { padding: 2vh 10px; }
+  .game-view { padding: 1vh 10px; }
   .container { max-width: 100%; }
   .badge { padding: 4px 12px; font-size: 10px; letter-spacing: 2px; }
-  .title { font-size: clamp(28px, 7vw, 48px); letter-spacing: 4px; }
+  .title { font-size: clamp(24px, 6vw, 36px); letter-spacing: 4px; }
   .subtitle { font-size: 10px; letter-spacing: 3px; }
   .idol-strip { gap: 10px; }
-  .theme-icon { width: clamp(36px, 10vw, 48px); height: clamp(36px, 10vw, 48px); font-size: clamp(14px, 3vw, 20px); }
+  .theme-icon { width: clamp(28px, 8vw, 36px); height: clamp(28px, 8vw, 36px); font-size: clamp(11px, 2.5vw, 14px); }
   .bingo-headers { gap: 6px; }
-  .bingo-grid { gap: 6px; }
-  .board-tab { padding: 4px 8px; }
-  .tab-name { font-size: 11px; max-width: 80px; }
+  .bingo-grid { gap: 4px; }
+  .board-tab { padding: 3px 6px; }
+  .tab-name { font-size: 10px; max-width: 60px; }
   .bingo-letter { font-size: clamp(10px, 3vw, 14px); }
   .tab-confirm { font-size: 10px; }
   .tab-confirm-btn { padding: 2px 6px; font-size: 10px; }
   .btn-group { display: grid; grid-template-columns: repeat(2, 1fr); }
-  .btn, .btn.sm { width: 100%; min-width: 0; padding: 10px 8px; font-size: 11px; border-radius: 16px; }
-  .score-pill { width: 100%; text-align: center; padding: 10px 12px; font-size: 11px; }
+  .btn, .btn.sm { width: 100%; min-width: 0; padding: 8px 6px; font-size: 10px; border-radius: 14px; }
+  .score-pill { width: 100%; text-align: center; padding: 8px 10px; font-size: 10px; }
   .controls { flex-direction: column; align-items: stretch; }
   .editor-view { padding: 24px 12px 50px; }
   .editor-panel { padding: 18px; }
