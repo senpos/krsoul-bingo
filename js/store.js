@@ -531,7 +531,7 @@ export function createApp() {
       const existingNumbers = new Set(
         this.boards
           .map(b => {
-            const match = b.name.match(/^Board (\d+)$/);
+            const match = b.name.match(/^Дошка (\d+)$/);
             return match ? parseInt(match[1], 10) : null;
           })
           .filter(n => n !== null)
