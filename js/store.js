@@ -3,6 +3,7 @@ import { state, loadBoards, saveBoards, saveActiveBoardId, saveState } from './s
 import { getEmoteEntry, splitCard, getAllEmotes, getEmotesBySource, scheduleEmoteRefresh, queueInitialEmoteRefresh, onEmoteRefresh, onEmoteStatus } from './emotes.js';
 import { loginWithTwitch, logout as authLogout, initAuth } from './auth.js';
 import { completedLineKeys, drawBingoLines, launchConfetti, applyParticleTheme, bingoCellBurst, setBingoMode } from './game.js';
+import { audioManager } from './audio.js';
 
 export function createApp() {
   return {
@@ -185,6 +186,23 @@ export function createApp() {
     emoteStatusKind: '',
     shareCopied: false,
     _cardsMigrated: false,
+
+    // ── Audio / Music ──
+    audioVolume: 0.25,
+    audioMusicMuted: false,
+    audioPlaying: false,
+    audioFxVolume: 0.75,
+    audioSfxEnabled: true,
+    audioCurrentTrack: null,
+    audioReady: false,
+    audioProgress: null,
+    audioCurrentTime: null,
+    audioDuration: null,
+    audioHasNext: false,
+    audioHasPrev: false,
+    audioSongs: [],
+    audioSongIndex: 0,
+    audioPlaylistOpen: false,
 
     // ── Undo/Redo (session only — not persisted) ──
     history: [],
@@ -442,6 +460,39 @@ export function createApp() {
       this.resolveChannelNames();
       queueInitialEmoteRefresh();
 
+      audioManager.init(this.theme, (state) => {
+        this.audioVolume = state.volume;
+        this.audioMusicMuted = state.musicMuted;
+        this.audioPlaying = state.playing;
+        this.audioFxVolume = state.fxVolume;
+        this.audioSfxEnabled = state.sfxEnabled;
+        this.audioCurrentTrack = state.currentTrack;
+        this.audioReady = state.ready;
+        this.audioHasNext = state.hasNext;
+        this.audioHasPrev = state.hasPrev;
+        this.audioSongs = state.songs;
+        this.audioSongIndex = state.currentSongIndex;
+      });
+
+      const pollProgress = () => {
+        this.audioProgress = audioManager.progress;
+        this.audioCurrentTime = audioManager.currentTime;
+        this.audioDuration = audioManager.duration;
+        this.audioPlaying = audioManager.playing;
+        this.audioHasNext = audioManager.hasNext;
+        this.audioHasPrev = audioManager.hasPrev;
+        this.audioSongs = audioManager.songs;
+        this.audioSongIndex = audioManager.currentSongIndex;
+        this._raf = requestAnimationFrame(pollProgress);
+      };
+      this._raf = requestAnimationFrame(pollProgress);
+
+      const unlockAudio = () => {
+        audioManager.unlock();
+        document.removeEventListener('click', unlockAudio);
+      };
+      document.addEventListener('click', unlockAudio, { once: true });
+
       this.checkImportUrl();
     },
 
@@ -519,6 +570,7 @@ export function createApp() {
       this.$nextTick(() => this.ensureActiveTabVisible());
       document.body.setAttribute('data-theme', this.theme);
       applyParticleTheme(this.theme);
+      audioManager.playTheme(this.theme);
     },
 
     deleteBoard(id) {
@@ -539,6 +591,7 @@ export function createApp() {
         this.redoHistory = [];
         document.body.setAttribute('data-theme', this.theme);
         applyParticleTheme(this.theme);
+        audioManager.playTheme(this.theme);
       }
       this.persist();
       this.$nextTick(() => this.ensureActiveTabVisible());
@@ -665,6 +718,7 @@ export function createApp() {
       this.persist();
       document.body.setAttribute('data-theme', this.theme);
       applyParticleTheme(this.theme);
+      audioManager.playTheme(this.theme);
     },
 
     // ── Actions ──
@@ -691,6 +745,7 @@ export function createApp() {
         this._toastTimer = setTimeout(() => { this.toastVisible = false; }, 1200);
         launchConfetti();
         bingoCellBurst([...newIndices]);
+        audioManager.playBingo();
       }
 
       // Toggle background particle intensity
@@ -758,6 +813,62 @@ export function createApp() {
       document.body.setAttribute('data-theme', name);
       this.persist();
       applyParticleTheme(name);
+      audioManager.playTheme(name);
+    },
+
+    // ── Audio Controls ──
+    setVolume(v) {
+      this.audioVolume = v;
+      if (v > 0 && this.audioMusicMuted) {
+        this.audioMusicMuted = false;
+      }
+      audioManager.setVolume(v);
+    },
+
+    toggleMusicMute() {
+      audioManager.toggleMusicMute();
+    },
+
+    togglePlay() {
+      audioManager.togglePlay();
+    },
+
+    setFxVolume(v) {
+      this.audioFxVolume = v;
+      audioManager.setFxVolume(v);
+    },
+
+    toggleSfx() {
+      const enabled = !this.audioSfxEnabled;
+      this.audioSfxEnabled = enabled;
+      audioManager.setSfxEnabled(enabled);
+    },
+
+    seek(frac) {
+      audioManager.seek(frac);
+    },
+
+    nextTrack() {
+      audioManager.nextTrack();
+    },
+
+    prevTrack() {
+      audioManager.prevTrack();
+    },
+
+    formatTime(seconds) {
+      if (seconds === null || seconds === undefined || isNaN(seconds)) return '--:--';
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    },
+
+    togglePlaylist() {
+      this.audioPlaylistOpen = !this.audioPlaylistOpen;
+    },
+
+    selectSong(index) {
+      audioManager.selectSong(index);
     },
 
     // ── Context Menu ──

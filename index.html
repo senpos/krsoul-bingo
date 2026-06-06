@@ -32,15 +32,6 @@
             <p class="subtitle">Ігрове поле</p>
         </div>
 
-        <div class="idol-strip" aria-label="Theme selectors">
-          <template x-for="t in themes" :key="t.id">
-            <button @click="setTheme(t.id)" :class="{ 'theme-btn': true, active: theme === t.id }">
-              <div class="theme-icon" x-text="t.icon"></div>
-              <span class="theme-name" x-text="t.name"></span>
-            </button>
-          </template>
-        </div>
-
         <div class="board-layout">
           <div class="mid-section">
             <div class="board-sidebar">
@@ -228,6 +219,102 @@
 
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Audio Theme Bar -->
+  <div class="audio-theme-bar">
+    <template x-for="t in themes" :key="t.id">
+      <button @click="setTheme(t.id)" :class="{ 'athm-btn': true, active: theme === t.id }">
+        <span class="athm-icon" x-text="t.icon"></span>
+        <span class="athm-name" x-text="t.name"></span>
+      </button>
+    </template>
+  </div>
+
+  <!-- Audio Player -->
+  <div class="audio-player">
+    <div class="audio-bar">
+      <button class="audio-btn audio-btn-nav"
+        @click="prevTrack()"
+        :disabled="!audioHasPrev"
+        :class="{ disabled: !audioHasPrev }"
+        title="Попередній">◀</button>
+      <button class="audio-btn audio-btn-play"
+        @click="togglePlay()"
+        :title="audioPlaying ? 'Пауза' : 'Грати'"
+        x-text="audioPlaying ? '&#x23F8;' : '&#x25B6;'"></button>
+      <button class="audio-btn audio-btn-nav"
+        @click="nextTrack()"
+        :disabled="!audioHasNext"
+        :class="{ disabled: !audioHasNext }"
+        title="Наступний">▶</button>
+      <div class="audio-track"
+        @click="if (audioCurrentTrack?.url) window.open(audioCurrentTrack.url, '_blank')"
+        :title="audioCurrentTrack?.url ? 'Відкрити на YouTube' : ''">
+        <div class="audio-track-scroll">
+          <span class="audio-track-text">
+            <span x-text="audioCurrentTrack?.title"></span>
+            <span class="audio-track-sep" x-show="audioCurrentTrack">·</span>
+            <span x-text="audioCurrentTrack?.artist"></span>
+          </span>
+        </div>
+      </div>
+      <button class="audio-btn audio-btn-playlist"
+        @click="togglePlaylist()"
+        :title="audioPlaylistOpen ? 'Сховати список' : 'Список треків'"
+        :class="{ open: audioPlaylistOpen }">☰</button>
+    </div>
+    <div class="audio-scrub-row">
+      <input type="range" class="audio-progress"
+        min="0" max="1" step="0.001"
+        :value="audioProgress ?? 0"
+        @input="seek(parseFloat($event.target.value))"
+        :class="{ active: audioProgress !== null }">
+      <span class="audio-time" x-text="formatTime(audioCurrentTime) + ' / ' + formatTime(audioDuration)"></span>
+    </div>
+    <div class="audio-volume-row">
+      <span class="audio-vol-half">
+        <span class="audio-fx-header">МУЗИКА</span>
+        <button class="audio-vol-icon"
+          @click="toggleMusicMute()"
+          :title="audioMusicMuted ? 'Увімкнути звук' : 'Вимкнути звук'"
+          x-text="audioMusicMuted ? '&#x1F507;' : '&#x1F50A;'"></button>
+        <span class="audio-vol-pct" x-text="Math.round(audioVolume * 100) + '%'"></span>
+        <span class="audio-slider-wrap">
+          <input type="range" class="audio-volume"
+            min="0" max="1" step="0.05"
+            :value="audioVolume"
+            @input="setVolume(parseFloat($event.target.value))">
+        </span>
+      </span>
+      <span class="audio-vol-half">
+        <span class="audio-fx-header">ЕФЕКТИ</span>
+        <button class="audio-vol-icon"
+          @click="toggleSfx()"
+          :title="audioSfxEnabled ? 'Вимкнути ефекти' : 'Увімкнути ефекти'"
+          x-text="audioSfxEnabled ? '&#x1F50A;' : '&#x1F507;'"></button>
+        <span class="audio-vol-pct" x-text="Math.round(audioFxVolume * 100) + '%'"></span>
+        <span class="audio-slider-wrap">
+          <input type="range" class="audio-volume"
+            min="0" max="1" step="0.05"
+            :value="audioFxVolume"
+            @input="setFxVolume(parseFloat($event.target.value))">
+        </span>
+      </span>
+    </div>
+    <div class="audio-playlist" x-show="audioPlaylistOpen" x-cloak>
+      <div class="audio-playlist-header">ПЛЕЙЛІСТ</div>
+      <template x-for="(song, i) in audioSongs" :key="song.id">
+        <button class="audio-playlist-item"
+          @click="selectSong(i)"
+          :class="{ current: i === audioSongIndex }">
+          <span class="playlist-item-idx" x-text="i === audioSongIndex ? '▶' : (i + 1)"></span>
+          <span class="playlist-item-title" x-text="song.title"></span>
+          <span class="audio-track-sep">·</span>
+          <span class="playlist-item-artist" x-text="song.artist"></span>
+        </button>
+      </template>
     </div>
   </div>
 
