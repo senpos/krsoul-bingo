@@ -233,10 +233,11 @@ html, body {
 }
 .sidebar-share-wrap {
   position: relative;
+  margin-bottom: 12px;
 }
 .sidebar-divider {
   border-top: 1px dashed rgba(255,255,255,0.15);
-  margin: 2px 0;
+  margin: -4px 0;
 }
 .share-toast {
   position: absolute;
