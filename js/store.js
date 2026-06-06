@@ -420,6 +420,7 @@ export function createApp() {
       const { boards, activeBoardId } = loadBoards();
       this.boards = boards;
       this.activeBoardId = activeBoardId;
+      for (const b of this.boards) if (b.size < 3) b.size = 3;
 
       const board = this.activeBoard;
       if (board) {
@@ -466,15 +467,15 @@ export function createApp() {
     },
 
     // ── Board Management ──
-    editingBoardId: null,
-    deletingBoardId: null,
 
-    startRename(id) {
-      this.editingBoardId = id;
-      requestAnimationFrame(() => {
-        const el = document.querySelector(`.tab-name-input[data-board-id="${id}"]`);
-        if (el) { el.focus(); el.select(); }
-      });
+    editBoardName(id) {
+      const board = this.boards.find(b => b.id === id);
+      if (!board) return;
+      const result = prompt('Rename board:', board.name);
+      if (result && result.trim()) {
+        board.name = result.trim().slice(0, 50);
+        this.persist();
+      }
     },
 
     addBoard() {
@@ -500,9 +501,6 @@ export function createApp() {
 
     switchBoard(id) {
       if (id === this.activeBoardId) return;
-      this.editingBoardId = null;
-      this.deletingBoardId = null;
-      clearTimeout(this._deletingTimer);
       this.activeBoardId = id;
       this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
       this.history = [];
@@ -528,38 +526,8 @@ export function createApp() {
       applyParticleTheme(this.theme);
     },
 
-    confirmDeleteBoard(id) {
-      clearTimeout(this._deletingTimer);
-      this.editingBoardId = null;
-      this.deletingBoardId = id;
-      this._deletingTimer = setTimeout(() => {
-        this.deletingBoardId = null;
-      }, 5000);
-    },
-
-    cancelDeleteBoard() {
-      clearTimeout(this._deletingTimer);
-      this.deletingBoardId = null;
-    },
-
-    executeDeleteBoard(id) {
-      clearTimeout(this._deletingTimer);
-      this.deletingBoardId = null;
-      const el = document.querySelector(`.board-tab[data-board-id="${id}"]`);
-      if (el) el.classList.add('removing');
-      setTimeout(() => { this.deleteBoard(id); }, 250);
-    },
-
-    renameBoard(id, newName) {
-      const board = this.boards.find(b => b.id === id);
-      if (board && newName.trim()) {
-        board.name = newName.trim().slice(0, 50);
-        this.persist();
-      }
-    },
-
     setSize(newSize) {
-      if (newSize < 2 || newSize > 10) return;
+      if (newSize < 3 || newSize > 10) return;
       const board = this.activeBoard;
       if (!board) return;
       board.size = newSize;
@@ -648,7 +616,7 @@ export function createApp() {
       if (!p || typeof p.id !== 'string' || p.id.length > 40) return false;
       if (!Array.isArray(p.cards) || p.cards.length > 200) return false;
       const sz = Number(p.size);
-      if (!Number.isFinite(sz) || sz < 2 || sz > 10) return false;
+      if (!Number.isFinite(sz) || sz < 3 || sz > 10) return false;
       return true;
     },
 

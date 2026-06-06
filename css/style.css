@@ -164,37 +164,40 @@ html, body {
 @keyframes titleShimmer { 0%{background-position:0% center} 100%{background-position:200% center} }
 .subtitle { font-size: 10px; color: var(--dim); letter-spacing: 3px; text-transform: uppercase; margin-top: 2px; transition: color 0.6s ease; }
 
-/* ── Header Controls ── */
-.header-controls {
-  display: flex; align-items: center; gap: 6px; margin-top: 2px;
-}
-.header-controls label {
-  font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--dim);
-}
-.header-size-input {
-  width: 48px; background: rgba(0,0,0,0.4); color: #fff;
-  border: 1px solid var(--border); border-radius: 8px; padding: 4px 6px;
-  font: inherit; font-size: 13px; text-align: center; outline: none;
-  transition: border-color 0.3s;
-}
-.header-size-input::-webkit-inner-spin-button,
-.header-size-input::-webkit-outer-spin-button { opacity: 1; }
-.header-size-input:focus { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(0,212,255,0.3); }
-
-/* ── Board Tabs ── */
-.board-tabs {
+/* ── Board Bar (unified boards + size) ── */
+.board-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
   flex-shrink: 0;
-  display: flex; align-items: center; gap: 4px; overflow-x: auto;
-  padding: 2px 0; margin-bottom: 4px;
+}
+.board-bar-boards {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  overflow-x: auto;
+  flex: 1;
+  min-width: 0;
+}
+.board-bar-size {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
 }
 .board-tab {
-  display: flex; align-items: center; gap: 3px;
-  padding: 3px 7px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px; cursor: pointer; white-space: nowrap;
-  transition: background .15s, border-color .15s, box-shadow .15s;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
   user-select: none;
+  flex-shrink: 0;
 }
 .board-tab:hover { background: rgba(255,255,255,0.1); }
 .board-tab.active {
@@ -203,8 +206,14 @@ html, body {
   box-shadow: 0 0 8px rgba(160,32,255,0.25);
 }
 .tab-name {
-  font-size: 11px; font-weight: 600; color: var(--text);
-  cursor: pointer; max-width: 100px; overflow: hidden; text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .tab-close {
   background: none; border: none; color: var(--dim); font-size: 14px;
@@ -213,39 +222,31 @@ html, body {
 }
 .tab-close:hover { opacity: 1; color: var(--pink); }
 .tab-close:disabled { display: none; }
-.tab-confirm {
-  display: flex; align-items: center; gap: 4px;
-  color: var(--text); font-size: 11px; font-weight: 600;
-  white-space: nowrap;
-  animation: confirmIn 0.2s ease;
-}
-@keyframes confirmIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-.tab-confirm-btn {
-  background: rgba(255,255,255,0.08); border: 1px solid var(--border);
-  color: var(--text); border-radius: 4px; padding: 2px 8px;
-  font-size: 11px; cursor: pointer; transition: background 0.15s, border-color 0.15s;
-  font-family: inherit;
-}
-.tab-confirm-btn.yes:hover { background: rgba(255,50,50,0.4); border-color: #f33; }
-.tab-confirm-btn.no:hover { background: rgba(255,255,255,0.15); border-color: var(--dim); }
-.board-tab.removing {
-  animation: tabRemove 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-@keyframes tabRemove {
-  to { opacity: 0; transform: scale(0.8); max-width: 0; padding: 0; margin: 0; border-width: 0; overflow: hidden; }
-}
-.tab-name-input {
-  font-size: 13px; font-weight: 600; color: #000; background: #fff;
-  border: 1px solid var(--purple); border-radius: 4px;
-  padding: 2px 6px; width: 120px; outline: none;
-  font-family: inherit;
-  box-shadow: 0 0 6px rgba(160,32,255,0.3);
-}
 .board-tab-new {
-  font-size: 16px; font-weight: 700; color: var(--dim); padding: 5px 10px;
+  font-size: 16px; font-weight: 700; color: var(--dim); padding: 2px 8px;
   display: flex; align-items: center; justify-content: center;
+  border-radius: 6px;
 }
 .board-tab-new:hover { color: var(--cyan); border-color: var(--cyan); }
+.size-select {
+  appearance: none;
+  background: rgba(0,0,0,0.4);
+  color: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+  min-width: 60px;
+  text-align: center;
+}
+.size-select:hover { border-color: var(--cyan); }
+.size-select:focus { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(0,212,255,0.2); }
+.size-select option { background: #1a002e; color: #fff; }
 
 /* ── Theme Switcher ── */
 .idol-strip {
@@ -566,11 +567,11 @@ html, body {
   .theme-icon { width: clamp(28px, 8vw, 36px); height: clamp(28px, 8vw, 36px); font-size: clamp(11px, 2.5vw, 14px); }
   .bingo-headers { gap: 6px; }
   .bingo-grid { gap: 4px; }
-  .board-tab { padding: 3px 6px; }
-  .tab-name { font-size: 10px; max-width: 60px; }
+  .board-bar { gap: 6px; }
+  .board-bar-size { gap: 1px; }
+  .tab-name { font-size: 11px; max-width: 70px; }
+  .size-select { font-size: 11px; padding: 2px 6px; min-width: 54px; }
   .bingo-letter { font-size: clamp(10px, 3vw, 14px); }
-  .tab-confirm { font-size: 10px; }
-  .tab-confirm-btn { padding: 2px 6px; font-size: 10px; }
   .btn-group { display: grid; grid-template-columns: repeat(2, 1fr); }
   .btn, .btn.sm { width: 100%; min-width: 0; padding: 8px 6px; font-size: 10px; border-radius: 14px; }
   .score-pill { width: 100%; text-align: center; padding: 8px 10px; font-size: 10px; }
