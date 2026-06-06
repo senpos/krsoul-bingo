@@ -127,68 +127,103 @@
     <div class="editor-view" id="editorSection">
       <div class="container">
         <div class="editor-panel">
-          <div class="editor-head">
-            <div>
-              <div class="editor-title">KRSoul Card Editor</div>
-              <div class="editor-note">Unlimited lines. First <span x-text="cellCount"></span> are used on the board. Right-click any cell to edit or insert emotes. Use <code>|</code> to separate icon from text.</div>
+
+          <!-- ═══ Section: Cards ═══ -->
+          <div class="editor-section">
+            <div class="editor-section-head">
+              <div class="editor-section-title">📝 Cards</div>
+              <div class="editor-section-note">Unlimited lines — first <span x-text="cellCount"></span> shown on board. Use <code>|</code> to separate icon from text.</div>
+              <div class="editor-meta" x-text="cardsCountText"></div>
+            </div>
+
+            <div class="editor-textarea-wrapper">
+              <div class="line-numbers">
+                <template x-for="n in Math.max(cards.length, cellCount)" :key="n">
+                  <div class="line-number" :class="{ unused: n > cellCount }" x-text="n <= cellCount ? n : '\u2715'"></div>
+                </template>
+              </div>
+              <textarea id="cardsInput" class="cards-input" spellcheck="false"
+                x-model="cardsText"
+                rows="20"></textarea>
             </div>
           </div>
 
-          <div class="editor-toolbar">
-            <button class="btn cyan sm" @click="copyShareUrl()">📋 Copy Share URL</button>
-            <button class="btn cyan sm" @click="importBoardFromText()">📥 Import</button>
-          </div>
-
-          <div class="emote-controls">
-            <div class="auth-row">
-              <template x-if="isLoggedIn">
-                <span class="twitch-user-badge" x-text="twitchUser?.display_name || twitchUser?.login"></span>
-              </template>
-              <template x-if="isLoggedIn">
-                <button class="btn twitch-logout" @click="logout()">Logout</button>
-              </template>
-              <template x-if="!isLoggedIn">
-                <button class="btn twitch-login" @click="login()">Login with Twitch</button>
-              </template>
+          <!-- ═══ Section: Emotes & Channels ═══ -->
+          <div class="editor-section">
+            <div class="editor-section-head">
+              <div class="editor-section-title">😀 Emotes &amp; Channels</div>
             </div>
 
-            <div class="channel-list">
-              <div class="channel-list-label">Канали:</div>
-              <template x-for="id in twitchUserIds" :key="id">
-                <div class="channel-chip">
-                  <span class="channel-id" x-text="id"></span>
-                  <button class="channel-remove"
-                    @click="removeChannel(id)"
-                    x-show="!isDefaultChannel(id)"
-                    title="Видалити канал">&times;</button>
+            <div class="emote-controls">
+              <div class="auth-row">
+                <template x-if="isLoggedIn">
+                  <span class="twitch-user-badge" x-text="twitchUser?.display_name || twitchUser?.login"></span>
+                </template>
+                <template x-if="isLoggedIn">
+                  <button class="btn twitch-logout" @click="logout()">Logout</button>
+                </template>
+                <template x-if="!isLoggedIn">
+                  <button class="btn twitch-login" @click="login()">Login with Twitch</button>
+                </template>
+              </div>
+
+              <div class="channel-list">
+                <div class="channel-list-label">Канали:</div>
+                <template x-for="id in twitchUserIds" :key="id">
+                  <div class="channel-chip">
+                    <span class="channel-id">
+                      <template x-if="channelNameForId(id) !== id">
+                        <span x-text="channelNameForId(id) + ' (' + id + ')'"></span>
+                      </template>
+                      <template x-if="channelNameForId(id) === id">
+                        <span x-text="id"></span>
+                      </template>
+                    </span>
+                    <button class="channel-remove"
+                      @click="removeChannel(id)"
+                      x-show="!isDefaultChannel(id)"
+                      title="Видалити канал">&times;</button>
+                  </div>
+                </template>
+                <div class="channel-add-row">
+                  <input type="text" class="channel-add-input" placeholder="ID або назва каналу"
+                    x-model="channelInput"
+                    @keydown.enter="addChannel(channelInput); channelInput = ''">
+                  <button class="channel-add-btn" @click="addChannel(channelInput); channelInput = ''">+</button>
                 </div>
-              </template>
-              <div class="channel-add-row">
-                <input type="text" class="channel-add-input" placeholder="ID або назва каналу"
-                  x-model="channelInput"
-                  @keydown.enter="addChannel(channelInput); channelInput = ''">
-                <button class="channel-add-btn" @click="addChannel(channelInput); channelInput = ''">+</button>
+              </div>
+            </div>
+
+            <!-- Collapsible emote log -->
+            <div class="emote-log">
+              <button class="emote-log-toggle" @click="emoteLogOpen = !emoteLogOpen">
+                <span class="emote-log-toggle-icon" x-text="emoteLogOpen ? '\u25BC' : '\u25B6'"></span>
+                <span>Emote sources</span>
+                <span class="emote-log-summary" x-text="emoteSourcesSummary"></span>
+              </button>
+              <div x-show="emoteLogOpen" class="emote-log-body">
+                <template x-for="src in emoteSourceStatusList" :key="src.label">
+                  <div class="emote-source-row" :class="'src-' + src.status">
+                    <span class="src-icon" x-text="src.icon"></span>
+                    <span class="src-label" x-text="src.label"></span>
+                    <span class="src-status" x-text="src.statusText"></span>
+                  </div>
+                </template>
               </div>
             </div>
           </div>
 
-          <div class="emote-status" x-text="emoteStatusMsg" :data-state="emoteStatusKind"></div>
-
-          <div class="editor-textarea-wrapper">
-            <div class="line-numbers">
-              <template x-for="n in Math.max(cards.length, cellCount)" :key="n">
-                <div class="line-number" :class="{ unused: n > cellCount }" x-text="n <= cellCount ? n : '\u2715'"></div>
-              </template>
+          <!-- ═══ Section: Share ═══ -->
+          <div class="editor-section">
+            <div class="editor-section-head">
+              <div class="editor-section-title">🔗 Share</div>
             </div>
-            <textarea id="cardsInput" class="cards-input" spellcheck="false"
-              x-model="cardsText"
-              rows="20"></textarea>
+            <button class="btn share-btn" @click="copyShareUrl()">
+              <span class="share-btn-icon">📋</span>
+              Copy Share URL
+            </button>
           </div>
 
-          <div class="editor-meta">
-            <span x-text="cardsCountText"></span>
-            <span>Right-click any cell to edit or insert emotes.</span>
-          </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { STORAGE_KEYS, DEFAULT_TWITCH_USER_IDS, DEFAULT_CARDS, TWITCH_CLIENT_ID, generateBoardId, toBase64, fromBase64, compress, decompress } from './config.js';
-import { state, loadBoards, saveBoards, saveActiveBoardId } from './state.js';
+import { state, loadBoards, saveBoards, saveActiveBoardId, saveState } from './state.js';
 import { getEmoteEntry, splitCard, getAllEmotes, getEmotesBySource, scheduleEmoteRefresh, queueInitialEmoteRefresh, onEmoteRefresh, onEmoteStatus } from './emotes.js';
 import { loginWithTwitch, logout as authLogout, initAuth } from './auth.js';
 import { completedLineKeys, drawBingoLines, launchConfetti, applyParticleTheme } from './game.js';
@@ -249,6 +249,45 @@ export function createApp() {
       const total = this.cards.filter(Boolean).length;
       const inGrid = Math.min(total, this.cellCount);
       return `${total} lines total${total !== inGrid ? ` (${inGrid} in grid)` : ''}`;
+    },
+
+    // ── Collapsible emote log ──
+    emoteLogOpen: false,
+
+    get emoteSourceStatusList() {
+      this.emoteVersion;
+      const list = [];
+      for (const [label, status] of state.emotes.sourceStatus.entries()) {
+        const channelMatch = label.match(/\((\d+)\)/);
+        const channelId = channelMatch ? channelMatch[1] : null;
+        const displayLabel = channelId
+          ? label.replace(channelId, this.channelNameForId(channelId))
+          : label;
+        const icons = { pending: '\u23F3', loaded: '\u2705', failed: '\u274C' };
+        list.push({
+          label: displayLabel,
+          status,
+          icon: icons[status] || '\u23F3',
+          statusText: status === 'loaded'
+            ? `${state.emotes.sourceRecords.get(label)?.length || 0} emotes`
+            : status === 'failed' ? 'error' : 'loading...'
+        });
+      }
+      return list;
+    },
+
+    get emoteSourcesSummary() {
+      let loaded = 0, failed = 0, pending = 0;
+      for (const st of state.emotes.sourceStatus.values()) {
+        if (st === 'loaded') loaded++;
+        else if (st === 'failed') failed++;
+        else pending++;
+      }
+      const parts = [];
+      if (loaded) parts.push(`${loaded} \u2705`);
+      if (failed) parts.push(`${failed} \u274C`);
+      if (pending) parts.push(`${pending} \u23F3`);
+      return parts.join(' \u00B7 ') || 'no sources';
     },
 
     // ── Emotes for picker ──
@@ -541,7 +580,8 @@ export function createApp() {
       if (!board) return '';
       const payload = {
         id: board.id, name: board.name, size: board.size,
-        cards: board.cards, marks: board.marks, theme: board.theme
+        cards: board.cards, marks: board.marks, theme: board.theme,
+        twitchUserIds: state.twitchUserIds
       };
       const encoded = await compress(JSON.stringify(payload));
       const url = new URL(window.location.href.split('?')[0].split('#')[0]);
@@ -590,6 +630,12 @@ export function createApp() {
         const payload = JSON.parse(dec);
         if (this._validateImportPayload(payload)) {
           this._importBoardPayload(payload);
+          if (Array.isArray(payload.twitchUserIds)) {
+            const merged = new Set([...state.twitchUserIds, ...payload.twitchUserIds]);
+            this.twitchUserIds = [...merged];
+            saveState();
+            scheduleEmoteRefresh();
+          }
         }
       } catch {}
 

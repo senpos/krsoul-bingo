@@ -295,14 +295,14 @@ export function refreshEmotes() {
     ? `Loading emotes for ${channelIds.length} channel(s)...`
     : 'Loading global emotes...');
 
-  const sourceState = new Map(sources.map(([label]) => [label, 'pending']));
+  state.emotes.sourceStatus = new Map(sources.map(([label]) => [label, 'pending']));
 
   const syncStatus = () => {
     const loaded = [];
     const pending = [];
     const failed = [];
 
-    for (const [label, status] of sourceState.entries()) {
+    for (const [label, status] of state.emotes.sourceStatus.entries()) {
       if (status === 'loaded') loaded.push(label);
       else if (status === 'failed') failed.push(label);
       else pending.push(label);
@@ -329,7 +329,7 @@ export function refreshEmotes() {
 
   const applySource = (label, records) => {
     if (token !== emoteRefreshToken) return;
-    sourceState.set(label, 'loaded');
+    state.emotes.sourceStatus.set(label, 'loaded');
     state.emotes.sourceRecords.set(label, records);
     rebuildEmoteLookup();
     syncStatus();
@@ -337,7 +337,7 @@ export function refreshEmotes() {
 
   const failSource = (label) => {
     if (token !== emoteRefreshToken) return;
-    sourceState.set(label, 'failed');
+    state.emotes.sourceStatus.set(label, 'failed');
     syncStatus();
   };
 

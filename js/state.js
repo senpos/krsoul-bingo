@@ -9,7 +9,8 @@ export const state = {
     error: '',
     lookup: new Map(),
     assetCache: new Map(),
-    sourceRecords: new Map()
+    sourceRecords: new Map(),
+    sourceStatus: new Map()
   },
   twitch: {
     token: null,
