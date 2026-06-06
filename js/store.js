@@ -8,6 +8,7 @@ export function createApp() {
   return {
     boards: [],
     activeBoardId: '',
+    pendingDeleteBoardId: null,
 
     get activeBoard() {
       return this.boards.find(b => b.id === this.activeBoardId) || this.boards[0];
@@ -182,6 +183,7 @@ export function createApp() {
     emoteVersion: 0,
     emoteStatusMsg: 'Loading emotes...',
     emoteStatusKind: '',
+    shareCopied: false,
     _cardsMigrated: false,
 
     // ── Undo/Redo (session only — not persisted) ──
@@ -199,21 +201,6 @@ export function createApp() {
         { id: 'newjeans', icon: 'NJ', name: 'NewJeans' },
         { id: 'lesserafim', icon: 'LS', name: 'Le Sserafim' },
       ];
-    },
-
-    // ── BINGO Headers ──
-    get bingoHeaders() {
-      const emojis = ['\uD83C\uDFB5', '\uD83C\uDFB6', '\uD83C\uDFB8', '\uD83C\uDFB9', '\uD83E\uDD41'];
-      const letters = ['B', 'I', 'N', 'G', 'O'];
-      const colorClasses = ['bl-b', 'bl-i', 'bl-n', 'bl-g', 'bl-o'];
-      const headers = [];
-      for (let i = 0; i < this.size; i++) {
-        headers.push({
-          text: i < 5 ? letters[i] : emojis[(i - 5) % emojis.length],
-          cls: i < 5 ? colorClasses[i] : ''
-        });
-      }
-      return headers;
     },
 
     // ── Computed ──
@@ -453,6 +440,8 @@ export function createApp() {
       this.$watch('size', () => this.$nextTick(drawLines));
       this.$watch('pickerOpen', val => { document.body.style.overflow = val ? 'hidden' : ''; });
       window.addEventListener('resize', () => requestAnimationFrame(() => drawBingoLines([...this.bingoKeys])));
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') this.cancelDelete(); });
+      document.addEventListener('click', (e) => { if (this.pendingDeleteBoardId && !e.target.closest('.board-sidebar')) this.cancelDelete(); });
 
       initAuth(this);
       this.resolveChannelNames();
@@ -466,7 +455,20 @@ export function createApp() {
       saveActiveBoardId(this.activeBoardId);
     },
 
+    cancelDelete() {
+      this.pendingDeleteBoardId = null;
+    },
+
     // ── Board Management ──
+
+    ensureActiveTabVisible() {
+      this.$nextTick(() => {
+        const el = this.$refs?.boardScroll;
+        if (!el) return;
+        const activeTab = el.querySelector('.sidebar-tab.active');
+        if (activeTab) activeTab.scrollIntoView({ block: 'nearest' });
+      });
+    },
 
     editBoardName(id) {
       const board = this.boards.find(b => b.id === id);
@@ -479,7 +481,18 @@ export function createApp() {
     },
 
     addBoard() {
-      const name = `Board ${this.boards.length + 1}`;
+      this.cancelDelete();
+      const existingNumbers = new Set(
+        this.boards
+          .map(b => {
+            const match = b.name.match(/^Board (\d+)$/);
+            return match ? parseInt(match[1], 10) : null;
+          })
+          .filter(n => n !== null)
+      );
+      let num = 1;
+      while (existingNumbers.has(num)) num++;
+      const name = `Board ${num}`;
       const newBoard = {
         id: generateBoardId(),
         name,
@@ -496,34 +509,44 @@ export function createApp() {
       this.persist();
       this.$nextTick(() => {
         document.body.setAttribute('data-theme', this.theme);
+        this.ensureActiveTabVisible();
       });
     },
 
     switchBoard(id) {
       if (id === this.activeBoardId) return;
+      this.cancelDelete();
       this.activeBoardId = id;
       this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
       this.history = [];
       this.redoHistory = [];
       this.persist();
+      this.$nextTick(() => this.ensureActiveTabVisible());
       document.body.setAttribute('data-theme', this.theme);
       applyParticleTheme(this.theme);
     },
 
     deleteBoard(id) {
       if (this.boards.length <= 1) return;
+      if (this.pendingDeleteBoardId !== id) {
+        this.pendingDeleteBoardId = id;
+        return;
+      }
+      this.pendingDeleteBoardId = null;
       const idx = this.boards.findIndex(b => b.id === id);
       if (idx === -1) return;
+      const wasActive = this.activeBoardId === id;
       this.boards.splice(idx, 1);
-      if (this.activeBoardId === id) {
+      if (wasActive) {
         this.activeBoardId = this.boards[0].id;
+        this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
+        this.history = [];
+        this.redoHistory = [];
+        document.body.setAttribute('data-theme', this.theme);
+        applyParticleTheme(this.theme);
       }
-      this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
-      this.history = [];
-      this.redoHistory = [];
       this.persist();
-      document.body.setAttribute('data-theme', this.theme);
-      applyParticleTheme(this.theme);
+      this.$nextTick(() => this.ensureActiveTabVisible());
     },
 
     setSize(newSize) {
@@ -571,6 +594,8 @@ export function createApp() {
         document.execCommand('copy');
         document.body.removeChild(ta);
       }
+      this.shareCopied = true;
+      setTimeout(() => { this.shareCopied = false; }, 2000);
     },
 
     async importBoardFromText() {
