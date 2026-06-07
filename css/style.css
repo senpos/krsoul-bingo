@@ -534,6 +534,7 @@ html, body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  margin-left: auto;
 }
 .chat-messages {
   flex: 1;
@@ -577,12 +578,11 @@ html, body {
   align-items: center;
   gap: 2px;
   margin-right: 3px;
-  vertical-align: baseline;
+  vertical-align: text-bottom;
 }
 .chat-badge {
   width: 1.1em;
   height: 1.1em;
-  vertical-align: text-bottom;
   display: inline-block;
   image-rendering: auto;
 }

@@ -100,14 +100,6 @@
                 <span class="chat-fontsize-val" x-text="chatFontSize"></span>
                 <button class="chat-fontsize-btn" @click="chatFontSize = Math.min(24, chatFontSize + 1)" title="Збільшити">+</button>
               </div>
-              <button class="chat-badge-toggle" @click="toggleChatBadges()"
-                :class="{ active: chatShowBadges }"
-                :title="chatShowBadges ? 'Бейджі показані — натисніть щоб приховати' : 'Бейджі приховані — натисніть щоб показати'">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
-                </svg>
-                <span class="chat-badge-label" x-text="chatShowBadges ? 'Бейджі' : 'Бейджі'"></span>
-              </button>
               <span class="chat-channel" x-text="chatChannelName ? '#' + chatChannelName : ''">#krsoul</span>
             </div>
             <div class="chat-messages" x-ref="chatMessages">
@@ -151,6 +143,19 @@
                   <circle cx="12" cy="12" r="3"/>
                 </svg>
                 <span class="chat-bot-label" x-text="chatShowBots ? 'Боти ON' : 'Боти OFF'"></span>
+              </button>
+              <button class="chat-badge-toggle" @click="toggleChatBadges()"
+                :class="{ active: chatShowBadges }"
+                :title="chatShowBadges ? 'Бейджі показані — натисніть щоб приховати' : 'Бейджі приховані — натисніть щоб показати'">
+                <svg x-show="!chatShowBadges" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+                <svg x-show="chatShowBadges" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <span class="chat-badge-label" x-text="chatShowBadges ? 'Бейджі ON' : 'Бейджі OFF'"></span>
               </button>
             </div>
           </div>
