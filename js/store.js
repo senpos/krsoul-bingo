@@ -195,6 +195,7 @@ export function createApp() {
     chatChannelName: '',
     chatFontSize: Number(localStorage.getItem(STORAGE_KEYS.chatFontSize)) || 12,
     chatShowBots: localStorage.getItem(STORAGE_KEYS.chatShowBots) === 'true',
+    chatShowBadges: localStorage.getItem(STORAGE_KEYS.chatShowBadges) !== 'false',
     chatHiddenBotsExtra: JSON.parse(localStorage.getItem(STORAGE_KEYS.chatHiddenBots) || '[]'),
     chatHiddenBotInput: '',
     chatReconnectStatus: { attempts: 0, nextReconnectAt: null, stopped: false, reason: null },
@@ -1055,6 +1056,10 @@ export function createApp() {
       this.chatShowBots = !this.chatShowBots;
       try { localStorage.setItem(STORAGE_KEYS.chatShowBots, String(this.chatShowBots)); } catch {}
     },
+    toggleChatBadges() {
+      this.chatShowBadges = !this.chatShowBadges;
+      try { localStorage.setItem(STORAGE_KEYS.chatShowBadges, String(this.chatShowBadges)); } catch {}
+    },
     scrollToLogin() {
       const el = document.getElementById('twitchLoginSection');
       if (!el) return;
@@ -1090,6 +1095,7 @@ export function createApp() {
           rawColor: m.rawColor,
           text: m.text,
           fragments: m.fragments || [],
+          badges: m.badges || [],
           timestamp: m.timestamp,
         });
       }
@@ -1124,6 +1130,7 @@ export function createApp() {
           rawColor: m.rawColor || null,
           text: m.text,
           fragments: m.fragments || [],
+          badges: m.badges || [],
           renderedText,
           timeStr: m.timestamp ? formatChatTime(m.timestamp) : '',
           timestamp: m.timestamp || '',

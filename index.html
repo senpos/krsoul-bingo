@@ -100,12 +100,27 @@
                 <span class="chat-fontsize-val" x-text="chatFontSize"></span>
                 <button class="chat-fontsize-btn" @click="chatFontSize = Math.min(24, chatFontSize + 1)" title="Збільшити">+</button>
               </div>
+              <button class="chat-badge-toggle" @click="toggleChatBadges()"
+                :class="{ active: chatShowBadges }"
+                :title="chatShowBadges ? 'Бейджі показані — натисніть щоб приховати' : 'Бейджі приховані — натисніть щоб показати'">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                </svg>
+                <span class="chat-badge-label" x-text="chatShowBadges ? 'Бейджі' : 'Бейджі'"></span>
+              </button>
               <span class="chat-channel" x-text="chatChannelName ? '#' + chatChannelName : ''">#krsoul</span>
             </div>
             <div class="chat-messages" x-ref="chatMessages">
               <template x-for="msg in visibleChatMessages" :key="msg.id">
                 <div class="chat-message" :class="{ restored: msg.isRestored }" :style="{ fontSize: chatFontSize + 'px' }">
                   <span class="chat-time" x-text="msg.timeStr"></span>
+                  <template x-if="chatShowBadges && msg.badges && msg.badges.length">
+                    <span class="chat-badges">
+                      <template x-for="badge in msg.badges" :key="badge.id">
+                        <img class="chat-badge" :src="badge.url" :alt="badge.setId" loading="lazy">
+                      </template>
+                    </span>
+                  </template>
                   <span class="chat-name" :style="{ color: msg.color }" x-text="msg.displayName"></span>
                   <span class="chat-colon">:</span>
                   <span class="chat-text" x-html="msg.renderedText"></span>

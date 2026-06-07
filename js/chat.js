@@ -299,6 +299,11 @@ class ChatManager {
     if (!event) return;
     const message = event.message || {};
     const fragments = message.fragments || [];
+    const badges = (event.badges || []).map(b => ({
+      id: b.id,
+      setId: b.set_id,
+      url: `https://static-cdn.jtvnw.net/badges/v1/${b.id}/1`
+    }));
     this.onMessage?.({
       id: ++this._msgId,
       messageId: event.message_id,
@@ -308,6 +313,7 @@ class ChatManager {
       rawColor: event.color || null,
       text: message.text || '',
       fragments: fragments,
+      badges: badges,
       renderedText: renderChatMessage(event),
       timeStr: formatChatTime(timestamp),
       timestamp: timestamp || '',

@@ -8,7 +8,8 @@ export const STORAGE_KEYS = {
   chatFontSize: 'krsoul-bingo-chat-font-size-v1',
   chatHistory: 'krsoul-bingo-chat-history-v1',
   chatHiddenBots: 'krsoul-bingo-chat-hidden-bots-v1',
-  chatShowBots: 'krsoul-bingo-chat-show-bots-v1'
+  chatShowBots: 'krsoul-bingo-chat-show-bots-v1',
+  chatShowBadges: 'krsoul-bingo-chat-show-badges-v1'
 };
 
 export const V2_KEYS = {
