@@ -1,9 +1,10 @@
-import { STORAGE_KEYS, DEFAULT_TWITCH_USER_IDS, DEFAULT_CARDS, TWITCH_CLIENT_ID, generateBoardId, toBase64, fromBase64, compress, decompress } from './config.js';
+import { STORAGE_KEYS, DEFAULT_TWITCH_USER_IDS, DEFAULT_CARDS, TWITCH_CLIENT_ID, generateBoardId, toBase64, fromBase64, compress, decompress, DEFAULT_CHAT_HIDDEN_BOTS } from './config.js';
 import { state, loadBoards, saveBoards, saveActiveBoardId, saveState } from './state.js';
 import { getEmoteEntry, splitCard, getAllEmotes, getEmotesBySource, scheduleEmoteRefresh, queueInitialEmoteRefresh, onEmoteRefresh, onEmoteStatus } from './emotes.js';
 import { loginWithTwitch, logout as authLogout, initAuth } from './auth.js';
 import { completedLineKeys, drawBingoLines, launchConfetti, applyParticleTheme, bingoCellBurst, setBingoMode } from './game.js';
 import { audioManager } from './audio.js';
+import { chatManager, isKnownBot, renderMessageFromFragments, formatChatTime } from './chat.js';
 
 export function createApp() {
   return {
@@ -186,6 +187,23 @@ export function createApp() {
     emoteStatusKind: '',
     shareCopied: false,
     _cardsMigrated: false,
+
+    // ── Chat ──
+    chatMessages: [],
+    chatConnected: false,
+    chatStatusMsg: '',
+    chatChannelName: '',
+    chatFontSize: Number(localStorage.getItem(STORAGE_KEYS.chatFontSize)) || 12,
+    chatShowBots: false,
+    chatHiddenBotsExtra: [],
+    chatHiddenBotInput: '',
+    chatReconnectStatus: { attempts: 0, nextReconnectAt: null, stopped: false, reason: null },
+    chatReconnectCountdown: '',
+    _chatMessageIds: new Set(),
+
+    get chatHiddenBots() {
+      return DEFAULT_CHAT_HIDDEN_BOTS.concat(this.chatHiddenBotsExtra.map(b => String(b || '').toLowerCase().trim()).filter(Boolean));
+    },
 
     // ── Audio / Music ──
     audioVolume: 0.25,
@@ -456,9 +474,56 @@ export function createApp() {
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape') this.cancelDelete(); });
       document.addEventListener('click', (e) => { if (this.pendingDeleteBoardId && !e.target.closest('.board-sidebar')) this.cancelDelete(); });
 
-      initAuth(this);
+      this.$watch('chatFontSize', val => {
+        try { localStorage.setItem(STORAGE_KEYS.chatFontSize, String(val)); } catch {}
+      });
       this.resolveChannelNames();
       queueInitialEmoteRefresh();
+
+      chatManager.onMessage = (msg) => {
+        if (!this.chatShowBots && isKnownBot(msg.username, this.chatHiddenBotsExtra)) return;
+        if (msg.messageId && this._chatMessageIds.has(msg.messageId)) return;
+        this.chatMessages.push(msg);
+        if (msg.messageId) this._chatMessageIds.add(msg.messageId);
+        if (this.chatMessages.length > 200) {
+          const removed = this.chatMessages.shift();
+          if (removed.messageId) this._chatMessageIds.delete(removed.messageId);
+        }
+        this._persistChatHistory();
+        this.$nextTick(() => {
+          const el = this.$refs?.chatMessages;
+          if (el) el.scrollTop = el.scrollHeight;
+        });
+      };
+      chatManager.onMessageDelete = (messageId) => {
+        const idx = this.chatMessages.findIndex(m => m.messageId === messageId);
+        if (idx !== -1) {
+          const removed = this.chatMessages.splice(idx, 1)[0];
+          if (removed.messageId) this._chatMessageIds.delete(removed.messageId);
+          this._persistChatHistory();
+        }
+      };
+      chatManager.onStatusChange = (connected, msg) => {
+        this.chatConnected = connected;
+        this.chatStatusMsg = msg || '';
+        if (connected) this.chatChannelName = chatManager.getTargetChannel();
+      };
+      chatManager.onReconnectStatusChange = (status) => {
+        this.chatReconnectStatus = status;
+        this._updateReconnectCountdown();
+      };
+
+      this._reconnectCountdownInterval = setInterval(() => {
+        this._updateReconnectCountdown();
+      }, 1000);
+
+      initAuth(this).then(() => {
+        this.chatChannelName = chatManager.getTargetChannel();
+        if (this.isLoggedIn) {
+          this.loadChatHistory();
+          try { chatManager.connect(); } catch (e) { console.warn(e); }
+        }
+      });
 
       audioManager.init(this.theme, (state) => {
         this.audioVolume = state.volume;
@@ -956,6 +1021,124 @@ export function createApp() {
       this.persist();
     },
     login() { loginWithTwitch(); },
-    logout() { authLogout(this); },
+    logout() {
+      authLogout(this);
+      this.chatMessages = [];
+      this._chatMessageIds.clear();
+      this.chatChannelName = chatManager.getTargetChannel();
+      try { localStorage.removeItem(STORAGE_KEYS.chatHistory); } catch {}
+      try { chatManager.reconnect(); } catch (e) { console.warn(e); }
+    },
+
+    // ── Chat Bot Management ──
+    addChatHiddenBot() {
+      const name = String(this.chatHiddenBotInput || '').trim().toLowerCase();
+      if (!name) return;
+      if (this.chatHiddenBots.includes(name)) {
+        this.chatHiddenBotInput = '';
+        return;
+      }
+      this.chatHiddenBotsExtra.push(name);
+      this.chatHiddenBotInput = '';
+    },
+    removeChatHiddenBot(name) {
+      const idx = this.chatHiddenBotsExtra.findIndex(b => String(b || '').toLowerCase().trim() === name);
+      if (idx !== -1) this.chatHiddenBotsExtra.splice(idx, 1);
+    },
+    toggleChatBots() {
+      this.chatShowBots = !this.chatShowBots;
+    },
+    scrollToLogin() {
+      const el = document.getElementById('twitchLoginSection');
+      if (!el) return;
+      const target = el.getBoundingClientRect().top + window.scrollY;
+      const start = window.scrollY;
+      const dist = target - start;
+      const dur = 600;
+      const startTime = performance.now();
+      const ease = t => 1 - Math.pow(1 - t, 3);
+      const frame = (now) => {
+        const p = Math.min((now - startTime) / dur, 1);
+        window.scrollTo(0, start + dist * ease(p));
+        if (p < 1) requestAnimationFrame(frame);
+      };
+      requestAnimationFrame(frame);
+    },
+
+    _persistChatHistory() {
+      if (!this.isLoggedIn) return;
+      const seen = new Set();
+      const toSave = [];
+      for (let i = this.chatMessages.length - 1; i >= 0 && toSave.length < 100; i--) {
+        const m = this.chatMessages[i];
+        if (m.isRestored) continue;
+        if (isKnownBot(m.username, this.chatHiddenBotsExtra)) continue;
+        if (!m.messageId || seen.has(m.messageId)) continue;
+        seen.add(m.messageId);
+        toSave.unshift({
+          messageId: m.messageId,
+          displayName: m.displayName,
+          username: m.username,
+          color: m.color,
+          rawColor: m.rawColor,
+          text: m.text,
+          fragments: m.fragments || [],
+          timestamp: m.timestamp,
+        });
+      }
+      try {
+        localStorage.setItem(STORAGE_KEYS.chatHistory, JSON.stringify(toSave));
+      } catch {}
+    },
+
+    loadChatHistory() {
+      if (!this.isLoggedIn) return;
+      let raw;
+      try { raw = localStorage.getItem(STORAGE_KEYS.chatHistory); } catch { return; }
+      if (!raw) return;
+      let parsed;
+      try { parsed = JSON.parse(raw); } catch { return; }
+      if (!Array.isArray(parsed)) return;
+      const now = Date.now();
+      const maxAge = 24 * 60 * 60 * 1000;
+      for (const m of parsed) {
+        if (!m || !m.text) continue;
+        if (m.messageId && this._chatMessageIds.has(m.messageId)) continue;
+        if (m.timestamp && (now - new Date(m.timestamp).getTime()) > maxAge) continue;
+        if (isKnownBot(m.username, this.chatHiddenBotsExtra)) continue;
+        const renderedText = m.fragments?.length
+          ? renderMessageFromFragments(m.fragments, m.text)
+          : m.text;
+        this.chatMessages.push({
+          id: ++chatManager._msgId,
+          messageId: m.messageId || '',
+          displayName: m.displayName || m.username || 'unknown',
+          username: m.username || 'unknown',
+          color: m.color || null,
+          rawColor: m.rawColor || null,
+          text: m.text,
+          fragments: m.fragments || [],
+          renderedText,
+          timeStr: m.timestamp ? formatChatTime(m.timestamp) : '',
+          timestamp: m.timestamp || '',
+          isRestored: true,
+        });
+        if (m.messageId) this._chatMessageIds.add(m.messageId);
+      }
+    },
+
+    manualReconnect() {
+      try { chatManager.reconnect(); } catch (e) { console.warn(e); }
+    },
+
+    _updateReconnectCountdown() {
+      const s = this.chatReconnectStatus;
+      if (!s || s.stopped || !s.nextReconnectAt) {
+        this.chatReconnectCountdown = '';
+        return;
+      }
+      const remaining = Math.max(0, Math.ceil((s.nextReconnectAt - Date.now()) / 1000));
+      this.chatReconnectCountdown = remaining > 0 ? `${remaining}с` : '';
+    },
   };
 }

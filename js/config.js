@@ -4,7 +4,9 @@ export const STORAGE_KEYS = {
   emoteSourceCache: 'krsoul-bingo-emote-source-cache-v2',
   twitchUserId: 'krsoul-bingo-twitch-user-id-v1',
   twitchUserIds: 'krsoul-bingo-twitch-user-ids-v1',
-  twitchChannelNames: 'krsoul-bingo-channel-names-v1'
+  twitchChannelNames: 'krsoul-bingo-channel-names-v1',
+  chatFontSize: 'krsoul-bingo-chat-font-size-v1',
+  chatHistory: 'krsoul-bingo-chat-history-v1'
 };
 
 export const V2_KEYS = {
@@ -20,6 +22,13 @@ export const DEFAULT_TWITCH_USER_ID = '55947428';
 export const DEFAULT_TWITCH_CHANNEL_NAMES = { '55947428': 'krsoul' };
 export const EMOTE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 export const EMOTE_CACHE_FAIL_TTL_MS = 10 * 60 * 1000;
+
+export const DEFAULT_CHAT_HIDDEN_BOTS = [
+  'streamelements', 'nightbot', 'moobot', 'wizebot', 'fossabot',
+  'stay_hydrated_bot', 'soundalerts', 'catinabot', 'commanderroot',
+  'pretzelrocks', 'streamlabs', 'deepbot', 'ankhbot', 'honbot',
+  'medicbot', 'xankhbot', 'phantombot', 'botismo'
+];
 
 export const KPOP_IDOL_NAMES = [
   'TWICE', 'aespa', 'NMIXX', 'NewJeans', 'IVE',

@@ -74,7 +74,7 @@ export async function loginWithTwitch() {
     client_id: TWITCH_CLIENT_ID,
     redirect_uri: redirectUri,
     response_type: 'token',
-    scope: 'user:read:email',
+    scope: 'user:read:chat',
     state: stateVal
   });
 

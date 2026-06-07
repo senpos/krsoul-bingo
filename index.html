@@ -92,6 +92,46 @@
             </div>
           </div>
 
+          <div class="chat-panel">
+            <div class="chat-header">
+              <span class="chat-title">ЧАТ</span>
+              <div class="chat-fontsize-wrap">
+                <button class="chat-fontsize-btn" @click="chatFontSize = Math.max(9, chatFontSize - 1)" title="Зменшити">−</button>
+                <span class="chat-fontsize-val" x-text="chatFontSize"></span>
+                <button class="chat-fontsize-btn" @click="chatFontSize = Math.min(24, chatFontSize + 1)" title="Збільшити">+</button>
+              </div>
+              <span class="chat-channel" x-text="chatChannelName ? '#' + chatChannelName : ''">#krsoul</span>
+            </div>
+            <div class="chat-messages" x-ref="chatMessages">
+              <template x-for="msg in chatMessages" :key="msg.id">
+                <div class="chat-message" :class="{ restored: msg.isRestored }" :style="{ fontSize: chatFontSize + 'px' }">
+                  <span class="chat-time" x-text="msg.timeStr"></span>
+                  <span class="chat-name" :style="{ color: msg.color }" x-text="msg.displayName"></span>
+                  <span class="chat-colon">:</span>
+                  <span class="chat-text" x-html="msg.renderedText"></span>
+                </div>
+              </template>
+              <div class="chat-login-prompt" x-show="!chatConnected && !isLoggedIn">
+                <p>Увійдіть через Twitch, щоб читати чат</p>
+                <button class="chat-scroll-login-btn" @click="scrollToLogin()">
+                  ↓ Налаштування входу
+                </button>
+              </div>
+            </div>
+            <div class="chat-footer">
+              <span class="chat-status-dot" :class="{ connected: chatConnected }"></span>
+              <span class="chat-status-text" x-text="chatStatusMsg || (chatConnected ? 'Онлайн' : 'Офлайн')"></span>
+              <span class="chat-reconnect-countdown" x-show="chatReconnectStatus.attempts > 0 && chatReconnectCountdown" x-text="'спроба ' + chatReconnectStatus.attempts + '/10 · ' + chatReconnectCountdown"></span>
+              <button class="chat-reconnect-btn" x-show="chatReconnectStatus.stopped" @click="manualReconnect()">🔄 Перепідключити</button>
+              <span class="chat-message-count" x-show="chatMessages.length > 0" x-text="chatMessages.length"></span>
+              <button class="chat-bot-toggle" @click="toggleChatBots()"
+                :class="{ active: chatShowBots }"
+                :title="chatShowBots ? 'Приховати ботів' : 'Показати ботів'">
+                <span x-text="chatShowBots ? '🤖' : '⚙️'"></span>
+              </button>
+            </div>
+          </div>
+
           <div class="controls">
             <div class="btn-group">
               <button class="btn pink" @click="reset()">↺ Скинути</button>
@@ -134,6 +174,55 @@
             </div>
           </div>
 
+          <!-- ═══ Section: Twitch Login ═══ -->
+          <div class="editor-section" id="twitchLoginSection">
+            <div class="editor-section-head">
+              <div class="editor-section-title">🔐 Вхід через Twitch</div>
+            </div>
+
+            <template x-if="!isLoggedIn">
+              <div class="twitch-login-section">
+                <div class="twitch-login-benefits">
+                  <div class="twitch-benefit-title">Після входу ви зможете:</div>
+                  <ul class="twitch-benefit-list">
+                    <li>Читати чат свого каналу в реальному часі 🗨️</li>
+                    <li>Використовувати власні емоції Twitch на дошці 😀</li>
+                    <li>Додавати канали за нікнеймом замість ID 🔍</li>
+
+                  </ul>
+                </div>
+
+                <div class="twitch-login-scopes">
+                  <div class="twitch-scope-title">Запитуємо дозволи:</div>
+                  <ul class="twitch-scope-list">
+                    <li><code>user:read:chat</code> — читання повідомлень чату <span class="twitch-scope-detail">(тільки читання, ми нічого не відправляємо)</span></li>
+                  </ul>
+                </div>
+
+                <div class="twitch-login-privacy">
+                  Токен зберігається лише у вашому браузері. Ми не бачимо ваш пароль.
+                  Немає сервера — все працює локально. 🔒
+                </div>
+
+                <div class="twitch-login-action">
+                  <button class="btn twitch-login" @click="login()">
+                    <span class="twitch-login-icon">🔗</span> Увійти через Twitch
+                  </button>
+                </div>
+              </div>
+            </template>
+
+            <template x-if="isLoggedIn">
+              <div class="twitch-user-card">
+                <div class="twitch-user-info">
+                  <span class="twitch-user-label">Підключено до Twitch</span>
+                  <span class="twitch-user-name" x-text="twitchUser?.display_name || twitchUser?.login"></span>
+                </div>
+                <button class="btn twitch-logout" @click="logout()">Вийти</button>
+              </div>
+            </template>
+          </div>
+
           <!-- ═══ Section: Emotes & Channels ═══ -->
           <div class="editor-section">
             <div class="editor-section-head">
@@ -141,36 +230,6 @@
             </div>
 
             <div class="emote-controls">
-              <div class="auth-row">
-                <template x-if="isLoggedIn">
-                  <div class="twitch-user-card">
-                    <div class="twitch-user-info">
-                      <span class="twitch-user-label">Підключено до Twitch</span>
-                      <span class="twitch-user-name" x-text="twitchUser?.display_name || twitchUser?.login"></span>
-                    </div>
-                     <button class="btn twitch-logout" @click="logout()">Вийти</button>
-                  </div>
-                </template>
-                <template x-if="!isLoggedIn">
-                  <div class="twitch-login-wrap">
-                      <button class="btn twitch-login" @click="login()">
-                      <span class="twitch-login-icon">🔗</span> Увійти через Twitch
-                    </button>
-                    <div class="twitch-help" x-data="{ open: false }" @click.away="open = false">
-                      <button class="twitch-help-btn" @click="open = !open" title="Що це дає?">?</button>
-                      <div class="twitch-help-tooltip" x-show="open" x-cloak>
-                        <p>З Twitch-аккаунтом можна:</p>
-                        <ul>
-                          <li>Використовувати власні емоції з чату</li>
-                          <li>Додавати канали за нікнеймом замість ID</li>
-                          <li>Автоматично підтягнути свій канал</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </template>
-              </div>
-
               <div class="channel-list">
                 <div class="channel-list-label">Канали:</div>
                 <template x-for="id in twitchUserIds" :key="id">
@@ -213,6 +272,43 @@
                     <span class="src-status" x-text="src.statusText"></span>
                   </div>
                 </template>
+              </div>
+            </div>
+
+            <!-- ═══ Section: Chat Bots ═══ -->
+            <div class="editor-section">
+              <div class="editor-section-head">
+                <div class="editor-section-title">🤖 Боти в чаті</div>
+              </div>
+
+              <div class="chat-bot-controls">
+                <div class="chat-bot-row">
+                  <button class="chat-bot-toggle-btn"
+                    @click="toggleChatBots()"
+                    :class="{ active: chatShowBots }">
+                    <span x-text="chatShowBots ? 'Показувати ботів' : 'Приховати ботів'"></span>
+                  </button>
+                </div>
+
+                <div class="chat-bot-list">
+                  <div class="chat-bot-list-label">Приховані боти:</div>
+                  <template x-for="name in chatHiddenBots" :key="name">
+                    <div class="chat-bot-chip">
+                      <span class="chat-bot-name" x-text="name"></span>
+                      <button class="chat-bot-remove"
+                        x-show="chatHiddenBotsExtra.includes(name)"
+                        @click="removeChatHiddenBot(name)">&times;</button>
+                    </div>
+                  </template>
+                </div>
+
+                <div class="chat-bot-add-row">
+                  <input type="text" class="chat-bot-add-input"
+                    placeholder="Ім'я бота"
+                    x-model="chatHiddenBotInput"
+                    @keydown.enter="addChatHiddenBot()">
+                  <button class="chat-bot-add-btn" @click="addChatHiddenBot()">+</button>
+                </div>
               </div>
             </div>
           </div>
