@@ -194,7 +194,7 @@ export function createApp() {
     chatStatusMsg: '',
     chatChannelName: '',
     chatFontSize: Number(localStorage.getItem(STORAGE_KEYS.chatFontSize)) || 12,
-    chatShowBots: false,
+    chatShowBots: localStorage.getItem(STORAGE_KEYS.chatShowBots) === 'true',
     chatHiddenBotsExtra: JSON.parse(localStorage.getItem(STORAGE_KEYS.chatHiddenBots) || '[]'),
     chatHiddenBotInput: '',
     chatReconnectStatus: { attempts: 0, nextReconnectAt: null, stopped: false, reason: null },
@@ -1053,6 +1053,7 @@ export function createApp() {
     },
     toggleChatBots() {
       this.chatShowBots = !this.chatShowBots;
+      try { localStorage.setItem(STORAGE_KEYS.chatShowBots, String(this.chatShowBots)); } catch {}
     },
     scrollToLogin() {
       const el = document.getElementById('twitchLoginSection');
