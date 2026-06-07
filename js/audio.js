@@ -28,6 +28,7 @@ const PLAYLISTS = {
   },
   nmixx: {
     songs: [
+      { id: 'nmixx-blue-valentine', title: 'NMIXX (엔믹스) "Blue Valentine" (Videogame Ver.)', url: 'https://www.youtube.com/watch?v=SXknBQeYTEw', file: 'audio/nmixx/nmixx-blue-valentine.opus', artist: 'Darnu-Pop' },
       { id: 'nmixx-0', title: 'NMIXX (엔믹스) ‘DICE’ / 8 bit (Chiptune) cover', url: 'https://www.youtube.com/watch?v=XHow_8Np_zg', file: 'audio/nmixx/nmixx-0.opus', artist: '정훈남JHN STUDIO' },
       { id: 'nmixx-1', title: 'NMIXX 엔믹스 ‘DASH’ / 8 Bit Cover', url: 'https://www.youtube.com/watch?v=rB9aOprwJZE', file: 'audio/nmixx/nmixx-1.opus', artist: '정훈남JHN STUDIO' },
     ],
