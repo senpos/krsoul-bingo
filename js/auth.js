@@ -36,18 +36,6 @@ function clearToken() {
   state.twitch.user = null;
 }
 
-export function isLoggedIn() {
-  return !!state.twitch.token;
-}
-
-export function getAccessToken() {
-  if (!state.twitch.token) {
-    const stored = localStorage.getItem('twitch-access-token');
-    if (stored) state.twitch.token = stored;
-  }
-  return state.twitch.token;
-}
-
 async function fetchUserInfo(token) {
   const res = await fetch('https://api.twitch.tv/helix/users', {
     headers: {

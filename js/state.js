@@ -1,4 +1,4 @@
-import { STORAGE_KEYS, V2_KEYS, DEFAULT_TWITCH_USER_IDS, DEFAULT_TWITCH_CHANNEL_NAMES, DEFAULT_CARDS, generateBoardId } from './config.js';
+import { STORAGE_KEYS, DEFAULT_TWITCH_USER_IDS, DEFAULT_TWITCH_CHANNEL_NAMES, DEFAULT_CARDS, generateBoardId } from './config.js';
 
 export const state = {
   twitchUserIds: [...DEFAULT_TWITCH_USER_IDS],
@@ -22,54 +22,7 @@ function loadJson(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }
 }
 
-function migrateV2ToV3() {
-  if (localStorage.getItem(STORAGE_KEYS.boards)) return null;
-
-  const hasV2 = localStorage.getItem(V2_KEYS.cards) || localStorage.getItem(V2_KEYS.marks);
-  if (!hasV2) return null;
-
-  const size = Number(localStorage.getItem(V2_KEYS.size)) || 5;
-  const storedCards = loadJson(V2_KEYS.cards, null);
-  const storedMarks = loadJson(V2_KEYS.marks, null);
-  const theme = localStorage.getItem(V2_KEYS.theme) || 'twice';
-  const twitchUserId = localStorage.getItem(V2_KEYS.twitchUserId) || DEFAULT_TWITCH_USER_ID;
-
-  const total = size * size;
-  const cards = Array.isArray(storedCards) && storedCards.length
-    ? storedCards.map(v => String(v).trim())
-    : [...DEFAULT_CARDS].slice(0, total);
-  const marks = Array.isArray(storedMarks) ? storedMarks.map(Boolean) : Array(total).fill(false);
-
-  while (cards.length < total) cards.push('');
-  cards.length = total;
-  while (marks.length < total) marks.push(false);
-  marks.length = total;
-
-  const board = {
-    id: generateBoardId(),
-    name: 'Дошка 1',
-    size,
-    cards,
-    marks,
-    theme
-  };
-
-  const boards = [board];
-  localStorage.setItem(STORAGE_KEYS.boards, JSON.stringify(boards));
-  localStorage.setItem(STORAGE_KEYS.activeBoard, board.id);
-  localStorage.setItem(STORAGE_KEYS.twitchUserId, twitchUserId);
-
-  Object.values(V2_KEYS).forEach(key => {
-    try { localStorage.removeItem(key); } catch {}
-  });
-
-  return { boards, activeBoardId: board.id };
-}
-
 export function loadBoards() {
-  const migrated = migrateV2ToV3();
-  if (migrated) return migrated;
-
   const boardsJson = localStorage.getItem(STORAGE_KEYS.boards);
   let boards = [];
   try { boards = boardsJson ? JSON.parse(boardsJson) : []; } catch { boards = []; }

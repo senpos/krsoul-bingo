@@ -72,7 +72,7 @@ export async function refreshBadgesCache(channelId) {
   badgesCacheTimestamp = now;
 }
 
-export function getBadgeUrl(setId, versionId) {
+function getBadgeUrl(setId, versionId) {
   const key = `${setId}/${versionId}`;
   return channelBadgesCache?.[key] || globalBadgesCache?.[key] || null;
 }

@@ -82,7 +82,6 @@ class AudioManager {
     this._isPaused = false;
 
     this._onUpdate = null;
-    this._initialTheme = null;
     this._unlocked = false;
     this._ctxPromise = null;
 
@@ -150,14 +149,6 @@ class AudioManager {
   get currentSongIndex() { return this._currentSongIndex; }
   get audioTheme() { return this._currentTheme; }
 
-  setAudioTheme(themeId) {
-    if (!PLAYLISTS[themeId] || themeId === this._currentTheme) return;
-    this._currentTheme = themeId;
-    this._currentSongId = null;
-    this._saveState();
-    this.playTheme(themeId);
-  }
-
   _findSongById(id) {
     for (const playlist of Object.values(PLAYLISTS)) {
       for (const song of playlist.songs) {
@@ -165,12 +156,6 @@ class AudioManager {
       }
     }
     return null;
-  }
-
-  _getSongForTheme(themeId) {
-    const playlist = PLAYLISTS[themeId];
-    if (!playlist || !playlist.songs.length) return null;
-    return playlist.songs[0];
   }
 
   _saveState() {

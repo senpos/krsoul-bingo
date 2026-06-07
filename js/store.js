@@ -1,4 +1,4 @@
-import { STORAGE_KEYS, DEFAULT_TWITCH_USER_IDS, DEFAULT_CARDS, TWITCH_CLIENT_ID, generateBoardId, toBase64, fromBase64, compress, decompress, DEFAULT_CHAT_HIDDEN_BOTS } from './config.js';
+import { STORAGE_KEYS, DEFAULT_TWITCH_USER_IDS, DEFAULT_CARDS, TWITCH_CLIENT_ID, generateBoardId, fromBase64, compress, decompress, DEFAULT_CHAT_HIDDEN_BOTS } from './config.js';
 import { state, loadBoards, saveBoards, saveActiveBoardId, saveState } from './state.js';
 import { getEmoteEntry, splitCard, getAllEmotes, getEmotesBySource, scheduleEmoteRefresh, queueInitialEmoteRefresh, onEmoteRefresh, onEmoteStatus } from './emotes.js';
 import { loginWithTwitch, logout as authLogout, initAuth } from './auth.js';
@@ -226,7 +226,7 @@ export function createApp() {
     audioHasPrev: false,
     audioSongs: [],
     audioSongIndex: 0,
-    audioPlaylistOpen: localStorage.getItem(STORAGE_KEYS.audioPlaylistOpen) === 'true',
+    audioPlaylistOpen: localStorage.getItem(STORAGE_KEYS.audioPlaylistOpen) !== 'false',
 
     // ── Undo/Redo (session only — not persisted) ──
     history: [],

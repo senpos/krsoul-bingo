@@ -13,27 +13,13 @@ export const STORAGE_KEYS = {
   audioPlaylistOpen: 'krsoul-bingo-audio-playlist-open-v1'
 };
 
-export const V2_KEYS = {
-  cards: 'krsoul-bingo-cards-v2',
-  size: 'krsoul-bingo-size-v2',
-  marks: 'krsoul-bingo-marks-v2',
-  theme: 'krsoul-bingo-theme-v2',
-  twitchUserId: 'krsoul-bingo-twitch-user-id-v1'
-};
-
 export const DEFAULT_TWITCH_USER_IDS = ['55947428'];
-export const DEFAULT_TWITCH_USER_ID = '55947428';
 export const DEFAULT_TWITCH_CHANNEL_NAMES = { '55947428': 'krsoul' };
 export const EMOTE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 export const EMOTE_CACHE_FAIL_TTL_MS = 10 * 60 * 1000;
 
 export const DEFAULT_CHAT_HIDDEN_BOTS = [
   'streamelements', 'streamlabs', 'moobot', 'ankhbot', 'nightbot'
-];
-
-export const KPOP_IDOL_NAMES = [
-  'TWICE', 'aespa', 'NMIXX', 'NewJeans', 'IVE',
-  'LE SSERAFIM', 'BLACKPINK', 'RED VELVET', 'G-IDLE', 'BTS'
 ];
 
 export function generateBoardId() {

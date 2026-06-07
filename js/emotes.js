@@ -17,7 +17,7 @@ export function setEmoteStatus(message, kind = '') {
   el.dataset.state = kind;
 }
 
-export function looksLikeEmoji(ch) {
+function looksLikeEmoji(ch) {
   return ch && (/[\u2600-\u27BF]/.test(ch) || /\p{Extended_Pictographic}/u.test(ch));
 }
 
@@ -62,7 +62,7 @@ function normalizeFfzEmoteArray(emoticons, scope, priority, channelId) {
   return out;
 }
 
-export function normalizeTwitchEmoteArray(entries, scope, priority, channelId) {
+function normalizeTwitchEmoteArray(entries, scope, priority, channelId) {
   const out = [];
   for (const entry of entries || []) {
     const id = String(entry?.id || '').trim();
@@ -269,7 +269,7 @@ function rebuildEmoteLookup() {
   state.emotes.lookup = mergeEmoteMaps(allRecords);
 }
 
-export function refreshEmotes() {
+function refreshEmotes() {
   const token = ++emoteRefreshToken;
   const channelIds = state.twitchUserIds.filter(Boolean);
   const sources = [
@@ -360,101 +360,8 @@ export function queueInitialEmoteRefresh() {
   setTimeout(() => refreshEmotes(), 0);
 }
 
-// ── Emote Images ─────────────────────────────────
-
-function getEmoteAssetStatus(url) {
-  return state.emotes.assetCache.get(url)?.status || 'idle';
-}
-
-function markEmoteAssetStatus(url, status) {
-  const cached = state.emotes.assetCache.get(url);
-  if (cached && cached.status === 'loaded' && status !== 'loaded') return;
-  state.emotes.assetCache.set(url, { status });
-}
-
 export function getEmoteEntry(token) {
   return state.emotes.lookup.get(String(token || '').trim()) || null;
-}
-
-export function createEmoteImage(emote) {
-  const slot = document.createElement('span');
-  slot.className = 'emote-slot';
-
-  const placeholder = document.createElement('span');
-  placeholder.className = 'emote-placeholder';
-  placeholder.textContent = '\u231B';
-
-  const img = document.createElement('img');
-  img.className = 'emote';
-  img.alt = emote.code;
-  img.title = `${emote.code}${emote.provider ? ` (${emote.provider.toUpperCase()})` : ''}`;
-  img.decoding = 'async';
-  img.loading = 'eager';
-  img.referrerPolicy = 'no-referrer';
-  img.dataset.src = emote.url;
-
-  img.addEventListener('load', () => {
-    markEmoteAssetStatus(emote.url, 'loaded');
-    slot.classList.add('emote-ready');
-  }, { once: true });
-
-  img.addEventListener('error', () => {
-    markEmoteAssetStatus(emote.url, 'error');
-    slot.classList.remove('emote-ready');
-  }, { once: true });
-
-  slot.appendChild(placeholder);
-  slot.appendChild(img);
-  if (getEmoteAssetStatus(emote.url) === 'loaded') {
-    img.src = emote.url;
-    slot.classList.add('emote-ready');
-  } else {
-    scheduleEmoteImageLoad(img, emote.url);
-  }
-  return slot;
-}
-
-const emoteObserver = 'IntersectionObserver' in window
-  ? new IntersectionObserver(entries => {
-      for (const entry of entries) {
-        if (!entry.isIntersecting) continue;
-        const img = entry.target;
-        const url = img.dataset.src;
-        if (!url || img.src) {
-          emoteObserver.unobserve(img);
-          continue;
-        }
-        if (getEmoteAssetStatus(url) !== 'error') img.src = url;
-        emoteObserver.unobserve(img);
-      }
-    }, { rootMargin: '120px' })
-  : null;
-
-function scheduleEmoteImageLoad(img, url) {
-  const start = () => {
-    if (!img.isConnected || img.src || !url || getEmoteAssetStatus(url) === 'error') return;
-    img.src = url;
-  };
-
-  if (emoteObserver) {
-    emoteObserver.observe(img);
-    return;
-  }
-
-  requestAnimationFrame(start);
-}
-
-export function appendRichText(target, text) {
-  const parts = String(text || '').split(/(\s+)/);
-  for (const part of parts) {
-    if (!part) continue;
-    if (/^\s+$/.test(part)) {
-      target.appendChild(document.createTextNode(part));
-      continue;
-    }
-    const emote = getEmoteEntry(part);
-    target.appendChild(emote ? createEmoteImage(emote) : document.createTextNode(part));
-  }
 }
 
 export function splitCard(line) {

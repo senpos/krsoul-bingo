@@ -86,11 +86,11 @@ html, body {
 
 .game-view {
   height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 1.2vh 16px;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  align-items: stretch;
+  padding: 0;
+  column-gap: 16px;
   position: relative;
   box-sizing: border-box;
 }
@@ -102,7 +102,9 @@ html, body {
 /* Container fills the game-view height */
 .container {
   width: 100%;
-  max-width: 1100px;
+  max-width: 1000px;
+  justify-self: center;
+  align-self: center;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -111,6 +113,10 @@ html, body {
 .game-view .container {
   flex: 1;
   min-height: 0;
+  padding: 1.2vh 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .editor-view {
@@ -184,7 +190,7 @@ html, body {
 .board-layout {
   display: grid;
   gap: 18px;
-  grid-template-columns: 150px 18px 1fr 18px 320px;
+  grid-template-columns: 150px 18px 1fr;
   grid-template-rows: 1fr auto;
   gap: 12px 0;
   flex: 1;
@@ -199,6 +205,7 @@ html, body {
   grid-row: 1;
   min-height: 0;
   overflow: hidden;
+  padding-left: 280px;
 }
 .controls { grid-column: 1 / -1; grid-row: 2; }
 .board-sidebar {
@@ -431,9 +438,9 @@ html, body {
   border-radius: 14px;
   padding: 6px;
   min-height: 0;
-  max-height: 100%;
-  grid-column: 5;
-  grid-row: 1;
+  height: calc(100dvh - 32px);
+  margin: 12px 12px 12px 0;
+  box-sizing: border-box;
   overflow: hidden;
   position: relative;
   z-index: 9998;
@@ -772,14 +779,6 @@ html, body {
   margin-top: 4px;
 }
 
-@keyframes loginHighlight {
-  0%, 100% { border-color: rgba(255,255,255,0.08); box-shadow: none; }
-  50% { border-color: var(--cyan); box-shadow: 0 0 20px rgba(0,212,255,0.15); }
-}
-.editor-section.login-section-highlight {
-  animation: loginHighlight 1.5s ease-in-out 3;
-  border-radius: 12px;
-}
 .chat-status-dot {
   width: 6px;
   height: 6px;
@@ -795,6 +794,9 @@ html, body {
 .chat-message-count {
   font-size: 9px;
   color: rgba(255,255,255,0.3);
+}
+.chat-status-text {
+  color: inherit;
 }
 
 /* ── Audio Theme Bar ── */
@@ -812,7 +814,6 @@ html, body {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   min-width: 260px;
-  max-width: 480px;
 }
 
 .athm-btn {
@@ -894,12 +895,6 @@ html, body {
   z-index: 7;
   opacity: 0;
   transition: opacity 0.3s ease;
-}
-
-/* ── 1. Default (dim) ── */
-.cell {
-  opacity: 0.85;
-  border-color: rgba(150, 150, 150, 0.4);
 }
 
 /* ── 2. Hover (plain cell only — not marked, not bingo, not free) ── */
@@ -1105,34 +1100,6 @@ html, body {
 [data-size="10"] .cell-icon { margin-bottom: 3px; }
 [data-size="10"] .cell-icon > span { width: clamp(16px, 3.5vw, 22px); height: clamp(16px, 3.5vw, 22px); font-size: clamp(9px, 2.2vw, 15px); }
 [data-size="10"] .cell-icon img.emote { width: clamp(16px, 3.5vw, 22px); height: clamp(16px, 3.5vw, 22px); }
-.emote-slot {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5em;
-  height: 1.5em;
-  position: relative;
-  vertical-align: text-bottom;
-}
-.emote-slot .emote-placeholder {
-  display: inline-block;
-  font-size: 1em;
-  line-height: 1;
-}
-.emote-slot img.emote {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-.emote-slot.emote-ready img.emote {
-  opacity: 1;
-}
-.emote-slot.emote-ready .emote-placeholder {
-  opacity: 0;
-}
 
 /* ── Controls ── */
 .controls {
@@ -1170,8 +1137,8 @@ html, body {
 }
 
 @media (max-width: 720px) {
-  .game-view { padding: 1vh 10px; }
-  .container { max-width: 100%; }
+  .game-view { grid-template-columns: 1fr; padding: 1vh 10px; }
+  .container { max-width: 100%; justify-self: stretch; align-self: stretch; }
   .badge { padding: 4px 12px; font-size: 10px; letter-spacing: 2px; }
   .title { font-size: clamp(24px, 6vw, 36px); letter-spacing: 4px; }
   .subtitle { font-size: 10px; letter-spacing: 3px; }
@@ -1199,7 +1166,6 @@ html, body {
   .editor-view { padding: 24px 12px 50px; }
   .editor-panel { padding: 18px; }
   .emote-controls { grid-template-columns: 1fr; }
-  .auth-controls { justify-content: flex-start; }
   .twitch-user-card { flex-direction: column; gap: 10px; padding: 12px; }
   .twitch-user-info { align-items: center; }
   .twitch-user-name { font-size: 13px; }
@@ -1213,7 +1179,6 @@ html, body {
   .editor-section { padding-top: 14px; margin-top: 14px; }
   .editor-section-head { flex-direction: column; gap: 4px; margin-bottom: 10px; }
   .editor-section-title { font-size: 14px; }
-  .share-btn { padding: 12px 16px; font-size: 13px; }
   .channel-id { max-width: 140px; font-size: 10px; }
 }
 
@@ -1223,30 +1188,7 @@ html, body {
   border-radius: 20px; padding: 24px; box-shadow: 0 0 40px rgba(0,0,0,0.5);
   backdrop-filter: blur(12px); transition: border-color 0.6s ease;
 }
-.editor-head {
-  display: flex; align-items: end; justify-content: space-between; gap: 16px;
-  flex-wrap: wrap; margin-bottom: 16px;
-}
-.editor-title { font-family: 'Black Han Sans', sans-serif; letter-spacing: 2px; font-size: 20px; color: #fff; }
-.editor-note { font-size: 12px; color: var(--dim); margin-top: 4px; transition: color 0.6s; }
-.editor-controls { display: flex; align-items: center; gap: 12px; }
-.editor-controls label { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--dim); transition: color 0.6s; }
-.board-size-select {
-  appearance: none; background: rgba(0,0,0,0.5); color: #fff;
-  border: 1px solid var(--border); border-radius: 12px; padding: 8px 16px; font: inherit; font-size: 13px; cursor: pointer;
-  transition: border-color 0.6s;
-}
-.board-size-select:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,212,255,0.3); }
-.board-size-input {
-  width: 64px; appearance: none;
-  background: rgba(0,0,0,0.5); color: #fff;
-  border: 1px solid var(--border); border-radius: 12px;
-  padding: 8px 10px; font: inherit; font-size: 13px; text-align: center;
-  transition: border-color 0.6s;
-}
-.board-size-input::-webkit-inner-spin-button,
-.board-size-input::-webkit-outer-spin-button { opacity: 1; }
-.board-size-input:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,212,255,0.3); }
+
 
 /* ── Editor Sections ── */
 .editor-section {
@@ -1418,37 +1360,6 @@ html, body {
   opacity: 0.8;
 }
 
-/* ── Share Button ── */
-.share-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 14px 24px;
-  font-size: 14px;
-  font-weight: 700;
-  border-radius: 14px;
-  background: linear-gradient(135deg, rgba(160,32,255,0.2), rgba(0,212,255,0.2));
-  border: 2px solid var(--cyan);
-  color: var(--cyan);
-  cursor: pointer;
-  letter-spacing: 1px;
-  transition: all 0.3s ease;
-  font-family: inherit;
-}
-.share-btn:hover {
-  background: var(--cyan);
-  color: #000;
-  box-shadow: 0 0 30px var(--cyan);
-  transform: translateY(-2px);
-}
-.share-btn:active {
-  transform: scale(0.97);
-}
-.share-btn-icon {
-  font-size: 18px;
-}
 .emote-controls {
   display: flex;
   flex-direction: column;
@@ -1537,12 +1448,6 @@ html, body {
   transition: opacity 0.2s;
 }
 .channel-add-btn:hover { opacity: 0.8; }
-.auth-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: flex-end;
-}
 .btn.twitch-login {
   border-color: var(--purple);
   color: #fff;
@@ -1561,86 +1466,8 @@ html, body {
   box-shadow: 0 0 20px var(--purple);
   transform: translateY(-2px);
 }
-.twitch-login-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-}
 .twitch-login-icon {
   font-size: 16px;
-}
-.twitch-help {
-  position: relative;
-}
-.twitch-help-btn {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 1px solid var(--dim);
-  background: transparent;
-  color: var(--dim);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-.twitch-help-btn:hover {
-  border-color: var(--cyan);
-  color: var(--cyan);
-  box-shadow: 0 0 8px var(--cyan);
-}
-.twitch-help-tooltip {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: 240px;
-  background: rgba(10, 0, 20, 0.95);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 16px;
-  font-size: 12px;
-  color: var(--text);
-  line-height: 1.5;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(10px);
-  z-index: 100;
-  pointer-events: none;
-  animation: tooltipIn 0.2s ease;
-}
-.twitch-help-tooltip p {
-  margin-bottom: 8px;
-  font-weight: 700;
-  color: var(--cyan);
-}
-.twitch-help-tooltip ul {
-  margin: 0;
-  padding-left: 16px;
-}
-.twitch-help-tooltip li {
-  margin-bottom: 4px;
-}
-.twitch-help-tooltip li:last-child {
-  margin-bottom: 0;
-}
-.twitch-help-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 6px solid transparent;
-  border-top-color: var(--border);
-}
-@keyframes tooltipIn {
-  from { opacity: 0; transform: translateX(-50%) translateY(4px); }
-  to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 .btn.twitch-logout {
   border-color: rgba(255,100,100,0.3);
@@ -1690,15 +1517,6 @@ html, body {
   font-weight: 700;
   color: #fff;
 }
-.emote-status {
-  margin-bottom: 14px;
-  font-size: 12px;
-  color: var(--dim);
-  transition: color 0.6s;
-  min-height: 1em;
-}
-.emote-status[data-state="error"] { color: #ff9dbb; }
-.emote-status[data-state="partial"] { color: var(--cyan); }
 .editor-textarea-wrapper {
   display: flex;
   border-radius: 12px;
@@ -1764,11 +1582,6 @@ html, body {
 @keyframes cFall {
   0% { transform: translateY(0) rotate(0deg) scaleX(1); opacity: 1 }
   100% { transform: translateY(110vh) rotate(800deg) scaleX(-1); opacity: 0 }
-}
-
-/* ── Auth Row ── */
-.auth-row {
-  display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;
 }
 
 /* ── Context Menu ── */
@@ -2295,20 +2108,12 @@ html, body {
   min-width: 0;
 }
 
-.playlist-item-artist {
-  color: rgba(255, 255, 255, 0.35);
-  font-size: 9px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 @media (max-width: 720px) {
   .audio-theme-bar {
     top: 8px;
     left: 8px;
     padding: 5px 8px;
     min-width: 200px;
-    max-width: 300px;
     gap: 4px;
     border-radius: 10px;
   }
@@ -2340,9 +2145,9 @@ html, body {
 
 /* ── Large screens (2K / 4K) ── */
 @media (min-width: 1920px) {
-  .game-view { padding: 2vh 24px; }
-  .container { max-width: 1300px; }
-  .board-layout { grid-template-columns: 150px 18px 1fr 18px 360px; }
+  .game-view { grid-template-columns: 1fr 400px; padding: 2vh 24px; }
+  .container { max-width: 1200px; }
+  .board-layout { grid-template-columns: 150px 18px 1fr; }
   .board-sidebar { width: 150px; }
   .title { font-size: clamp(28px, 5.5vw, 64px); }
   .athm-btn { padding: 5px 8px; }
@@ -2357,9 +2162,9 @@ html, body {
 }
 
 @media (min-width: 2560px) {
-  .game-view { padding: 2.5vh 32px; }
-  .container { max-width: 1500px; }
-  .board-layout { grid-template-columns: 170px 24px 1fr 24px 400px; }
+  .game-view { grid-template-columns: 1fr 440px; padding: 2.5vh 32px; }
+  .container { max-width: 1400px; }
+  .board-layout { grid-template-columns: 170px 24px 1fr; }
   .board-sidebar { width: 170px; }
   .title { font-size: clamp(28px, 5.5vw, 78px); }
   .athm-btn { padding: 6px 10px; }
