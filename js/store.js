@@ -196,6 +196,10 @@ export function createApp() {
     chatShowBadges: localStorage.getItem(STORAGE_KEYS.chatShowBadges) !== 'false',
     chatHiddenBotsExtra: JSON.parse(localStorage.getItem(STORAGE_KEYS.chatHiddenBots) || '[]'),
     chatHiddenBotInput: '',
+    chatTargetChannel: '',
+    chatTargetChannelInput: '',
+    chatTargetChannelId: null,
+    chatTargetChannelError: '',
     chatReconnectStatus: { attempts: 0, nextReconnectAt: null, stopped: false, reason: null },
     chatReconnectCountdown: '',
     _chatMessageIds: new Set(),
@@ -525,9 +529,21 @@ export function createApp() {
       }, 1000);
 
       initAuth(this).then(async () => {
+        if (this.isLoggedIn) {
+          try {
+            const saved = JSON.parse(localStorage.getItem('krsoul-bingo-chat-target-channel-v1'));
+            if (saved?.login && saved?.id) {
+              this.chatTargetChannel = saved.login;
+              this.chatTargetChannelId = saved.id;
+              chatManager.setTargetChannel(saved.login, saved.id);
+            }
+          } catch {}
+        }
+        this.chatTargetChannelInput = this.chatTargetChannel || state.twitch.user?.login || '';
         this.chatChannelName = chatManager.getTargetChannel();
         if (this.isLoggedIn) {
-          await refreshBadgesCache(state.twitch.user?.id);
+          const badgeChannelId = chatManager.targetChannelId || state.twitch.user?.id;
+          await refreshBadgesCache(badgeChannelId);
           this.loadChatHistory();
           try { chatManager.connect(); } catch (e) { console.warn(e); }
         }
@@ -1035,8 +1051,14 @@ export function createApp() {
       authLogout(this);
       this.chatMessages = [];
       this._chatMessageIds.clear();
+      this.chatTargetChannel = '';
+      this.chatTargetChannelInput = '';
+      this.chatTargetChannelId = null;
+      this.chatTargetChannelError = '';
+      chatManager.setTargetChannel(null, null);
+      try { localStorage.removeItem('krsoul-bingo-chat-target-channel-v1'); } catch {}
       this.chatChannelName = chatManager.getTargetChannel();
-      try { localStorage.removeItem(STORAGE_KEYS.chatHistory); } catch {}
+      try { localStorage.removeItem(this._chatHistoryKey()); } catch {}
       try { chatManager.reconnect(); } catch (e) { console.warn(e); }
     },
 
@@ -1082,13 +1104,17 @@ export function createApp() {
       requestAnimationFrame(frame);
     },
 
+    _chatHistoryKey() {
+      const channel = this.chatTargetChannel || state.twitch.user?.login || 'default';
+      return `krsoul-bingo-chat-history-v1-${channel}`;
+    },
+
     _persistChatHistory() {
       if (!this.isLoggedIn) return;
       const seen = new Set();
       const toSave = [];
       for (let i = this.chatMessages.length - 1; i >= 0 && toSave.length < 100; i--) {
         const m = this.chatMessages[i];
-        if (m.isRestored) continue;
         if (isKnownBot(m.username, this.chatHiddenBotsExtra)) continue;
         if (!m.messageId || seen.has(m.messageId)) continue;
         seen.add(m.messageId);
@@ -1105,24 +1131,21 @@ export function createApp() {
         });
       }
       try {
-        localStorage.setItem(STORAGE_KEYS.chatHistory, JSON.stringify(toSave));
+        localStorage.setItem(this._chatHistoryKey(), JSON.stringify(toSave));
       } catch {}
     },
 
     loadChatHistory() {
       if (!this.isLoggedIn) return;
       let raw;
-      try { raw = localStorage.getItem(STORAGE_KEYS.chatHistory); } catch { return; }
+      try { raw = localStorage.getItem(this._chatHistoryKey()); } catch { return; }
       if (!raw) return;
       let parsed;
       try { parsed = JSON.parse(raw); } catch { return; }
       if (!Array.isArray(parsed)) return;
-      const now = Date.now();
-      const maxAge = 24 * 60 * 60 * 1000;
       for (const m of parsed) {
         if (!m || !m.text) continue;
         if (m.messageId && this._chatMessageIds.has(m.messageId)) continue;
-        if (m.timestamp && (now - new Date(m.timestamp).getTime()) > maxAge) continue;
         const renderedText = m.fragments?.length
           ? renderMessageFromFragments(m.fragments, m.text)
           : m.text;
@@ -1143,10 +1166,56 @@ export function createApp() {
         });
         if (m.messageId) this._chatMessageIds.add(m.messageId);
       }
+      this.$nextTick(() => {
+        const el = this.$refs?.chatMessages;
+        if (el) el.scrollTop = el.scrollHeight;
+      });
     },
 
     manualReconnect() {
       try { chatManager.reconnect(); } catch (e) { console.warn(e); }
+    },
+
+    async changeChatChannel() {
+      this.chatTargetChannelError = '';
+      const val = this.chatTargetChannelInput.trim();
+      if (!val || val === state.twitch.user?.login) {
+        this.chatTargetChannel = '';
+        this.chatTargetChannelId = null;
+        chatManager.setTargetChannel(null, null);
+        this.chatTargetChannelInput = state.twitch.user?.login || '';
+        try { localStorage.removeItem('krsoul-bingo-chat-target-channel-v1'); } catch {}
+      } else {
+        try {
+          const res = await fetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(val)}`, {
+            headers: { 'Authorization': `Bearer ${this.twitchToken}`, 'Client-ID': TWITCH_CLIENT_ID }
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const body = await res.json();
+          const users = body?.data;
+          if (!users?.length) {
+            this.chatTargetChannelError = `Канал "${val}" не знайдено`;
+            return;
+          }
+          this.chatTargetChannel = users[0].login;
+          this.chatTargetChannelId = users[0].id;
+          chatManager.setTargetChannel(users[0].login, users[0].id);
+        } catch (err) {
+          this.chatTargetChannelError = `Помилка: ${err.message}`;
+          return;
+        }
+        try {
+          localStorage.setItem('krsoul-bingo-chat-target-channel-v1', JSON.stringify({
+            login: this.chatTargetChannel,
+            id: this.chatTargetChannelId,
+          }));
+        } catch {}
+      }
+      this._persistChatHistory();
+      this.chatMessages = [];
+      this._chatMessageIds.clear();
+      chatManager.reconnect();
+      this.loadChatHistory();
     },
 
     _updateReconnectCountdown() {

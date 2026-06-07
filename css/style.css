@@ -532,14 +532,77 @@ html, body {
 .chat-badge-label {
   white-space: nowrap;
 }
-.chat-channel {
+.chat-channel-wrap {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  min-width: 0;
+  max-width: 50%;
+  position: relative;
+}
+.chat-channel-prefix {
   font-size: 11px;
   color: var(--cyan);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.chat-channel-input {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 3px;
+  color: var(--text);
+  font-size: 10px;
   font-weight: 600;
+  padding: 2px 4px;
+  width: 68px;
+  outline: none;
+  transition: border-color 0.15s;
+  font-family: inherit;
+}
+.chat-channel-input:focus {
+  border-color: var(--cyan);
+}
+.chat-channel-input::placeholder {
+  color: rgba(255,255,255,0.25);
+  font-weight: 400;
+}
+.chat-channel-go {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 3px;
+  color: var(--cyan);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+.chat-channel-go:hover:not(:disabled) {
+  background: rgba(255,255,255,0.12);
+  border-color: var(--cyan);
+}
+.chat-channel-go:disabled,
+.chat-channel-input:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.chat-channel-error {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  font-size: 9px;
+  color: var(--red, #ff4444);
+  background: rgba(0,0,0,0.9);
+  padding: 2px 6px;
+  border-radius: 3px;
+  z-index: 10;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  margin-left: auto;
 }
 .chat-messages {
   flex: 1;

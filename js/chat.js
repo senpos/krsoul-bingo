@@ -190,10 +190,17 @@ class ChatManager {
     this._reconnectStopped = false;
     this._nextReconnectAt = null;
     this._reconnectStopReason = null;
+    this.targetChannelLogin = null;
+    this.targetChannelId = null;
+  }
+
+  setTargetChannel(login, id) {
+    this.targetChannelLogin = login || null;
+    this.targetChannelId = id || null;
   }
 
   getTargetChannel() {
-    return state.twitch.user?.login ?? null;
+    return this.targetChannelLogin || (state.twitch.user?.login ?? null);
   }
 
   connect() {
@@ -302,7 +309,7 @@ class ChatManager {
     const sessionAtCall = this._sessionId;
     if (!sessionAtCall || !state.twitch.token || !state.twitch.user?.id) return;
 
-    const channelId = state.twitch.user.id;
+    const broadcasterId = this.targetChannelId || state.twitch.user.id;
     const types = [
       { type: 'channel.chat.message', version: '1' },
       { type: 'channel.chat.message_delete', version: '1' },
@@ -316,8 +323,8 @@ class ChatManager {
         type,
         version,
         condition: {
-          broadcaster_user_id: channelId,
-          user_id: channelId,
+          broadcaster_user_id: broadcasterId,
+          user_id: state.twitch.user.id,
         },
         transport: { method: 'websocket', session_id: sessionAtCall },
       };

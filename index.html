@@ -117,7 +117,19 @@
             <span class="chat-fontsize-val" x-text="chatFontSize"></span>
             <button class="chat-fontsize-btn" @click="chatFontSize = Math.min(24, chatFontSize + 1)" title="Збільшити">+</button>
           </div>
-          <span class="chat-channel" x-text="chatChannelName ? '#' + chatChannelName : ''">#krsoul</span>
+          <div class="chat-channel-wrap">
+            <span class="chat-channel-prefix">#</span>
+            <input type="text" class="chat-channel-input"
+              x-model="chatTargetChannelInput"
+              placeholder="назва каналу"
+              @keydown.enter="changeChatChannel()"
+              :disabled="!isLoggedIn">
+            <button class="chat-channel-go" @click="changeChatChannel()"
+              :disabled="!isLoggedIn"
+              title="Підключитись до каналу">Go</button>
+            <span class="chat-channel-error" x-show="chatTargetChannelError"
+              x-text="chatTargetChannelError"></span>
+          </div>
         </div>
         <div class="chat-messages" x-ref="chatMessages">
           <template x-for="msg in visibleChatMessages" :key="msg.id">
