@@ -9,7 +9,8 @@ export const STORAGE_KEYS = {
   chatHistory: 'krsoul-bingo-chat-history-v1',
   chatHiddenBots: 'krsoul-bingo-chat-hidden-bots-v1',
   chatShowBots: 'krsoul-bingo-chat-show-bots-v1',
-  chatShowBadges: 'krsoul-bingo-chat-show-badges-v1'
+  chatShowBadges: 'krsoul-bingo-chat-show-badges-v1',
+  audioPlaylistOpen: 'krsoul-bingo-audio-playlist-open-v1'
 };
 
 export const V2_KEYS = {

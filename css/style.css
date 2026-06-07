@@ -2255,18 +2255,15 @@ html, body {
   border: none;
   color: rgba(255, 255, 255, 0.55);
   cursor: pointer;
-  font-size: 10px;
+  font-size: 11px;
   font-family: 'Courier New', 'Noto Sans KR', monospace;
-  padding: 3px 6px;
+  padding: 4px 6px;
   border-radius: 4px;
   text-align: left;
   display: flex;
   align-items: baseline;
   gap: 4px;
   transition: color 0.15s, background 0.15s;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .audio-playlist-item:hover {
@@ -2293,6 +2290,9 @@ html, body {
 .playlist-item-title {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .playlist-item-artist {
@@ -2335,7 +2335,7 @@ html, body {
   .audio-track-text { font-size: 10px; }
   .audio-btn-playlist { font-size: 12px; }
   .audio-playlist { max-height: 110px; }
-  .audio-playlist-item { font-size: 9px; }
+  .audio-playlist-item { font-size: 10px; }
 }
 
 /* ── Large screens (2K / 4K) ── */

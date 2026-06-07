@@ -226,7 +226,7 @@ export function createApp() {
     audioHasPrev: false,
     audioSongs: [],
     audioSongIndex: 0,
-    audioPlaylistOpen: false,
+    audioPlaylistOpen: localStorage.getItem(STORAGE_KEYS.audioPlaylistOpen) === 'true',
 
     // ── Undo/Redo (session only — not persisted) ──
     history: [],
@@ -483,6 +483,9 @@ export function createApp() {
       this.$watch('chatFontSize', val => {
         try { localStorage.setItem(STORAGE_KEYS.chatFontSize, String(val)); } catch {}
       });
+      this.$watch('audioPlaylistOpen', val => {
+        try { localStorage.setItem(STORAGE_KEYS.audioPlaylistOpen, val ? 'true' : 'false'); } catch {}
+      });
       this.resolveChannelNames();
       queueInitialEmoteRefresh();
 
@@ -560,7 +563,6 @@ export function createApp() {
 
       const unlockAudio = () => {
         audioManager.unlock();
-        document.removeEventListener('click', unlockAudio);
       };
       document.addEventListener('click', unlockAudio, { once: true });
 
