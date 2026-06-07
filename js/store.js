@@ -205,6 +205,11 @@ export function createApp() {
       return DEFAULT_CHAT_HIDDEN_BOTS.concat(this.chatHiddenBotsExtra.map(b => String(b || '').toLowerCase().trim()).filter(Boolean));
     },
 
+    get visibleChatMessages() {
+      if (this.chatShowBots) return this.chatMessages;
+      return this.chatMessages.filter(m => !isKnownBot(m.username, this.chatHiddenBotsExtra));
+    },
+
     // ── Audio / Music ──
     audioVolume: 0.25,
     audioMusicMuted: false,
@@ -481,7 +486,6 @@ export function createApp() {
       queueInitialEmoteRefresh();
 
       chatManager.onMessage = (msg) => {
-        if (!this.chatShowBots && isKnownBot(msg.username, this.chatHiddenBotsExtra)) return;
         if (msg.messageId && this._chatMessageIds.has(msg.messageId)) return;
         this.chatMessages.push(msg);
         if (msg.messageId) this._chatMessageIds.add(msg.messageId);
@@ -1105,7 +1109,6 @@ export function createApp() {
         if (!m || !m.text) continue;
         if (m.messageId && this._chatMessageIds.has(m.messageId)) continue;
         if (m.timestamp && (now - new Date(m.timestamp).getTime()) > maxAge) continue;
-        if (isKnownBot(m.username, this.chatHiddenBotsExtra)) continue;
         const renderedText = m.fragments?.length
           ? renderMessageFromFragments(m.fragments, m.text)
           : m.text;

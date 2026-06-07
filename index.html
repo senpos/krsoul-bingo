@@ -103,7 +103,7 @@
               <span class="chat-channel" x-text="chatChannelName ? '#' + chatChannelName : ''">#krsoul</span>
             </div>
             <div class="chat-messages" x-ref="chatMessages">
-              <template x-for="msg in chatMessages" :key="msg.id">
+              <template x-for="msg in visibleChatMessages" :key="msg.id">
                 <div class="chat-message" :class="{ restored: msg.isRestored }" :style="{ fontSize: chatFontSize + 'px' }">
                   <span class="chat-time" x-text="msg.timeStr"></span>
                   <span class="chat-name" :style="{ color: msg.color }" x-text="msg.displayName"></span>
@@ -123,7 +123,7 @@
               <span class="chat-status-text" x-text="chatStatusMsg || (chatConnected ? 'Онлайн' : 'Офлайн')"></span>
               <span class="chat-reconnect-countdown" x-show="chatReconnectStatus.attempts > 0 && chatReconnectCountdown" x-text="'спроба ' + chatReconnectStatus.attempts + '/10 · ' + chatReconnectCountdown"></span>
               <button class="chat-reconnect-btn" x-show="chatReconnectStatus.stopped" @click="manualReconnect()">🔄 Перепідключити</button>
-              <span class="chat-message-count" x-show="chatMessages.length > 0" x-text="chatMessages.length"></span>
+              <span class="chat-message-count" x-show="visibleChatMessages.length > 0" x-text="visibleChatMessages.length"></span>
               <button class="chat-bot-toggle" @click="toggleChatBots()"
                 :class="{ active: chatShowBots }"
                 :title="chatShowBots ? 'Боти показані — натисніть щоб приховати' : 'Боти приховані — натисніть щоб показати'">
@@ -290,14 +290,6 @@
               </div>
 
               <div class="chat-bot-controls">
-                <div class="chat-bot-row">
-                  <button class="chat-bot-toggle-btn"
-                    @click="toggleChatBots()"
-                    :class="{ active: chatShowBots }">
-                    <span x-text="chatShowBots ? 'Показувати ботів' : 'Приховати ботів'"></span>
-                  </button>
-                </div>
-
                 <div class="chat-bot-list">
                   <div class="chat-bot-list-label">Приховані боти:</div>
                   <template x-for="name in chatHiddenBots" :key="name">

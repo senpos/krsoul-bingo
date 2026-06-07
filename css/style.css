@@ -1295,31 +1295,6 @@ html, body {
   flex-direction: column;
   gap: 10px;
 }
-.chat-bot-row {
-  display: flex;
-  align-items: center;
-}
-.chat-bot-toggle-btn {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px;
-  padding: 6px 14px;
-  color: var(--dim);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.chat-bot-toggle-btn:hover {
-  background: rgba(255,255,255,0.08);
-  border-color: var(--cyan);
-  color: var(--cyan);
-}
-.chat-bot-toggle-btn.active {
-  background: rgba(0,212,255,0.08);
-  border-color: var(--cyan);
-  color: var(--cyan);
-}
 .chat-bot-list {
   display: flex;
   flex-wrap: wrap;
