@@ -610,12 +610,25 @@ html, body {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 12px;
   line-height: 1;
-  padding: 2px;
+  padding: 3px;
   border-radius: 4px;
-  opacity: 0.4;
-  transition: opacity 0.15s;
+  color: rgba(255,255,255,0.35);
+  transition: color 0.15s, background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.chat-bot-toggle:hover {
+  color: rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.06);
+}
+.chat-bot-toggle.active {
+  color: #4caf50;
+}
+.chat-bot-toggle.active:hover {
+  color: #66bb6a;
+  background: rgba(76,175,80,0.1);
 }
 .chat-login-prompt {
   display: flex;
@@ -716,12 +729,6 @@ html, body {
 .editor-section.login-section-highlight {
   animation: loginHighlight 1.5s ease-in-out 3;
   border-radius: 12px;
-}
-.chat-bot-toggle:hover {
-  opacity: 0.8;
-}
-.chat-bot-toggle.active {
-  opacity: 0.7;
 }
 .chat-status-dot {
   width: 6px;
