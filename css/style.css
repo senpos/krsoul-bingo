@@ -577,13 +577,12 @@ html, body {
   align-items: center;
   gap: 2px;
   margin-right: 3px;
-  vertical-align: middle;
-  line-height: 1;
+  vertical-align: baseline;
 }
 .chat-badge {
   width: 1.1em;
   height: 1.1em;
-  vertical-align: middle;
+  vertical-align: text-bottom;
   display: inline-block;
   image-rendering: auto;
 }
