@@ -24,10 +24,7 @@ export const EMOTE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 export const EMOTE_CACHE_FAIL_TTL_MS = 10 * 60 * 1000;
 
 export const DEFAULT_CHAT_HIDDEN_BOTS = [
-  'streamelements', 'nightbot', 'moobot', 'wizebot', 'fossabot',
-  'stay_hydrated_bot', 'soundalerts', 'catinabot', 'commanderroot',
-  'pretzelrocks', 'streamlabs', 'deepbot', 'ankhbot', 'honbot',
-  'medicbot', 'xankhbot', 'phantombot', 'botismo'
+  'streamelements', 'streamlabs', 'moobot', 'ankhbot', 'nightbot'
 ];
 
 export const KPOP_IDOL_NAMES = [
