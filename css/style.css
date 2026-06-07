@@ -611,13 +611,16 @@ html, body {
   border: none;
   cursor: pointer;
   line-height: 1;
-  padding: 3px;
+  padding: 3px 6px;
   border-radius: 4px;
   color: rgba(255,255,255,0.35);
   transition: color 0.15s, background 0.15s;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
 }
 .chat-bot-toggle:hover {
   color: rgba(255,255,255,0.6);
@@ -629,6 +632,9 @@ html, body {
 .chat-bot-toggle.active:hover {
   color: #66bb6a;
   background: rgba(76,175,80,0.1);
+}
+.chat-bot-label {
+  white-space: nowrap;
 }
 .chat-login-prompt {
   display: flex;
