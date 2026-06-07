@@ -7,6 +7,84 @@ const MAX_RECONNECT_ATTEMPTS = 10;
 const BASE_RECONNECT_DELAY_MS = 1000;
 const MAX_RECONNECT_DELAY_MS = 60000;
 
+let globalBadgesCache = null;
+let channelBadgesCache = null;
+let badgesCacheTimestamp = 0;
+const BADGES_CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+async function fetchGlobalBadges() {
+  if (!state.twitch.token) return null;
+  try {
+    const res = await fetch('https://api.twitch.tv/helix/chat/badges/global', {
+      headers: {
+        'Authorization': `Bearer ${state.twitch.token}`,
+        'Client-ID': TWITCH_CLIENT_ID,
+      },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const badges = {};
+    for (const set of data.data || []) {
+      for (const version of set.versions || []) {
+        badges[`${set.set_id}/${version.id}`] = version.image_url_1x;
+      }
+    }
+    return badges;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchChannelBadges(channelId) {
+  if (!state.twitch.token || !channelId) return null;
+  try {
+    const res = await fetch(`https://api.twitch.tv/helix/chat/badges?broadcaster_id=${channelId}`, {
+      headers: {
+        'Authorization': `Bearer ${state.twitch.token}`,
+        'Client-ID': TWITCH_CLIENT_ID,
+      },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const badges = {};
+    for (const set of data.data || []) {
+      for (const version of set.versions || []) {
+        badges[`${set.set_id}/${version.id}`] = version.image_url_1x;
+      }
+    }
+    return badges;
+  } catch {
+    return null;
+  }
+}
+
+export async function refreshBadgesCache(channelId) {
+  const now = Date.now();
+  if (now - badgesCacheTimestamp < BADGES_CACHE_TTL && globalBadgesCache) return;
+  
+  const [global, channel] = await Promise.all([
+    fetchGlobalBadges(),
+    fetchChannelBadges(channelId),
+  ]);
+  
+  globalBadgesCache = global || {};
+  channelBadgesCache = channel || {};
+  badgesCacheTimestamp = now;
+}
+
+export function getBadgeUrl(setId, versionId) {
+  const key = `${setId}/${versionId}`;
+  return channelBadgesCache?.[key] || globalBadgesCache?.[key] || null;
+}
+
+export function resolveBadgeUrls(badges) {
+  if (!badges || !Array.isArray(badges)) return [];
+  return badges.map(b => {
+    const url = getBadgeUrl(b.setId, b.id);
+    return url ? { setId: b.setId, id: b.id, url } : null;
+  }).filter(Boolean);
+}
+
 function pad2(n) { return String(n).padStart(2, '0'); }
 
 export function formatChatTime(iso) {
@@ -299,11 +377,10 @@ class ChatManager {
     if (!event) return;
     const message = event.message || {};
     const fragments = message.fragments || [];
-    const badges = (event.badges || []).map(b => ({
-      id: b.id,
-      setId: b.set_id,
-      url: `https://static-cdn.jtvnw.net/badges/v1/${b.id}/1`
-    }));
+    const badges = (event.badges || []).map(b => {
+      const url = getBadgeUrl(b.set_id, b.id);
+      return url ? { setId: b.set_id, id: b.id, url } : null;
+    }).filter(Boolean);
     this.onMessage?.({
       id: ++this._msgId,
       messageId: event.message_id,

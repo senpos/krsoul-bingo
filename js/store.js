@@ -4,7 +4,7 @@ import { getEmoteEntry, splitCard, getAllEmotes, getEmotesBySource, scheduleEmot
 import { loginWithTwitch, logout as authLogout, initAuth } from './auth.js';
 import { completedLineKeys, drawBingoLines, launchConfetti, applyParticleTheme, bingoCellBurst, setBingoMode } from './game.js';
 import { audioManager } from './audio.js';
-import { chatManager, isKnownBot, renderMessageFromFragments, formatChatTime } from './chat.js';
+import { chatManager, isKnownBot, renderMessageFromFragments, formatChatTime, refreshBadgesCache, resolveBadgeUrls } from './chat.js';
 
 export function createApp() {
   return {
@@ -522,9 +522,10 @@ export function createApp() {
         this._updateReconnectCountdown();
       }, 1000);
 
-      initAuth(this).then(() => {
+      initAuth(this).then(async () => {
         this.chatChannelName = chatManager.getTargetChannel();
         if (this.isLoggedIn) {
+          await refreshBadgesCache(state.twitch.user?.id);
           this.loadChatHistory();
           try { chatManager.connect(); } catch (e) { console.warn(e); }
         }
@@ -1130,7 +1131,7 @@ export function createApp() {
           rawColor: m.rawColor || null,
           text: m.text,
           fragments: m.fragments || [],
-          badges: m.badges || [],
+          badges: resolveBadgeUrls(m.badges || []),
           renderedText,
           timeStr: m.timestamp ? formatChatTime(m.timestamp) : '',
           timestamp: m.timestamp || '',

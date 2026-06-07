@@ -116,8 +116,8 @@
                   <span class="chat-time" x-text="msg.timeStr"></span>
                   <template x-if="chatShowBadges && msg.badges && msg.badges.length">
                     <span class="chat-badges">
-                      <template x-for="badge in msg.badges" :key="badge.id">
-                        <img class="chat-badge" :src="badge.url" :alt="badge.setId" loading="lazy">
+                      <template x-for="badge in msg.badges" :key="badge.setId + '/' + badge.id">
+                        <img class="chat-badge" :src="badge.url" :alt="badge.setId" loading="lazy" crossorigin="anonymous">
                       </template>
                     </span>
                   </template>
