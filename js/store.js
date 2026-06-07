@@ -167,8 +167,6 @@ export function createApp() {
     allowCelebrate: true,
     lastCompletedKeys: new Set(),
     toastVisible: false,
-    toastLabel: '',
-    toastCount: 0,
 
     // ── Context Menu ──
     ctxMenu: { show: false, x: 0, y: 0, cellIndex: -1 },
@@ -811,8 +809,6 @@ export function createApp() {
       newKeys.forEach(k => k.split(',').forEach(n => newIndices.add(Number(n))));
 
       if (newKeys.length > 0) {
-        this.toastCount = currentKeys.size;
-        this.toastLabel = this.toastCount === 1 ? 'Новий рядок!' : `${this.toastCount} рядків знайдено!`;
         this.toastVisible = true;
         clearTimeout(this._toastTimer);
         this._toastTimer = setTimeout(() => { this.toastVisible = false; }, 1200);
@@ -827,7 +823,6 @@ export function createApp() {
 
     hideToast() {
       this.toastVisible = false;
-      this.toastCount = 0;
     },
 
     saveToHistory() {

@@ -19,8 +19,6 @@
 <div x-data="app" x-init="init()" x-cloak>
   <div class="toast" id="toast" :class="{ show: toastVisible }" @click="hideToast()">
     <span class="toast-title">BINGO!</span>
-    <p class="toast-sub">Вітаємо! 🎉</p>
-    <p class="toast-count" x-text="toastLabel"></p>
   </div>
 
   <div class="app-wrapper">

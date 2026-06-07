@@ -63,7 +63,7 @@ export function drawBingoLines(keys) {
 
 export function launchConfetti() {
   const colors = ['#ff007f', '#00ffff', '#ffee00', '#5500ff', '#ffffff', '#ff0055'];
-  for (let i = 0; i < 70; i++) {
+  for (let i = 0; i < 140; i++) {
     setTimeout(() => {
       const c = document.createElement('div');
       c.className = 'confetti-piece';
@@ -112,7 +112,7 @@ export function bingoCellBurst(indices) {
   ctx.scale(dpr, dpr);
 
   const particles = [];
-  const PARTICLES_PER_CELL = 40;
+  const PARTICLES_PER_CELL = 80;
   const GRAVITY = 0.25;
   const FRICTION = 0.96;
 
