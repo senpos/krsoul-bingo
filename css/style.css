@@ -165,7 +165,7 @@ html, body {
 }
 
 /* ── Header ── */
-.header { flex-shrink: 0; text-align: center; margin-bottom: 1.2vh; }
+.header { flex-shrink: 0; text-align: center; margin-bottom: 1.2vh; padding-left: 360px; }
 .badge {
   display: inline-flex; align-items: center;
   background: linear-gradient(90deg, var(--pink), var(--purple), var(--cyan));
@@ -205,7 +205,7 @@ html, body {
   grid-row: 1;
   min-height: 0;
   overflow: hidden;
-  padding-left: 280px;
+  padding-left: 360px;
 }
 .controls { grid-column: 1 / -1; grid-row: 2; }
 .board-sidebar {
@@ -437,18 +437,16 @@ html, body {
   flex-direction: column;
   border-radius: 14px;
   padding: 6px;
-  min-height: 0;
-  height: calc(100dvh - 32px);
-  margin: 12px 12px 12px 0;
-  box-sizing: border-box;
-  overflow: hidden;
-  position: relative;
-  z-index: 9998;
   background: rgba(0, 0, 0, 0.78);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  position: relative;
+  z-index: 9998;
+  margin: 1.2vh 12px 1.2vh 0;
+  box-sizing: border-box;
 }
 .chat-header {
   display: flex;
@@ -1146,7 +1144,8 @@ html, body {
   .board-layout {
     display: flex; flex-direction: column; gap: 6px;
   }
-  .mid-section { flex-direction: column; gap: 6px; }
+  .header { padding-left: 0; }
+  .mid-section { flex-direction: column; gap: 6px; padding-left: 0; }
   .chat-panel { display: none; }
   .controls { grid-column: auto; grid-row: auto; }
   .board-sidebar { width: 100%; flex-direction: row; gap: 4px; overflow-x: auto; border: none; padding: 0; }
