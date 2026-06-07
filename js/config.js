@@ -6,7 +6,8 @@ export const STORAGE_KEYS = {
   twitchUserIds: 'krsoul-bingo-twitch-user-ids-v1',
   twitchChannelNames: 'krsoul-bingo-channel-names-v1',
   chatFontSize: 'krsoul-bingo-chat-font-size-v1',
-  chatHistory: 'krsoul-bingo-chat-history-v1'
+  chatHistory: 'krsoul-bingo-chat-history-v1',
+  chatHiddenBots: 'krsoul-bingo-chat-hidden-bots-v1'
 };
 
 export const V2_KEYS = {

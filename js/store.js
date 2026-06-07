@@ -195,7 +195,7 @@ export function createApp() {
     chatChannelName: '',
     chatFontSize: Number(localStorage.getItem(STORAGE_KEYS.chatFontSize)) || 12,
     chatShowBots: false,
-    chatHiddenBotsExtra: [],
+    chatHiddenBotsExtra: JSON.parse(localStorage.getItem(STORAGE_KEYS.chatHiddenBots) || '[]'),
     chatHiddenBotInput: '',
     chatReconnectStatus: { attempts: 0, nextReconnectAt: null, stopped: false, reason: null },
     chatReconnectCountdown: '',
@@ -1044,10 +1044,12 @@ export function createApp() {
       }
       this.chatHiddenBotsExtra.push(name);
       this.chatHiddenBotInput = '';
+      try { localStorage.setItem(STORAGE_KEYS.chatHiddenBots, JSON.stringify(this.chatHiddenBotsExtra)); } catch {}
     },
     removeChatHiddenBot(name) {
       const idx = this.chatHiddenBotsExtra.findIndex(b => String(b || '').toLowerCase().trim() === name);
       if (idx !== -1) this.chatHiddenBotsExtra.splice(idx, 1);
+      try { localStorage.setItem(STORAGE_KEYS.chatHiddenBots, JSON.stringify(this.chatHiddenBotsExtra)); } catch {}
     },
     toggleChatBots() {
       this.chatShowBots = !this.chatShowBots;
