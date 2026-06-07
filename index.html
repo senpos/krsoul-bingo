@@ -377,6 +377,10 @@
           </span>
         </div>
       </div>
+      <button class="audio-btn audio-btn-mode"
+        @click="toggleLoopMode()"
+        :title="audioLoopMode === 'playlist' ? 'Повторювати плейлист' : (audioLoopMode === 'song' ? 'Повторювати трек' : 'Випадковий трек')"
+        x-text="audioLoopMode === 'playlist' ? '&#x1F501;' : (audioLoopMode === 'song' ? '&#x1F502;' : '&#x1F500;')"></button>
       <button class="audio-btn audio-btn-playlist"
         @click="togglePlaylist()"
         :title="audioPlaylistOpen ? 'Сховати список' : 'Список треків'"

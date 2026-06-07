@@ -225,6 +225,7 @@ export function createApp() {
     audioSongs: [],
     audioSongIndex: 0,
     audioPlaylistOpen: localStorage.getItem(STORAGE_KEYS.audioPlaylistOpen) !== 'false',
+    audioLoopMode: 'playlist',
 
     // ── Undo/Redo (session only — not persisted) ──
     history: [],
@@ -544,6 +545,7 @@ export function createApp() {
         this.audioHasPrev = state.hasPrev;
         this.audioSongs = state.songs;
         this.audioSongIndex = state.currentSongIndex;
+        this.audioLoopMode = state.loopMode;
       });
 
       const pollProgress = () => {
@@ -555,6 +557,7 @@ export function createApp() {
         this.audioHasPrev = audioManager.hasPrev;
         this.audioSongs = audioManager.songs;
         this.audioSongIndex = audioManager.currentSongIndex;
+        this.audioLoopMode = audioManager.loopMode;
         this._raf = requestAnimationFrame(pollProgress);
       };
       this._raf = requestAnimationFrame(pollProgress);
@@ -937,6 +940,10 @@ export function createApp() {
 
     selectSong(index) {
       audioManager.selectSong(index);
+    },
+
+    toggleLoopMode() {
+      audioManager.toggleLoopMode();
     },
 
     // ── Context Menu ──

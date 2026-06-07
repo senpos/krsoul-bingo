@@ -1848,6 +1848,18 @@ html, body {
   color: var(--cyan);
 }
 
+.audio-btn-mode {
+  font-size: 13px;
+  padding: 2px 4px;
+  color: var(--dim);
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+.audio-btn-mode:hover {
+  opacity: 1;
+}
+
 .audio-btn-nav.disabled {
   opacity: 0.2;
   pointer-events: none;

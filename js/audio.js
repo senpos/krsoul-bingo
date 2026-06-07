@@ -89,6 +89,8 @@ class AudioManager {
     this._themeStates = {};
     this._playThemeVersion = 0;
     this._positionSaveTimer = null;
+
+    this._loopMode = 'playlist';
   }
 
   get currentTrack() {
@@ -130,7 +132,10 @@ class AudioManager {
   get hasNext() {
     if (!this._currentTheme) return false;
     const songs = PLAYLISTS[this._currentTheme]?.songs;
-    return songs ? this._currentSongIndex < songs.length - 1 : false;
+    if (!songs) return false;
+    if (this._loopMode === 'random') return songs.length > 1;
+    if (this._loopMode === 'playlist') return songs.length > 0;
+    return this._currentSongIndex < songs.length - 1;
   }
 
   get hasPrev() {
@@ -149,6 +154,11 @@ class AudioManager {
 
   get currentSongIndex() { return this._currentSongIndex; }
   get audioTheme() { return this._currentTheme; }
+  get loopMode() { return this._loopMode; }
+
+  _shouldLoop() {
+    return this._loopMode === 'song';
+  }
 
   _findSongById(id) {
     for (const playlist of Object.values(PLAYLISTS)) {
@@ -169,6 +179,7 @@ class AudioManager {
         musicMuted: this._musicMuted,
         fxVolume: this._fxVolume,
         sfxMuted: this._sfxMuted,
+        loopMode: this._loopMode,
       }));
     } catch {}
   }
@@ -185,6 +196,7 @@ class AudioManager {
       if (state.musicMuted !== undefined) this._musicMuted = !!state.musicMuted;
       if (state.fxVolume !== undefined) this._fxVolume = state.fxVolume;
       if (state.sfxMuted !== undefined) this._sfxMuted = !!state.sfxMuted;
+      if (state.loopMode === 'playlist' || state.loopMode === 'song' || state.loopMode === 'random') this._loopMode = state.loopMode;
     } catch {}
   }
 
@@ -345,12 +357,18 @@ class AudioManager {
 
     const source = this._ctx.createBufferSource();
     source.buffer = buffer;
-    source.loop = true;
 
     const gain = this._ctx.createGain();
     gain.gain.value = 1;
     source.connect(gain);
     gain.connect(this._musicGain);
+
+    if (this._shouldLoop()) {
+      source.loop = true;
+    } else {
+      source.loop = false;
+      this._attachEndedHandler(source);
+    }
 
     const pos = this._trackPositions[songId] || 0;
     source.start(0, pos);
@@ -447,7 +465,6 @@ class AudioManager {
 
       const newSource = ctx.createBufferSource();
       newSource.buffer = buffer;
-      newSource.loop = true;
 
       const newGain = ctx.createGain();
       newGain.gain.value = 0;
@@ -459,6 +476,13 @@ class AudioManager {
       newGain.gain.linearRampToValueAtTime(1, now + 1);
       oldGain.gain.setValueAtTime(oldGain.gain.value, now);
       oldGain.gain.linearRampToValueAtTime(0, now + 1);
+
+      if (this._shouldLoop()) {
+        newSource.loop = true;
+      } else {
+        newSource.loop = false;
+        this._attachEndedHandler(newSource);
+      }
 
       newSource.start(0, pos);
 
@@ -486,10 +510,20 @@ class AudioManager {
   }
 
   async nextTrack() {
-    if (!this.hasNext) return;
     const songs = PLAYLISTS[this._currentTheme]?.songs;
     if (!songs) return;
-    this._currentSongIndex++;
+    if (this._loopMode === 'random') {
+      if (songs.length <= 1) return;
+      let newIdx;
+      do { newIdx = Math.floor(Math.random() * songs.length); }
+      while (newIdx === this._currentSongIndex);
+      this._currentSongIndex = newIdx;
+    } else if (this._loopMode === 'playlist') {
+      this._currentSongIndex = (this._currentSongIndex + 1) % songs.length;
+    } else {
+      if (!this.hasNext) return;
+      this._currentSongIndex++;
+    }
     this._currentSongId = null;
     const song = songs[this._currentSongIndex];
     if (song) {
@@ -554,6 +588,31 @@ class AudioManager {
     this._currentGain = null;
     this._crossfading = false;
     this._stopPositionSaving();
+  }
+
+  _attachEndedHandler(source) {
+    if (source._loopHandler) return;
+    const handler = () => {
+      if (this._currentSource === source) this.nextTrack();
+    };
+    source._loopHandler = handler;
+    source.addEventListener('ended', handler);
+  }
+
+  toggleLoopMode() {
+    const modes = ['playlist', 'song', 'random'];
+    const idx = modes.indexOf(this._loopMode);
+    this._loopMode = modes[(idx + 1) % modes.length];
+    if (this._currentSource && this._currentBuffer) {
+      if (this._shouldLoop()) {
+        this._currentSource.loop = true;
+      } else {
+        this._currentSource.loop = false;
+        this._attachEndedHandler(this._currentSource);
+      }
+    }
+    this._saveState();
+    this._notify();
   }
 
   _gainFromVolume(v) {
@@ -663,6 +722,7 @@ class AudioManager {
         duration: this.duration,
         hasNext: this.hasNext,
         hasPrev: this.hasPrev,
+        loopMode: this._loopMode,
         audioTheme: this._currentTheme,
         songs: this.songs,
         currentSongIndex: this._currentSongIndex,
