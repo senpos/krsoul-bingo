@@ -1340,7 +1340,6 @@ body {
 .chat-status-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; flex-shrink: 0; }
 .chat-status-dot.connected { background: #4caf50; box-shadow: 0 0 6px rgba(76, 175, 80, 0.5); }
 .chat-status-text { color: inherit; }
-.chat-message-count { font-size: 9px; color: rgba(255, 255, 255, 0.3); }
 
 .chat-reconnect-btn {
   background: rgba(255, 255, 255, 0.06);
@@ -1362,15 +1361,27 @@ body {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 2px 6px;
+  padding: 4px 6px;
   border-radius: 4px;
-  color: rgba(255, 255, 255, 0.35);
-  font-size: 9px;
-  font-weight: 600;
+  color: rgba(255, 255, 255, 0.25);
   transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 10px;
 }
 
-.chat-bot-toggle:hover, .chat-badge-toggle:hover { color: rgba(255, 255, 255, 0.6); background: rgba(255, 255, 255, 0.06); }
+.chat-bot-toggle { margin-left: auto; }
+
+.chat-toggle-separator {
+  width: 1px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 2px;
+}
+
+.chat-bot-toggle:hover, .chat-badge-toggle:hover { color: rgba(255, 255, 255, 0.5); background: rgba(255, 255, 255, 0.06); }
 .chat-bot-toggle.active { color: #4caf50; }
 .chat-badge-toggle.active { color: #ffd700; }
 

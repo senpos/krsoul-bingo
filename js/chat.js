@@ -344,7 +344,7 @@ class ChatManager {
           if (res.status === 409) {
             pending--;
             if (pending === 0 && !anyError) {
-              this._status(true, 'Онлайн');
+              this._status(true, 'Підключено');
             }
             return;
           }
