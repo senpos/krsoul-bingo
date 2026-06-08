@@ -1,104 +1,275 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🎮 KRSoul Bingo 2026</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Black+Han+Sans&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KRSoul Bingo 2026</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Black+Han+Sans&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body data-theme="twice">
 
-<div class="bg-grid"></div>
-<div id="tsparticles" class="particle-layer" aria-hidden="true"></div>
-<div class="orb orb-1"></div>
-<div class="orb orb-2"></div>
-<div class="orb orb-3"></div>
-<div class="theme-watermark">KRSoul</div>
+  <div class="bg-grid"></div>
+  <div id="tsparticles" class="particle-layer" aria-hidden="true"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="theme-watermark">KRSoul</div>
 
-<div x-data="app" x-init="init()" x-cloak>
-  <div class="toast" id="toast" :class="{ show: toastVisible }" @click="hideToast()">
-    <span class="toast-title">BINGO!</span>
-  </div>
+  <div x-data="app" x-init="init()" x-cloak>
+    <div class="toast" :class="{ show: toastVisible }" @click="hideToast()">
+      <span class="toast-title">BINGO!</span>
+    </div>
 
-  <div class="app-wrapper">
-    <div class="game-view">
-      <div class="container">
-        <div class="header">
-           <div class="badge">KRSoul ✦ BINGO 2026</div>
-           <h1 class="title">BINGO</h1>
-            <p class="subtitle">Ігрове поле</p>
+    <div class="app-wrapper">
+      <header class="app-header">
+        <div class="header-left">
+          <div class="badge">KRSoul BINGO 2026</div>
+          <h1 class="title">BINGO</h1>
         </div>
+        <div class="header-right">
+          <div class="theme-bar">
+            <template x-for="t in themes" :key="t.id">
+              <button @click="setTheme(t.id)" :class="{ 'theme-btn': true, active: theme === t.id }" :title="t.name">
+                <span class="theme-btn-icon" x-text="t.icon"></span>
+                <span class="theme-btn-name" x-text="t.name"></span>
+              </button>
+            </template>
+          </div>
+          <button class="chat-toggle-btn" @click="chatPanelOpen = !chatPanelOpen" :class="{ active: chatPanelOpen }"
+            title="Показати/сховати чат">
+            <span>CHAT</span>
+          </button>
+        </div>
+      </header>
 
-        <div class="board-layout">
-          <div class="mid-section">
-            <div class="board-sidebar">
-              <div class="sidebar-share-wrap">
-                <button class="sidebar-share" @click="copyShareUrl()">
-                  <span class="sidebar-share-icon">📋</span> Поділитися
+      <div class="game-view">
+        <aside class="left-col">
+          <div class="player-card">
+            <div class="player-header">
+              <span class="player-label">ПЛЕЄР</span>
+              <a x-show="audioCurrentTrack?.url" :href="audioCurrentTrack?.url" target="_blank" rel="noopener"
+                class="player-yt-link" title="Відкрити на YouTube">YT</a>
+            </div>
+
+            <div class="player-video">
+              <template x-if="!audioMounted">
+                <button class="player-start-btn" @click="mountPlayer()">
+                  <img x-show="audioCurrentTrack?.videoId"
+                    :src="'https://i.ytimg.com/vi/' + audioCurrentTrack?.videoId + '/mqdefault.jpg'" class="player-thumb"
+                    alt="">
+                  <div class="player-start-overlay">
+                    <div class="player-play-icon">&#9654;</div>
+                  </div>
                 </button>
-                <div class="share-toast" :class="{ show: shareCopied }">
-                  <span>Посилання скопійовано!</span>
+              </template>
+              <div x-show="audioMounted" id="ytPlayerContainer" class="player-yt-frame"
+                :style="audioMounted ? '' : 'display:none'"></div>
+            </div>
+
+            <div class="player-track-info">
+              <div class="player-track-title" x-text="audioCurrentTrack?.title || '—'"></div>
+              <div class="player-track-artist" x-text="audioCurrentTrack?.artist || ''"></div>
+            </div>
+
+            <div class="player-controls">
+              <button class="player-btn" @click="prevTrack()" :disabled="!audioHasPrev">&#9664;</button>
+              <button class="player-btn player-btn-play" @click="togglePlay()"
+                x-text="audioPlaying ? '&#x23F8;' : '&#x25B6;'"></button>
+              <button class="player-btn" @click="nextTrack()" :disabled="!audioHasNext">&#9654;</button>
+              <button class="player-btn player-btn-mode" @click="toggleLoopMode()"
+                x-text="audioLoopMode === 'playlist' ? '&#x1F501;' : (audioLoopMode === 'song' ? '&#x1F502;' : '&#x1F500;')"
+                :title="audioLoopMode"></button>
+            </div>
+
+            <div class="player-volume">
+              <span class="player-vol-label">Гучність</span>
+              <input type="range" class="player-vol-slider" min="0" max="100" :value="audioVolume"
+                @input="setVolume(Number($event.target.value))">
+              <span class="player-vol-val" x-text="Math.round(audioVolume)"></span>
+            </div>
+
+            <div class="player-sfx-row">
+              <span class="player-sfx-label">Ефекти</span>
+              <button class="player-sfx-btn" @click="toggleSfx()"
+                :class="{ active: audioSfxEnabled }"
+                x-text="audioSfxEnabled ? 'ON' : 'OFF'"></button>
+            </div>
+
+            <div class="player-playlist-toggle" @click="audioPlaylistOpen = !audioPlaylistOpen">
+              <span>Плейлист</span>
+              <span class="player-playlist-arrow" :class="{ open: audioPlaylistOpen }">&#9660;</span>
+            </div>
+
+            <div x-show="audioPlaylistOpen" class="player-playlist">
+              <template x-for="(song, i) in audioSongs" :key="song.id">
+                <button class="player-playlist-item" @click="selectSong(i)" :class="{ current: i === audioSongIndex }">
+                  <span class="pli-idx" x-text="i === audioSongIndex ? '&#9654;' : (i + 1)"></span>
+                  <span class="pli-title" x-text="song.title"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <div class="editor-card">
+            <button class="editor-toggle" @click="editorOpen = !editorOpen">
+              <span>Налаштування</span>
+              <span class="editor-toggle-arrow" :class="{ open: editorOpen }">&#9660;</span>
+            </button>
+
+            <div x-show="editorOpen" class="editor-body">
+              <div class="editor-section">
+                <div class="editor-section-title">Картки</div>
+                <div class="editor-textarea-wrap">
+                  <div class="line-numbers">
+                    <template x-for="n in Math.max(cards.length, cellCount)" :key="n">
+                      <div class="line-number" :class="{ unused: n > cellCount }" x-text="n <= cellCount ? n : '\u2715'">
+                      </div>
+                    </template>
+                  </div>
+                  <textarea class="cards-input" spellcheck="false" x-model="cardsText" rows="12"></textarea>
                 </div>
               </div>
-              <button class="sidebar-add" @click="addBoard()">+ Нова дошка</button>
-              <div class="sidebar-divider"></div>
-              <div class="sidebar-boards" x-ref="boardScroll">
-                <template x-for="board in boards" :key="board.id">
-                  <div class="sidebar-tab"
-                    :class="{
-                      active: board.id === activeBoardId,
-                      'sidebar-tab-pending': pendingDeleteBoardId === board.id
-                    }"
-                    @click="pendingDeleteBoardId === board.id ? deleteBoard(board.id) : switchBoard(board.id)"
-                    @contextmenu.prevent="editBoardName(board.id)">
-                    <span class="sidebar-tab-name" x-text="pendingDeleteBoardId === board.id ? 'Видалити?' : board.name"></span>
-                    <button class="tab-close"
-                      @click.stop="deleteBoard(board.id)"
-                      :disabled="boards.length <= 1"
-                      x-show="boards.length > 1 && pendingDeleteBoardId !== board.id">&times;</button>
+
+              <div class="editor-section" id="twitchLoginSection">
+                <div class="editor-section-title">Twitch</div>
+                <template x-if="!isLoggedIn">
+                  <div class="twitch-login-box">
+                    <p class="twitch-login-desc">Увійдіть, щоб читати чат та використовувати емоції</p>
+                    <button class="btn twitch-login" @click="login()">Увійти через Twitch</button>
                   </div>
                 </template>
-              </div>
-            </div>
-            <div class="grid-wrap">
-              <div class="bingo-grid" id="bingoGrid" :data-size="size" :style="{ gridTemplateColumns: `repeat(${size}, 1fr)`, gridTemplateRows: `repeat(${size}, minmax(0, 1fr))` }">
-                <template x-for="cell in cells" :key="cell.index">
-                  <div
-                    @click="toggleMark(cell.index)"
-                    @contextmenu.prevent="ctxOpen($event, cell.index)"
-                    :class="{
-                      'cell': true,
-                      'marked': cell.marked,
-                      'bingo-active': cell.bingoActive,
-                      'bingo-new': cell.bingoNew,
-                    }"
-                  >
-                        <span class="cell-icon">
-                        <img x-show="cell.emoteUrl"
-                          :src="cell.emoteUrl" :alt="cell.icon"
-                          class="emote" loading="lazy"
-                          @error="markEmoteError(cell.emoteUrl)">
-                        <span x-show="!cell.emoteUrl" x-text="cell.iconParts[0]?.text || '\u2726'"></span>
-                      </span>
-                     <span class="cell-text" x-text="cell.label"></span>
+                <template x-if="isLoggedIn">
+                  <div class="twitch-user-card">
+                    <span class="twitch-user-name" x-text="twitchUser?.display_name || twitchUser?.login"></span>
+                    <button class="btn twitch-logout" @click="logout()">Вийти</button>
                   </div>
                 </template>
               </div>
 
-              <svg id="bingoLines" class="bingo-lines-overlay" preserveAspectRatio="none"></svg>
+              <div class="editor-section">
+                <div class="editor-section-title">Канали</div>
+                <div class="channel-list">
+                  <template x-for="id in twitchUserIds" :key="id">
+                    <div class="channel-chip">
+                      <span class="channel-name" x-text="channelNameForId(id)"></span>
+                      <button class="channel-remove" @click="removeChannel(id)" x-show="!isDefaultChannel(id)">&times;</button>
+                    </div>
+                  </template>
+                  <div class="channel-add-row">
+                    <input type="text" class="channel-add-input" placeholder="ID або ім'я" x-model="channelInput"
+                      @keydown.enter="addChannel(channelInput); channelInput = ''">
+                    <button class="channel-add-btn" @click="addChannel(channelInput); channelInput = ''">+</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="editor-section">
+                <button class="emote-log-toggle" @click="emoteLogOpen = !emoteLogOpen">
+                  <span x-text="emoteLogOpen ? '\u25BC' : '\u25B6'"></span>
+                  <span>Провайдери емоцій</span>
+                  <span class="emote-log-summary" x-text="emoteSourcesSummary"></span>
+                </button>
+                <div x-show="emoteLogOpen" class="emote-log-body">
+                  <template x-for="src in emoteSourceStatusList" :key="src.label">
+                    <div class="emote-source-row" :class="'src-' + src.status">
+                      <span class="src-icon" x-text="src.icon"></span>
+                      <span class="src-label" x-text="src.label"></span>
+                      <span class="src-status" x-text="src.statusText"></span>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <div class="editor-section">
+                <div class="editor-section-title">Боти</div>
+                <div class="chat-bot-controls">
+                  <div class="chat-bot-list">
+                    <template x-for="name in chatHiddenBots" :key="name">
+                      <div class="chat-bot-chip">
+                        <span x-text="name"></span>
+                        <button class="chat-bot-remove" x-show="chatHiddenBotsExtra.includes(name)"
+                          @click="removeChatHiddenBot(name)">&times;</button>
+                      </div>
+                    </template>
+                  </div>
+                  <div class="chat-bot-add-row">
+                    <input type="text" class="chat-bot-add-input" placeholder="Ім'я бота" x-model="chatHiddenBotInput"
+                      @keydown.enter="addChatHiddenBot()">
+                    <button class="chat-bot-add-btn" @click="addChatHiddenBot()">+</button>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <div class="disclaimer">
+            <p>Вміст використовується в розважальних цілях. Авторські права на музику належать: <a
+                href="https://www.youtube.com/channel/UCO615czs48hYvhKdolnq_LQ" target="_blank"
+                rel="noopener">MasterJonald</a>, <a href="https://www.youtube.com/channel/UC3iCGU82DkLi2T4eYr-BiBg"
+                target="_blank" rel="noopener">Darnu-Pop</a>, <a
+                href="https://www.youtube.com/channel/UCWvrB8eZ18wB5o7QnzMAdcA" target="_blank" rel="noopener">정훈남JHN
+                STUDIO</a>.</p>
+          </div>
+        </aside>
+
+        <main class="center-col">
+          <div class="board-tabs">
+            <div class="board-tabs-scroll" x-ref="boardScroll">
+              <template x-for="board in boards" :key="board.id">
+                <div class="board-tab" :class="{
+                  active: board.id === activeBoardId,
+                  'board-tab-pending': pendingDeleteBoardId === board.id
+                }" @click="pendingDeleteBoardId === board.id ? deleteBoard(board.id) : switchBoard(board.id)"
+                  @contextmenu.prevent="editBoardName(board.id)">
+                  <span class="board-tab-name"
+                    x-text="pendingDeleteBoardId === board.id ? 'Видалити?' : board.name"></span>
+                  <button class="board-tab-close" @click.stop="deleteBoard(board.id)"
+                    x-show="boards.length > 1 && pendingDeleteBoardId !== board.id">&times;</button>
+                </div>
+              </template>
+            </div>
+            <button class="board-tab-add" @click="addBoard()" title="Нова дошка">+</button>
+            <button class="board-tab-share" @click="copyShareUrl()" title="Поділитися">
+              <span>📋</span>
+              <span class="share-toast" :class="{ show: shareCopied }">Скопійовано!</span>
+            </button>
+          </div>
+
+          <div class="grid-wrap">
+            <div class="bingo-grid" id="bingoGrid" :data-size="size"
+              :style="{ gridTemplateColumns: `repeat(${size}, 1fr)`, gridTemplateRows: `repeat(${size}, minmax(0, 1fr))` }">
+              <template x-for="cell in cells" :key="cell.index">
+                <div @click="toggleMark(cell.index)" @contextmenu.prevent="ctxOpen($event, cell.index)" :class="{
+                  'cell': true,
+                  'marked': cell.marked,
+                  'bingo-active': cell.bingoActive,
+                  'bingo-new': cell.bingoNew,
+                }">
+                  <span class="cell-icon">
+                    <img x-show="cell.emoteUrl" :src="cell.emoteUrl" :alt="cell.icon" class="emote" loading="lazy"
+                      @error="markEmoteError(cell.emoteUrl)">
+                    <span x-show="!cell.emoteUrl" x-text="cell.iconParts[0]?.text || '\u2726'"></span>
+                  </span>
+                  <span class="cell-text" x-text="cell.label"></span>
+                </div>
+              </template>
+            </div>
+            <svg id="bingoLines" class="bingo-lines-overlay" preserveAspectRatio="none"></svg>
           </div>
 
           <div class="controls">
             <div class="btn-group">
-              <button class="btn pink" @click="reset()">↺ Скинути</button>
-              <button class="btn cyan sm" @click="shuffle()">🔀 Перемішати</button>
-              <button class="btn cyan sm" @click="undo()" :disabled="!canUndo">↩ Назад</button>
-              <button class="btn cyan sm" @click="redo()" :disabled="!canRedo">↪ Вперед</button>
+              <button class="btn btn-reset" @click="reset()">Скинути</button>
+              <button class="btn btn-action" @click="shuffle()">Перемішати</button>
+              <button class="btn btn-action btn-sm" @click="undo()" :disabled="!canUndo">Назад</button>
+              <button class="btn btn-action btn-sm" @click="redo()" :disabled="!canRedo">Вперед</button>
             </div>
             <div class="score-pill" x-text="scoreText"></div>
-            <div class="sidebar-size">
+            <div class="size-select-wrap">
               <select class="size-select" @change="setSize(Number($el.value))">
                 <template x-for="s in [3,4,5,6,7,8,9,10]" :key="s">
                   <option :value="s" :selected="size === s" x-text="s + '\u00D7' + s"></option>
@@ -106,397 +277,112 @@
               </select>
             </div>
           </div>
-        </div>
-      </div>
+        </main>
 
-      <div class="chat-panel">
-        <div class="chat-header">
-          <span class="chat-title">ЧАТ</span>
-          <div class="chat-fontsize-wrap">
-            <button class="chat-fontsize-btn" @click="chatFontSize = Math.max(9, chatFontSize - 1)" title="Зменшити">−</button>
-            <span class="chat-fontsize-val" x-text="chatFontSize"></span>
-            <button class="chat-fontsize-btn" @click="chatFontSize = Math.min(24, chatFontSize + 1)" title="Збільшити">+</button>
-          </div>
-          <div class="chat-channel-wrap">
-            <span class="chat-channel-prefix">#</span>
-            <input type="text" class="chat-channel-input"
-              x-model="chatTargetChannelInput"
-              placeholder="назва каналу"
-              @keydown.enter="changeChatChannel()"
-              :disabled="!isLoggedIn">
-            <button class="chat-channel-go" @click="changeChatChannel()"
-              :disabled="!isLoggedIn"
-              title="Підключитись до каналу">Go</button>
-            <span class="chat-channel-error" x-show="chatTargetChannelError"
-              x-text="chatTargetChannelError"></span>
-          </div>
-        </div>
-        <div class="chat-messages" x-ref="chatMessages">
-          <template x-for="msg in visibleChatMessages" :key="msg.id">
-            <div class="chat-message" :class="{ restored: msg.isRestored }" :style="{ fontSize: chatFontSize + 'px' }">
-              <span class="chat-time" x-text="msg.timeStr"></span>
-              <template x-if="chatShowBadges && msg.badges && msg.badges.length">
-                <span class="chat-badges">
-                  <template x-for="badge in msg.badges" :key="badge.setId + '/' + badge.id">
-                    <img class="chat-badge" :src="badge.url" :alt="badge.setId" loading="lazy" crossorigin="anonymous">
-                  </template>
-                </span>
-              </template>
-              <span class="chat-name" :style="{ color: msg.color }" x-text="msg.displayName"></span>
-              <span class="chat-colon">:</span>
-              <span class="chat-text" x-html="msg.renderedText"></span>
-            </div>
-          </template>
-          <div class="chat-login-prompt" x-show="!chatConnected && !isLoggedIn">
-            <p>Увійдіть через Twitch, щоб читати чат</p>
-            <button class="chat-scroll-login-btn" @click="scrollToLogin()">
-              ↓ Налаштування входу
-            </button>
-          </div>
-        </div>
-        <div class="chat-footer">
-          <span class="chat-status-dot" :class="{ connected: chatConnected }"></span>
-          <span class="chat-status-text" x-text="chatStatusMsg || (chatConnected ? 'Онлайн' : 'Офлайн')"></span>
-          <span class="chat-reconnect-countdown" x-show="chatReconnectStatus.attempts > 0 && chatReconnectCountdown" x-text="'спроба ' + chatReconnectStatus.attempts + '/10 · ' + chatReconnectCountdown"></span>
-          <button class="chat-reconnect-btn" x-show="chatReconnectStatus.stopped" @click="manualReconnect()">🔄 Перепідключити</button>
-          <span class="chat-message-count" x-show="visibleChatMessages.length > 0" x-text="visibleChatMessages.length"></span>
-          <button class="chat-bot-toggle" @click="toggleChatBots()"
-            :class="{ active: chatShowBots }"
-            :title="chatShowBots ? 'Боти показані — натисніть щоб приховати' : 'Боти приховані — натисніть щоб показати'">
-            <svg x-show="!chatShowBots" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-              <line x1="1" y1="1" x2="23" y2="23"/>
-            </svg>
-            <svg x-show="chatShowBots" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-            <span class="chat-bot-label" x-text="chatShowBots ? 'Боти ON' : 'Боти OFF'"></span>
-          </button>
-          <button class="chat-badge-toggle" @click="toggleChatBadges()"
-            :class="{ active: chatShowBadges }"
-            :title="chatShowBadges ? 'Бейджі показані — натисніть щоб приховати' : 'Бейджі приховані — натисніть щоб показати'">
-            <svg x-show="!chatShowBadges" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-              <line x1="1" y1="1" x2="23" y2="23"/>
-            </svg>
-            <svg x-show="chatShowBadges" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-            <span class="chat-badge-label" x-text="chatShowBadges ? 'Бейджі ON' : 'Бейджі OFF'"></span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="editor-view" id="editorSection">
-      <div class="container">
-        <div class="editor-panel">
-
-          <!-- ═══ Section: Cards ═══ -->
-          <div class="editor-section">
-            <div class="editor-section-head">
-              <div class="editor-section-title">📝 Cards</div>
-            </div>
-
-            <div class="editor-textarea-wrapper">
-              <div class="line-numbers">
-                <template x-for="n in Math.max(cards.length, cellCount)" :key="n">
-                  <div class="line-number" :class="{ unused: n > cellCount }" x-text="n <= cellCount ? n : '\u2715'"></div>
-                </template>
+        <aside class="right-col" :class="{ open: chatPanelOpen }">
+          <div class="chat-panel">
+            <div class="chat-header">
+              <span class="chat-title">ЧАТ</span>
+              <div class="chat-fontsize-wrap">
+                <button class="chat-fontsize-btn" @click="chatFontSize = Math.max(9, chatFontSize - 1)">−</button>
+                <span class="chat-fontsize-val" x-text="chatFontSize"></span>
+                <button class="chat-fontsize-btn" @click="chatFontSize = Math.min(24, chatFontSize + 1)">+</button>
               </div>
-              <textarea id="cardsInput" class="cards-input" spellcheck="false"
-                x-model="cardsText"
-                rows="20"></textarea>
-            </div>
-          </div>
-
-          <!-- ═══ Section: Twitch Login ═══ -->
-          <div class="editor-section" id="twitchLoginSection">
-            <div class="editor-section-head">
-              <div class="editor-section-title">🔐 Вхід через Twitch</div>
-            </div>
-
-            <template x-if="!isLoggedIn">
-              <div class="twitch-login-section">
-                <div class="twitch-login-benefits">
-                  <div class="twitch-benefit-title">Після входу ви зможете:</div>
-                  <ul class="twitch-benefit-list">
-                    <li>Читати чат свого каналу в реальному часі 🗨️</li>
-                    <li>Використовувати власні емоції Twitch на дошці 😀</li>
-                    <li>Додавати канали за нікнеймом замість ID 🔍</li>
-
-                  </ul>
-                </div>
-
-                <div class="twitch-login-scopes">
-                  <div class="twitch-scope-title">Запитуємо дозволи:</div>
-                  <ul class="twitch-scope-list">
-                    <li><code>user:read:chat</code> — читання повідомлень чату <span class="twitch-scope-detail">(тільки читання, ми нічого не відправляємо)</span></li>
-                  </ul>
-                </div>
-
-                <div class="twitch-login-privacy">
-                  Токен зберігається лише у вашому браузері. Ми не бачимо ваш пароль.
-                  Немає сервера — все працює локально. 🔒
-                </div>
-
-                <div class="twitch-login-action">
-                  <button class="btn twitch-login" @click="login()">
-                    <span class="twitch-login-icon">🔗</span> Увійти через Twitch
-                  </button>
-                </div>
+              <div class="chat-channel-wrap">
+                <span class="chat-channel-prefix">#</span>
+                <input type="text" class="chat-channel-input" x-model="chatTargetChannelInput" placeholder="канал"
+                  @keydown.enter="changeChatChannel()" :disabled="!isLoggedIn">
+                <button class="chat-channel-go" @click="changeChatChannel()" :disabled="!isLoggedIn">Go</button>
+                <span class="chat-channel-error" x-show="chatTargetChannelError" x-text="chatTargetChannelError"></span>
               </div>
-            </template>
-
-            <template x-if="isLoggedIn">
-              <div class="twitch-user-card">
-                <div class="twitch-user-info">
-                  <span class="twitch-user-label">Підключено до Twitch</span>
-                  <span class="twitch-user-name" x-text="twitchUser?.display_name || twitchUser?.login"></span>
-                </div>
-                <button class="btn twitch-logout" @click="logout()">Вийти</button>
-              </div>
-            </template>
-          </div>
-
-          <!-- ═══ Section: Emotes & Channels ═══ -->
-          <div class="editor-section">
-            <div class="editor-section-head">
-              <div class="editor-section-title">😀 Емоції та канали</div>
             </div>
-
-            <div class="emote-controls">
-              <div class="channel-list">
-                <div class="channel-list-label">Канали:</div>
-                <template x-for="id in twitchUserIds" :key="id">
-                  <div class="channel-chip">
-                    <span class="channel-id">
-                      <template x-if="channelNameForId(id) !== id">
-                        <span x-text="channelNameForId(id) + ' (' + id + ')'"></span>
-                      </template>
-                      <template x-if="channelNameForId(id) === id">
-                        <span x-text="id"></span>
+            <div class="chat-messages" x-ref="chatMessages">
+              <template x-for="msg in visibleChatMessages" :key="msg.id">
+                <div class="chat-message" :class="{ restored: msg.isRestored }"
+                  :style="{ fontSize: chatFontSize + 'px' }">
+                  <span class="chat-time" x-text="msg.timeStr"></span>
+                  <template x-if="chatShowBadges && msg.badges && msg.badges.length">
+                    <span class="chat-badges">
+                      <template x-for="badge in msg.badges" :key="badge.setId + '/' + badge.id">
+                        <img class="chat-badge" :src="badge.url" :alt="badge.setId" loading="lazy"
+                          crossorigin="anonymous">
                       </template>
                     </span>
-                    <button class="channel-remove"
-                      @click="removeChannel(id)"
-                      x-show="!isDefaultChannel(id)"
-                      title="Видалити канал">&times;</button>
-                  </div>
-                </template>
-                <div class="channel-add-row">
-                  <input type="text" class="channel-add-input" placeholder="ID або ім'я каналу"
-                    x-model="channelInput"
-                    @keydown.enter="addChannel(channelInput); channelInput = ''">
-                  <button class="channel-add-btn" @click="addChannel(channelInput); channelInput = ''">+</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Collapsible emote log -->
-            <div class="emote-log">
-              <button class="emote-log-toggle" @click="emoteLogOpen = !emoteLogOpen">
-                <span class="emote-log-toggle-icon" x-text="emoteLogOpen ? '\u25BC' : '\u25B6'"></span>
-                <span>Статус провайдерів емоцій</span>
-                <span class="emote-log-summary" x-text="emoteSourcesSummary"></span>
-              </button>
-              <div x-show="emoteLogOpen" class="emote-log-body">
-                <template x-for="src in emoteSourceStatusList" :key="src.label">
-                  <div class="emote-source-row" :class="'src-' + src.status">
-                    <span class="src-icon" x-text="src.icon"></span>
-                    <span class="src-label" x-text="src.label"></span>
-                    <span class="src-status" x-text="src.statusText"></span>
-                  </div>
-                </template>
-              </div>
-            </div>
-
-            <!-- ═══ Section: Chat Bots ═══ -->
-            <div class="editor-section">
-              <div class="editor-section-head">
-                <div class="editor-section-title">🤖 Боти в чаті</div>
-              </div>
-
-              <div class="chat-bot-controls">
-                <div class="chat-bot-list">
-                  <div class="chat-bot-list-label">Приховані боти:</div>
-                  <template x-for="name in chatHiddenBots" :key="name">
-                    <div class="chat-bot-chip">
-                      <span class="chat-bot-name" x-text="name"></span>
-                      <button class="chat-bot-remove"
-                        x-show="chatHiddenBotsExtra.includes(name)"
-                        @click="removeChatHiddenBot(name)">&times;</button>
-                    </div>
                   </template>
+                  <span class="chat-name" :style="{ color: msg.color }" x-text="msg.displayName"></span>
+                  <span class="chat-colon">:</span>
+                  <span class="chat-text" x-html="msg.renderedText"></span>
                 </div>
-
-                <div class="chat-bot-add-row">
-                  <input type="text" class="chat-bot-add-input"
-                    placeholder="Ім'я бота"
-                    x-model="chatHiddenBotInput"
-                    @keydown.enter="addChatHiddenBot()">
-                  <button class="chat-bot-add-btn" @click="addChatHiddenBot()">+</button>
-                </div>
+              </template>
+              <div class="chat-login-prompt" x-show="!chatConnected && !isLoggedIn">
+                <p>Увійдіть через Twitch, щоб читати чат</p>
               </div>
+            </div>
+            <div class="chat-footer">
+              <span class="chat-status-dot" :class="{ connected: chatConnected }"></span>
+              <span class="chat-status-text" x-text="chatStatusMsg || (chatConnected ? 'Онлайн' : 'Офлайн')"></span>
+              <span class="chat-reconnect-countdown" x-show="chatReconnectStatus.attempts > 0 && chatReconnectCountdown"
+                x-text="'спроба ' + chatReconnectStatus.attempts + '/10 · ' + chatReconnectCountdown"></span>
+              <button class="chat-reconnect-btn" x-show="chatReconnectStatus.stopped" @click="manualReconnect()">Перепідключити</button>
+              <span class="chat-message-count" x-show="visibleChatMessages.length > 0"
+                x-text="visibleChatMessages.length"></span>
+              <button class="chat-bot-toggle" @click="toggleChatBots()" :class="{ active: chatShowBots }"
+                :title="chatShowBots ? 'Боти показані' : 'Боти приховані'">
+                <span x-text="chatShowBots ? 'Боти ON' : 'Боти OFF'"></span>
+              </button>
+              <button class="chat-badge-toggle" @click="toggleChatBadges()" :class="{ active: chatShowBadges }"
+                :title="chatShowBadges ? 'Бейджі показані' : 'Бейджі приховані'">
+                <span x-text="chatShowBadges ? 'Бейджі ON' : 'Бейджі OFF'"></span>
+              </button>
             </div>
           </div>
-
-        </div>
+        </aside>
       </div>
     </div>
 
-    <div class="disclaimer">
-      <p>Весь вміст на цьому сайті використовується виключно в розважальних цілях. Сайт не монетизований і створений для фанатської спільноти.</p>
-      <p>Авторські права на музичні композиції належать їхнім правовласникам: <a href="https://www.youtube.com/channel/UCO615czs48hYvhKdolnq_LQ" target="_blank" rel="noopener">MasterJonald</a>, <a href="https://www.youtube.com/channel/UC3iCGU82DkLi2T4eYr-BiBg" target="_blank" rel="noopener">Darnu-Pop</a>, <a href="https://www.youtube.com/channel/UCWvrB8eZ18wB5o7QnzMAdcA" target="_blank" rel="noopener">정훈남JHN STUDIO</a>.</p>
+    <div x-show="ctxMenu.show" x-cloak class="context-menu" :style="{ left: ctxMenu.x + 'px', top: ctxMenu.y + 'px' }"
+      @click.away="ctxMenu.show = false" @keydown.escape.window="ctxMenu.show = false">
+      <button class="ctx-item" @click="editCellText()">Редагувати текст</button>
+      <button class="ctx-item" @click="insertEmote()">Вставити емоцію...</button>
     </div>
-  </div>
 
-  <div class="audio-theme-bar">
-    <template x-for="t in themes" :key="t.id">
-      <button @click="setTheme(t.id)" :class="{ 'athm-btn': true, active: theme === t.id }">
-        <span class="athm-icon" x-text="t.icon"></span>
-        <span class="athm-name" x-text="t.name"></span>
-      </button>
-    </template>
-  </div>
-
-  <div class="audio-player">
-    <div class="audio-bar">
-    <button class="audio-btn audio-btn-nav"
-        @click="prevTrack()"
-        :disabled="!audioHasPrev"
-        :class="{ disabled: !audioHasPrev }"
-        title="Попередній">◀</button>
-      <button class="audio-btn audio-btn-play"
-        @click="togglePlay()"
-        :title="audioPlaying ? 'Пауза' : 'Грати'"
-        x-text="audioPlaying ? '&#x23F8;' : '&#x25B6;'"></button>
-      <button class="audio-btn audio-btn-nav"
-        @click="nextTrack()"
-        :disabled="!audioHasNext"
-        :class="{ disabled: !audioHasNext }"
-        title="Наступний">▶</button>
-      <div class="audio-track"
-        @click="if (audioCurrentTrack?.url) window.open(audioCurrentTrack.url, '_blank')"
-        :title="audioCurrentTrack?.url ? 'Відкрити на YouTube' : ''">
-        <div class="audio-track-scroll">
-          <span class="audio-track-text">
-            <span x-text="audioCurrentTrack?.title"></span>
-            <span class="audio-track-sep" x-show="audioCurrentTrack">·</span>
-            <span x-text="audioCurrentTrack?.artist"></span>
-          </span>
-        </div>
-      </div>
-      <button class="audio-btn audio-btn-mode"
-        @click="toggleLoopMode()"
-        :title="audioLoopMode === 'playlist' ? 'Повторювати плейлист' : (audioLoopMode === 'song' ? 'Повторювати трек' : 'Випадковий трек')"
-        x-text="audioLoopMode === 'playlist' ? '&#x1F501;' : (audioLoopMode === 'song' ? '&#x1F502;' : '&#x1F500;')"></button>
-      <button class="audio-btn audio-btn-playlist"
-        @click="togglePlaylist()"
-        :title="audioPlaylistOpen ? 'Сховати список' : 'Список треків'"
-        :class="{ open: audioPlaylistOpen }">☰</button>
-    </div>
-    <div class="audio-scrub-row">
-      <input type="range" class="audio-progress"
-        min="0" max="1" step="0.001"
-        :value="audioProgress ?? 0"
-        @input="seek(parseFloat($event.target.value))"
-        :class="{ active: audioProgress !== null }">
-      <span class="audio-time" x-text="formatTime(audioCurrentTime) + ' / ' + formatTime(audioDuration)"></span>
-    </div>
-    <div class="audio-volume-row">
-      <span class="audio-vol-half">
-        <span class="audio-fx-header">МУЗИКА</span>
-        <button class="audio-vol-icon"
-          @click="toggleMusicMute()"
-          :title="audioMusicMuted ? 'Увімкнути звук' : 'Вимкнути звук'"
-          x-text="audioMusicMuted ? '&#x1F507;' : '&#x1F50A;'"></button>
-        <span class="audio-vol-pct" x-text="Math.round(audioVolume * 100) + '%'"></span>
-        <span class="audio-slider-wrap">
-          <input type="range" class="audio-volume"
-            min="0" max="1" step="0.05"
-            :value="audioVolume"
-            @input="setVolume(parseFloat($event.target.value))">
-        </span>
-      </span>
-      <span class="audio-vol-half">
-        <span class="audio-fx-header">ЕФЕКТИ</span>
-        <button class="audio-vol-icon"
-          @click="toggleSfx()"
-          :title="audioSfxEnabled ? 'Вимкнути ефекти' : 'Увімкнути ефекти'"
-          x-text="audioSfxEnabled ? '&#x1F50A;' : '&#x1F507;'"></button>
-        <span class="audio-vol-pct" x-text="Math.round(audioFxVolume * 100) + '%'"></span>
-        <span class="audio-slider-wrap">
-          <input type="range" class="audio-volume"
-            min="0" max="1" step="0.05"
-            :value="audioFxVolume"
-            @input="setFxVolume(parseFloat($event.target.value))">
-        </span>
-      </span>
-    </div>
-    <div class="audio-playlist" x-show="audioPlaylistOpen" x-cloak>
-      <div class="audio-playlist-header">ПЛЕЙЛІСТ</div>
-      <template x-for="(song, i) in audioSongs" :key="song.id">
-        <button class="audio-playlist-item"
-          @click="selectSong(i)"
-          :class="{ current: i === audioSongIndex }">
-          <span class="playlist-item-idx" x-text="i === audioSongIndex ? '▶' : (i + 1)"></span>
-          <span class="playlist-item-title" x-text="song.title"></span>
-        </button>
-      </template>
-    </div>
-  </div>
-
-  <!-- Context Menu -->
-  <div x-show="ctxMenu.show" x-cloak class="context-menu"
-    :style="{ left: ctxMenu.x + 'px', top: ctxMenu.y + 'px' }"
-    @click.away="ctxMenu.show = false"
-    @keydown.escape.window="ctxMenu.show = false">
-    <button class="ctx-item" @click="editCellText()">✎ Редагувати текст</button>
-    <button class="ctx-item" @click="insertEmote()">😀 Вставити емоцію...</button>
-  </div>
-
-  <!-- Emote Picker -->
-  <div x-show="pickerOpen" x-cloak class="picker-overlay"
-    @click.self="closePicker()" @keydown.escape.window="closePicker()">
-    <div class="picker-panel">
-      <div class="picker-sidebar">
-        <template x-for="src in pickerSources" :key="src.id">
-          <button
-            @click="setPickerCategory(src.id)"
-            :class="{ 'picker-cat-btn': true, active: pickerCategory === src.id }"
-            :data-scope="src.scope">
-            <span class="picker-cat-icon" :style="'background:' + src.color" x-text="src.iconText"></span>
-            <span class="picker-cat-name" x-text="src.label"></span>
-          </button>
-        </template>
-      </div>
-      <div class="picker-main">
-        <div class="picker-head">
-          <input type="text" x-model="pickerSearch" placeholder="Пошук емоцій..." class="picker-search"
-            @keydown.escape="closePicker()">
-          <button class="picker-close-btn" @click="closePicker()">✕</button>
-        </div>
-        <div class="picker-category-label" x-text="pickerCategoryLabel"></div>
-        <div class="picker-grid" @scroll="onPickerScroll($event)">
-          <template x-for="emote in visibleEmotes" :key="emote.provider + ':' + emote.id">
-            <button class="picker-item" @click="pickEmote(emote)">
-              <img :src="emote.url" :alt="emote.code" class="picker-img" loading="lazy" decoding="async">
-              <span class="picker-code" x-text="emote.code"></span>
-              <span class="picker-src" x-text="emote.provider.toUpperCase()"></span>
-              <span class="picker-channel" x-show="emote.channelId" x-text="channelNameForId(emote.channelId)"></span>
+    <div x-show="pickerOpen" x-cloak class="picker-overlay" @click.self="closePicker()"
+      @keydown.escape.window="closePicker()">
+      <div class="picker-panel">
+        <div class="picker-sidebar">
+          <template x-for="src in pickerSources" :key="src.id">
+            <button @click="setPickerCategory(src.id)"
+              :class="{ 'picker-cat-btn': true, active: pickerCategory === src.id }" :data-scope="src.scope">
+              <span class="picker-cat-icon" :style="'background:' + src.color" x-text="src.iconText"></span>
+              <span class="picker-cat-name" x-text="src.label"></span>
             </button>
           </template>
-          <div x-show="hasMoreEmotes" class="picker-sentinel">Завантаження...</div>
+        </div>
+        <div class="picker-main">
+          <div class="picker-head">
+            <input type="text" x-model="pickerSearch" placeholder="Пошук емоцій..." class="picker-search"
+              @keydown.escape="closePicker()">
+            <button class="picker-close-btn" @click="closePicker()">X</button>
+          </div>
+          <div class="picker-category-label" x-text="pickerCategoryLabel"></div>
+          <div class="picker-grid" @scroll="onPickerScroll($event)">
+            <template x-for="emote in visibleEmotes" :key="emote.provider + ':' + emote.id">
+              <button class="picker-item" @click="pickEmote(emote)">
+                <img :src="emote.url" :alt="emote.code" class="picker-img" loading="lazy" decoding="async">
+                <span class="picker-code" x-text="emote.code"></span>
+                <span class="picker-src" x-text="emote.provider.toUpperCase()"></span>
+                <span class="picker-channel" x-show="emote.channelId" x-text="channelNameForId(emote.channelId)"></span>
+              </button>
+            </template>
+            <div x-show="hasMoreEmotes" class="picker-sentinel">Завантаження...</div>
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
-<script type="module" src="js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
+
 </html>

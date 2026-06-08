@@ -167,6 +167,9 @@ export function createApp() {
     allowCelebrate: true,
     lastCompletedKeys: new Set(),
     toastVisible: false,
+    chatPanelOpen: false,
+    editorOpen: false,
+    audioMounted: false,
 
     // ── Context Menu ──
     ctxMenu: { show: false, x: 0, y: 0, cellIndex: -1 },
@@ -214,7 +217,7 @@ export function createApp() {
     },
 
     // ── Audio / Music ──
-    audioVolume: 0.25,
+    audioVolume: 40,
     audioMusicMuted: false,
     audioPlaying: false,
     audioFxVolume: 0.75,
@@ -481,7 +484,7 @@ export function createApp() {
       this.$watch('pickerOpen', val => { document.body.style.overflow = val ? 'hidden' : ''; });
       window.addEventListener('resize', () => requestAnimationFrame(() => drawBingoLines([...this.bingoKeys])));
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape') this.cancelDelete(); });
-      document.addEventListener('click', (e) => { if (this.pendingDeleteBoardId && !e.target.closest('.board-sidebar')) this.cancelDelete(); });
+      document.addEventListener('click', (e) => { if (this.pendingDeleteBoardId && !e.target.closest('.board-tabs')) this.cancelDelete(); });
 
       this.$watch('chatFontSize', val => {
         try { localStorage.setItem(STORAGE_KEYS.chatFontSize, String(val)); } catch {}
@@ -562,6 +565,7 @@ export function createApp() {
         this.audioSongs = state.songs;
         this.audioSongIndex = state.currentSongIndex;
         this.audioLoopMode = state.loopMode;
+        this.audioMounted = state.mounted;
       });
 
       const pollProgress = () => {
@@ -574,14 +578,10 @@ export function createApp() {
         this.audioSongs = audioManager.songs;
         this.audioSongIndex = audioManager.currentSongIndex;
         this.audioLoopMode = audioManager.loopMode;
+        this.audioMounted = audioManager.mounted;
         this._raf = requestAnimationFrame(pollProgress);
       };
       this._raf = requestAnimationFrame(pollProgress);
-
-      const unlockAudio = () => {
-        audioManager.unlock();
-      };
-      document.addEventListener('click', unlockAudio, { once: true });
 
       this.checkImportUrl();
     },
@@ -601,8 +601,8 @@ export function createApp() {
       this.$nextTick(() => {
         const el = this.$refs?.boardScroll;
         if (!el) return;
-        const activeTab = el.querySelector('.sidebar-tab.active');
-        if (activeTab) activeTab.scrollIntoView({ block: 'nearest' });
+        const activeTab = el.querySelector('.board-tab.active');
+        if (activeTab) activeTab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       });
     },
 
@@ -904,11 +904,17 @@ export function createApp() {
     },
 
     // ── Audio Controls ──
+    mountPlayer() {
+      this.audioMounted = true;
+      this.$nextTick(() => {
+        const el = document.getElementById('ytPlayerContainer');
+        if (!el) return;
+        audioManager.mountPlayer(el);
+      });
+    },
+
     setVolume(v) {
       this.audioVolume = v;
-      if (v > 0 && this.audioMusicMuted) {
-        this.audioMusicMuted = false;
-      }
       audioManager.setVolume(v);
     },
 
@@ -917,6 +923,10 @@ export function createApp() {
     },
 
     togglePlay() {
+      if (!this.audioMounted) {
+        this.mountPlayer();
+        return;
+      }
       audioManager.togglePlay();
     },
 
@@ -1088,20 +1098,11 @@ export function createApp() {
       try { localStorage.setItem(STORAGE_KEYS.chatShowBadges, String(this.chatShowBadges)); } catch {}
     },
     scrollToLogin() {
-      const el = document.getElementById('twitchLoginSection');
-      if (!el) return;
-      const target = el.getBoundingClientRect().top + window.scrollY;
-      const start = window.scrollY;
-      const dist = target - start;
-      const dur = 600;
-      const startTime = performance.now();
-      const ease = t => 1 - Math.pow(1 - t, 3);
-      const frame = (now) => {
-        const p = Math.min((now - startTime) / dur, 1);
-        window.scrollTo(0, start + dist * ease(p));
-        if (p < 1) requestAnimationFrame(frame);
-      };
-      requestAnimationFrame(frame);
+      this.editorOpen = true;
+      this.$nextTick(() => {
+        const el = document.getElementById('twitchLoginSection');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
     },
 
     _chatHistoryKey() {
