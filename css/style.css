@@ -26,8 +26,8 @@
   --bingo-rgb: 255, 238, 0;
   --left-col-w: 280px;
   --right-col-w: 340px;
-  --font-body: 'Noto Sans KR', sans-serif;
-  --font-title: 'Black Han Sans', sans-serif;
+  --font-body: 'Noto Sans', 'Noto Sans KR', sans-serif;
+  --font-title: 'Russo One', 'Noto Sans', 'Noto Sans KR', sans-serif;
 }
 
 body[data-theme="twice"][data-theme-mode="dark"] {
@@ -44,8 +44,8 @@ body[data-theme="twice"][data-theme-mode="dark"] {
   --cell-radius: 18px;
   --bingo: #ffee00;
   --bingo-rgb: 255, 238, 0;
-  --font-body: 'Quicksand', 'Noto Sans KR', sans-serif;
-  --font-title: 'Pacifico', cursive;
+  --font-body: 'Literata', 'Noto Serif', 'Noto Sans KR', serif;
+  --font-title: 'Lobster', 'Noto Sans', 'Noto Sans KR', cursive;
 }
 
 body[data-theme="twice"][data-theme-mode="light"] {
@@ -60,10 +60,10 @@ body[data-theme="twice"][data-theme-mode="light"] {
   --bg-pattern: radial-gradient(circle, rgba(255, 127, 0, 0.12) 3px, transparent 3px);
   --bg-size: 35px 35px;
   --cell-radius: 18px;
-  --bingo: #ff6600;
-  --bingo-rgb: 255, 102, 0;
-  --font-body: 'Quicksand', 'Noto Sans KR', sans-serif;
-  --font-title: 'Pacifico', cursive;
+  --bingo: #b84000;
+  --bingo-rgb: 184, 64, 0;
+  --font-body: 'Literata', 'Noto Serif', 'Noto Sans KR', serif;
+  --font-title: 'Lobster', 'Noto Sans', 'Noto Sans KR', cursive;
 }
 
 body[data-theme="aespa"][data-theme-mode="dark"] {
@@ -80,8 +80,8 @@ body[data-theme="aespa"][data-theme-mode="dark"] {
   --cell-radius: 4px;
   --bingo: #00ffff;
   --bingo-rgb: 0, 255, 255;
-  --font-body: 'Rajdhani', 'Noto Sans KR', sans-serif;
-  --font-title: 'Orbitron', sans-serif;
+  --font-body: 'Jura', 'Noto Sans', 'Noto Sans KR', sans-serif;
+  --font-title: 'Oranienbaum', 'Noto Serif', 'Noto Sans KR', serif;
 }
 
 body[data-theme="aespa"][data-theme-mode="light"] {
@@ -98,8 +98,8 @@ body[data-theme="aespa"][data-theme-mode="light"] {
   --cell-radius: 4px;
   --bingo: #0099cc;
   --bingo-rgb: 0, 153, 204;
-  --font-body: 'Rajdhani', 'Noto Sans KR', sans-serif;
-  --font-title: 'Orbitron', sans-serif;
+  --font-body: 'Jura', 'Noto Sans', 'Noto Sans KR', sans-serif;
+  --font-title: 'Oranienbaum', 'Noto Serif', 'Noto Sans KR', serif;
 }
 
 body[data-theme="nmixx"][data-theme-mode="dark"] {
@@ -116,8 +116,8 @@ body[data-theme="nmixx"][data-theme-mode="dark"] {
   --cell-radius: 16px 4px 16px 4px;
   --bingo: #ffee00;
   --bingo-rgb: 255, 238, 0;
-  --font-body: 'Poppins', 'Noto Sans KR', sans-serif;
-  --font-title: 'Bebas Neue', sans-serif;
+  --font-body: 'Exo 2', 'Noto Sans', 'Noto Sans KR', sans-serif;
+  --font-title: 'Alumni Sans', 'Noto Sans', 'Noto Sans KR', sans-serif;
 }
 
 body[data-theme="nmixx"][data-theme-mode="light"] {
@@ -132,10 +132,10 @@ body[data-theme="nmixx"][data-theme-mode="light"] {
   --bg-pattern: repeating-radial-gradient(circle at 0 0, rgba(230, 0, 76, 0.06) 0, rgba(0, 51, 255, 0.06) 25px);
   --bg-size: 120px 120px;
   --cell-radius: 16px 4px 16px 4px;
-  --bingo: #cc8800;
-  --bingo-rgb: 204, 136, 0;
-  --font-body: 'Poppins', 'Noto Sans KR', sans-serif;
-  --font-title: 'Bebas Neue', sans-serif;
+  --bingo: #886600;
+  --bingo-rgb: 136, 102, 0;
+  --font-body: 'Exo 2', 'Noto Sans', 'Noto Sans KR', sans-serif;
+  --font-title: 'Alumni Sans', 'Noto Sans', 'Noto Sans KR', sans-serif;
 }
 
 body[data-theme="newjeans"][data-theme-mode="dark"] {
@@ -152,14 +152,14 @@ body[data-theme="newjeans"][data-theme-mode="dark"] {
   --cell-radius: 25px;
   --bingo: #ffee00;
   --bingo-rgb: 255, 238, 0;
-  --font-body: 'VT323', 'Noto Sans KR', monospace;
-  --font-title: 'Press Start 2P', cursive;
+  --font-body: 'Pixelify Sans', 'Noto Sans', 'Noto Sans KR', monospace;
+  --font-title: 'Press Start 2P', 'Noto Sans', 'Noto Sans KR', cursive;
 }
 
 body[data-theme="newjeans"][data-theme-mode="light"] {
   --pink: #4488ff;
   --purple: #cc44aa;
-  --cyan: #ddaa00;
+  --cyan: #886600;
   --dark: #e8f0ff;
   --card: rgba(68, 136, 255, 0.1);
   --border: rgba(68, 136, 255, 0.3);
@@ -168,10 +168,10 @@ body[data-theme="newjeans"][data-theme-mode="light"] {
   --bg-pattern: radial-gradient(circle, rgba(68, 136, 255, 0.12) 4px, transparent 4px);
   --bg-size: 25px 25px;
   --cell-radius: 25px;
-  --bingo: #ddaa00;
-  --bingo-rgb: 221, 170, 0;
-  --font-body: 'VT323', 'Noto Sans KR', monospace;
-  --font-title: 'Press Start 2P', cursive;
+  --bingo: #776600;
+  --bingo-rgb: 119, 102, 0;
+  --font-body: 'Pixelify Sans', 'Noto Sans', 'Noto Sans KR', monospace;
+  --font-title: 'Press Start 2P', 'Noto Sans', 'Noto Sans KR', cursive;
 }
 
 body[data-theme="lesserafim"][data-theme-mode="dark"] {
@@ -188,8 +188,8 @@ body[data-theme="lesserafim"][data-theme-mode="dark"] {
   --cell-radius: 0px;
   --bingo: #ff0000;
   --bingo-rgb: 255, 0, 0;
-  --font-body: 'Cormorant', 'Noto Sans KR', serif;
-  --font-title: 'Cinzel', serif;
+  --font-body: 'Spectral', 'Noto Serif', 'Noto Sans KR', serif;
+  --font-title: 'Playfair Display', 'Noto Serif', 'Noto Sans KR', serif;
 }
 
 body[data-theme="lesserafim"][data-theme-mode="light"] {
@@ -206,13 +206,13 @@ body[data-theme="lesserafim"][data-theme-mode="light"] {
   --cell-radius: 0px;
   --bingo: #cc0000;
   --bingo-rgb: 204, 0, 0;
-  --font-body: 'Cormorant', 'Noto Sans KR', serif;
-  --font-title: 'Cinzel', serif;
+  --font-body: 'Spectral', 'Noto Serif', 'Noto Sans KR', serif;
+  --font-title: 'Playfair Display', 'Noto Serif', 'Noto Sans KR', serif;
 }
 
 body[data-theme]:not([data-theme-mode]) {
-  --font-body: 'Noto Sans KR', sans-serif;
-  --font-title: 'Black Han Sans', sans-serif;
+  --font-body: 'Noto Sans', 'Noto Sans KR', sans-serif;
+  --font-title: 'Russo One', 'Noto Sans', 'Noto Sans KR', sans-serif;
 }
 
 [data-theme-mode="light"] .app-header {
@@ -2171,6 +2171,7 @@ body {
 .chat-time-toggle.active { color: var(--cyan); }
 .chat-bot-toggle.active { color: #4caf50; }
 .chat-badge-toggle.active { color: #ffd700; }
+[data-theme-mode="light"] .chat-badge-toggle.active { color: #8a6b00; }
 
 .chat-login-prompt {
   display: flex;
