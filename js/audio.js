@@ -26,7 +26,6 @@ const PLAYLISTS = {
       { id: 'aespa-1', title: 'WHIPLASH', url: 'https://www.youtube.com/watch?v=nZ-CW15cECo', artist: 'Darnu-Pop' },
       { id: 'aespa-2', title: 'BETTER THINGS', url: 'https://www.youtube.com/watch?v=xIPcFu1kLFw', artist: 'Darnu-Pop' },
       { id: 'aespa-3', title: 'SPICY', url: 'https://www.youtube.com/watch?v=jAZK2IUBQeU', artist: 'Darnu-Pop' },
-      { id: 'aespa-4', title: 'HOLD ON TIGHT', url: 'https://www.youtube.com/watch?v=w-JOF8ZjlC8', artist: 'Darnu-Pop' },
       { id: 'aespa-5', title: "LIFE'S TOO SHORT", url: 'https://www.youtube.com/watch?v=EvtVAs39tBw', artist: 'Darnu-Pop' },
       { id: 'aespa-6', title: 'SAVAGE', url: 'https://www.youtube.com/watch?v=t1r2HTnqxos', artist: 'Darnu-Pop' },
       { id: 'aespa-7', title: 'BLACK MAMBA', url: 'https://www.youtube.com/watch?v=gIKd3Ai-o7E', artist: 'Darnu-Pop' },
@@ -37,6 +36,8 @@ const PLAYLISTS = {
       { id: 'nmixx-blue-valentine', title: 'Blue Valentine (Videogame)', url: 'https://www.youtube.com/watch?v=SXknBQeYTEw', artist: 'Darnu-Pop' },
       { id: 'nmixx-0', title: 'DICE (Chiptune)', url: 'https://www.youtube.com/watch?v=XHow_8Np_zg', artist: 'JHN STUDIO' },
       { id: 'nmixx-1', title: 'DASH (8-bit)', url: 'https://www.youtube.com/watch?v=rB9aOprwJZE', artist: 'JHN STUDIO' },
+      { id: 'nmixx-o-o', title: 'O.O (8-bit)', url: 'https://www.youtube.com/watch?v=ggur0dTX7Hs', artist: '8-Bit Nmixx Emulation' },
+      { id: 'nmixx-know-about-me', title: 'Know About Me (8-bit)', url: 'https://www.youtube.com/watch?v=iSAYFXeIabk', artist: 'PiXL 라디오' },
     ],
   },
   newjeans: {

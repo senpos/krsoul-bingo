@@ -2661,7 +2661,7 @@ body {
 .picker-sentinel { padding: 10px; text-align: center; color: var(--dim); font-size: 12px; grid-column: 1 / -1; }
 
 /* ── Disclaimer ── */
-.disclaimer { max-width: 800px; margin: 0; padding: 12px; text-align: center; font-size: 9px; color: rgba(255, 255, 255, 0.25); line-height: 1.5; border-top: 1px solid rgba(255, 255, 255, 0.06); flex-shrink: 0; }
+.disclaimer { max-width: 800px; margin: 0; padding: 12px; text-align: left; font-size: 9px; color: rgba(255, 255, 255, 0.25); line-height: 1.5; border-top: 1px solid rgba(255, 255, 255, 0.06); flex-shrink: 0; word-break: break-word; }
 .disclaimer a { color: var(--cyan); text-decoration: none; opacity: 0.7; }
 .disclaimer a:hover { opacity: 1; text-decoration: underline; }
 
