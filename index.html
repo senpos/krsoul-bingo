@@ -268,7 +268,19 @@
               <button class="btn btn-action btn-sm" @click="undo()" :disabled="!canUndo">Назад</button>
               <button class="btn btn-action btn-sm" @click="redo()" :disabled="!canRedo">Вперед</button>
             </div>
-            <div class="score-pill" x-text="scoreText"></div>
+            <div class="controls-sep"></div>
+            <div class="stats-panel">
+              <div class="stat-block">
+                <span class="stat-value" x-text="markedCount"></span>
+                <span class="stat-label">відмічено</span>
+              </div>
+              <div class="stat-divider"></div>
+              <div class="stat-block stat-block-bingo">
+                <span class="stat-value" x-text="bingoCount"></span>
+                <span class="stat-label">бінго</span>
+              </div>
+            </div>
+            <div class="controls-sep"></div>
             <div class="size-select-wrap">
               <select class="size-select" @change="setSize(Number($el.value))">
                 <template x-for="s in [3,4,5,6,7,8,9,10]" :key="s">
