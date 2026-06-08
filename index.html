@@ -59,18 +59,12 @@
             </div>
 
             <div class="player-video">
-              <template x-if="!audioMounted">
-                <button class="player-start-btn" @click="mountPlayer()">
-                  <img x-show="audioCurrentTrack?.videoId"
-                    :src="'https://i.ytimg.com/vi/' + audioCurrentTrack?.videoId + '/mqdefault.jpg'" class="player-thumb"
-                    alt="">
-                  <div class="player-start-overlay">
-                    <div class="player-play-icon">&#9654;</div>
-                  </div>
-                </button>
-              </template>
-              <div x-show="audioMounted" id="ytPlayerContainer" class="player-yt-frame"
-                :style="audioMounted ? '' : 'display:none'"></div>
+              <div id="ytPlayerContainer" class="player-yt-frame"></div>
+              <div x-show="audioMounted && audioMusicMuted && audioPlaying"
+                   class="player-mute-hint" @click="toggleMusicMute()">
+                <span>&#x1F50A;</span>
+                <span>Натисніть, щоб почути музику</span>
+              </div>
             </div>
 
             <div class="player-track-info">
@@ -93,6 +87,9 @@
               <input type="range" class="player-vol-slider" min="0" max="100" :value="audioVolume"
                 @input="setVolume(Number($event.target.value))">
               <span class="player-vol-val" x-text="Math.round(audioVolume)"></span>
+              <button class="player-mute-btn" @click="toggleMusicMute()"
+                      :title="audioMusicMuted ? 'Увімкнути звук' : 'Вимкнути звук'"
+                      x-text="audioMusicMuted ? '&#x1F507;' : '&#x1F50A;'"></button>
             </div>
 
             <div class="player-sfx-row">

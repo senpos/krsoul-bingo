@@ -580,6 +580,12 @@ export function createApp() {
         this.audioMounted = state.mounted;
       });
 
+      this.audioMounted = true;
+      this.$nextTick(() => {
+        const el = document.getElementById('ytPlayerContainer');
+        if (el) audioManager.mountPlayer(el);
+      });
+
       const pollProgress = () => {
         this.audioProgress = audioManager.progress;
         this.audioCurrentTime = audioManager.currentTime;
@@ -946,10 +952,6 @@ export function createApp() {
     },
 
     togglePlay() {
-      if (!this.audioMounted) {
-        this.mountPlayer();
-        return;
-      }
       audioManager.togglePlay();
     },
 

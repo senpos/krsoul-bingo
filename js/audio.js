@@ -102,6 +102,7 @@ class AudioManager {
     this._fxVolume = 0.75;
     this._sfxMuted = false;
     this._isPaused = false;
+    this._muted = false;
     this._mounted = false;
 
     this._loopMode = 'playlist';
@@ -167,6 +168,7 @@ class AudioManager {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         paused: this._isPaused,
+        muted: this._muted,
         theme: this._currentTheme,
         themeStates: this._themeStates,
         volume: this._volume,
@@ -183,6 +185,7 @@ class AudioManager {
       if (!raw) return;
       const s = JSON.parse(raw);
       if (s.paused !== undefined) this._isPaused = !!s.paused;
+      if (s.muted !== undefined) this._muted = !!s.muted;
       if (s.theme) this._currentTheme = s.theme;
       if (s.themeStates) this._themeStates = s.themeStates;
       if (s.volume !== undefined) this._volume = s.volume;
@@ -245,13 +248,17 @@ class AudioManager {
       videoId,
       width: '100%',
       height: '100%',
-      playerVars: { autoplay: 1, modestbranding: 1, rel: 0, playsinline: 1 },
+      playerVars: { autoplay: 1, controls: 0, disablekb: 1, fs: 0, modestbranding: 1, rel: 0, playsinline: 1 },
       events: {
         onReady: (e) => {
           this._ytReady = true;
           e.target.setVolume(this._volume);
           if (!this._isPaused) {
+            e.target.mute();
+            this._muted = true;
             e.target.playVideo();
+          } else if (this._muted) {
+            e.target.mute();
           }
           this._startProgressPolling();
           this._notify();
@@ -302,20 +309,17 @@ class AudioManager {
     const songs = PLAYLISTS[themeId]?.songs;
     if (!songs?.length) return;
 
-    if (this._currentTheme && this._currentTheme !== themeId) {
-      this._saveThemeState();
+    const prevTheme = this._currentTheme;
+
+    if (prevTheme === themeId) {
+      return;
     }
 
-    const prevTheme = this._currentTheme;
+    this._saveThemeState();
     this._currentTheme = themeId;
 
-    let idx;
-    if (prevTheme === themeId) {
-      idx = this._currentSongIndex;
-    } else {
-      const saved = this._themeStates[themeId];
-      idx = saved?.songIndex ?? 0;
-    }
+    const saved = this._themeStates[themeId];
+    let idx = saved?.songIndex ?? 0;
     if (idx < 0 || idx >= songs.length) idx = 0;
     this._currentSongIndex = idx;
 
@@ -359,6 +363,7 @@ class AudioManager {
     const song = songs[this._currentSongIndex];
     if (song && this._ytPlayer) {
       this._ytPlayer.loadVideoById(song.videoId);
+      this._isPaused = false;
     }
     this._saveThemeState();
     this._notify();
@@ -372,6 +377,7 @@ class AudioManager {
     const song = songs[this._currentSongIndex];
     if (song && this._ytPlayer) {
       this._ytPlayer.loadVideoById(song.videoId);
+      this._isPaused = false;
     }
     this._saveThemeState();
     this._notify();
@@ -384,6 +390,7 @@ class AudioManager {
     const song = songs[index];
     if (song && this._ytPlayer) {
       this._ytPlayer.loadVideoById(song.videoId);
+      this._isPaused = false;
     }
     this._saveThemeState();
     this._notify();
@@ -413,15 +420,17 @@ class AudioManager {
     this._notify();
   }
 
-  toggleMusicMute() {
-    if (this._ytPlayer?.isMuted) {
-      if (this._ytPlayer.isMuted()) {
-        this._ytPlayer.unMute();
-      } else {
-        this._ytPlayer.mute();
-      }
+  _setMuted(muted) {
+    this._muted = muted;
+    if (this._ytPlayer) {
+      muted ? this._ytPlayer.mute() : this._ytPlayer.unMute();
     }
+    this._saveState();
     this._notify();
+  }
+
+  toggleMusicMute() {
+    this._setMuted(!this._muted);
   }
 
   setFxVolume(v) {
