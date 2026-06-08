@@ -1808,7 +1808,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 100px;
+  max-width: 150px;
 }
 
 .board-tab-close {
@@ -1824,6 +1824,15 @@ body {
 }
 
 .board-tab-close:hover { opacity: 1; color: var(--pink); }
+
+.board-tab-close-delete {
+  opacity: 1;
+  color: var(--pink);
+}
+
+.board-tab-close-delete:hover {
+  color: #ff0000;
+}
 
 .board-tab-pending {
   background: rgba(255, 68, 68, 0.15) !important;
@@ -2543,6 +2552,38 @@ body {
   -webkit-text-fill-color: transparent;
 }
 
+.notification-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  z-index: 10000;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 24px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 10px var(--border);
+  transition: transform 0.3s cubic-bezier(.34, 1.56, .64, 1), opacity 0.3s;
+  opacity: 0;
+  pointer-events: none;
+  max-width: 90vw;
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+
+.notification-toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.notification-toast.error {
+  border-color: var(--pink);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 10px var(--pink);
+}
+
 .confetti-piece { position: fixed; top: -20px; pointer-events: none; z-index: 9998; animation: cFall linear forwards; border-radius: 4px; }
 
 @keyframes cFall { 0% { transform: translateY(0) rotate(0deg) scaleX(1); opacity: 1 } 100% { transform: translateY(110vh) rotate(800deg) scaleX(-1); opacity: 0 } }
@@ -2698,7 +2739,7 @@ body {
   .controls-sep { width: 100%; height: 1px; }
   .stats-panel { width: 100%; justify-content: center; }
 
-  .board-tab-name { max-width: 70px; font-size: 10px; }
+  .board-tab-name { max-width: 100px; font-size: 10px; }
 
   .toast { padding: 20px 30px; }
   .toast-title { font-size: clamp(36px, 12vw, 60px); }

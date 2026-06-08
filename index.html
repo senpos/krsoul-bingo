@@ -24,6 +24,8 @@
       <span class="toast-title">BINGO!</span>
     </div>
 
+    <div class="notification-toast" :class="{ show: notificationVisible, error: notificationKind === 'error' }" x-text="notificationMsg"></div>
+
     <div class="app-wrapper">
       <header class="app-header">
         <div class="header-left">
@@ -244,12 +246,17 @@
                 <div class="board-tab" :class="{
                   active: board.id === activeBoardId,
                   'board-tab-pending': pendingDeleteBoardId === board.id
-                }" @click="pendingDeleteBoardId === board.id ? deleteBoard(board.id) : switchBoard(board.id)"
+                }" @click="switchBoard(board.id)"
                   @contextmenu.prevent="editBoardName(board.id)">
-                  <span class="board-tab-name"
-                    x-text="pendingDeleteBoardId === board.id ? 'Видалити?' : board.name"></span>
-                  <button class="board-tab-close" @click.stop="deleteBoard(board.id)"
-                    x-show="boards.length > 1 && pendingDeleteBoardId !== board.id">&times;</button>
+                  <span class="board-tab-name" x-text="board.name"></span>
+                  <button class="board-tab-close" :class="{ 'board-tab-close-delete': pendingDeleteBoardId === board.id }"
+                    @click.stop="boards.length > 1 ? (pendingDeleteBoardId === board.id ? deleteBoard(board.id) : requestDelete(board.id)) : null"
+                    x-show="boards.length > 1">
+                    <svg x-show="pendingDeleteBoardId === board.id" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                    <span x-show="pendingDeleteBoardId !== board.id">&times;</span>
+                  </button>
                 </div>
               </template>
             </div>

@@ -27,67 +27,6 @@ export function generateBoardId() {
   return 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-export function toBase64(str) {
-  const bytes = new TextEncoder().encode(str);
-  const bin = Array.from(bytes, b => String.fromCodePoint(b)).join('');
-  return btoa(bin);
-}
-
-export function fromBase64(b64) {
-  const bin = atob(b64);
-  const bytes = Uint8Array.from(bin, c => c.codePointAt(0));
-  return new TextDecoder().decode(bytes);
-}
-
-export async function compress(str) {
-  if (typeof CompressionStream === 'undefined') return toBase64(str);
-  try {
-    const cs = new CompressionStream('gzip');
-    const writer = cs.writable.getWriter();
-    writer.write(new TextEncoder().encode(str));
-    writer.close();
-    const buf = await new Response(cs.readable).arrayBuffer();
-    const arr = new Uint8Array(buf);
-    let bin = '';
-    for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);
-    return btoa(bin);
-  } catch { return toBase64(str); }
-}
-
-export async function decompress(b64) {
-  if (typeof DecompressionStream === 'undefined') return fromBase64(b64);
-  try {
-    const bin = atob(b64);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    const ds = new DecompressionStream('gzip');
-    const writer = ds.writable.getWriter();
-    writer.write(bytes);
-    writer.close();
-    return await new Response(ds.readable).text();
-  } catch { return fromBase64(b64); }
-}
-
-export function toBase64Url(b64) {
-  return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-export function fromBase64Url(b64url) {
-  let b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
-  const pad = b64.length % 4;
-  if (pad === 2) b64 += '==';
-  else if (pad === 3) b64 += '=';
-  return b64;
-}
-
-export async function compressUrl(str) {
-  return toBase64Url(await compress(str));
-}
-
-export async function decompressUrl(b64url) {
-  return decompress(fromBase64Url(b64url));
-}
-
 /*
   Twitch App Setup:
   1. Go to https://dev.twitch.tv/console/apps → Register Your Application
@@ -198,6 +137,8 @@ export const PARTICLE_THEME_OPTIONS = {
     retina_detect: true
   }
 };
+
+export const THEMES = Object.keys(PARTICLE_THEME_OPTIONS);
 
 export const DEFAULT_CARDS = [
   '💀 DeS on PC', '🩸 Bloodborne', '⚡ GoW 3', '🔥 New Fromsoft Game', '🗡️ DS2/3 Remaster',
