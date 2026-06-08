@@ -5,12 +5,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KRSoul Bingo 2026</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Black+Han+Sans&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Black+Han+Sans&family=Quicksand:wght@400;600;700&family=Pacifico&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&family=Bebas+Neue&family=Poppins:wght@400;600;700;900&family=Press+Start+2P&family=VT323&family=Cinzel:wght@400;700;900&family=Cormorant:wght@400;600;700&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 
-<body data-theme="twice">
+<body data-theme="twice" data-theme-mode="dark">
 
   <div class="bg-grid"></div>
   <div id="tsparticles" class="particle-layer" aria-hidden="true"></div>
@@ -38,6 +38,9 @@
                 <span class="theme-btn-name" x-text="t.name"></span>
               </button>
             </template>
+            <button class="theme-mode-toggle" @click="toggleThemeMode()" :title="themeMode === 'dark' ? 'Світла тема' : 'Темна тема'">
+              <span x-text="themeMode === 'dark' ? '\u263E' : '\u2600'"></span>
+            </button>
           </div>
           <button class="chat-toggle-btn" @click="chatPanelOpen = !chatPanelOpen" :class="{ active: chatPanelOpen }"
             title="Показати/сховати чат">

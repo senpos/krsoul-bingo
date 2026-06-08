@@ -1,4 +1,19 @@
-import { PARTICLE_THEME_OPTIONS } from './config.js';
+import { PARTICLE_THEME_OPTIONS, PARTICLE_LIMITS } from './config.js';
+
+function _calcMaxParticles() {
+  const area = window.innerWidth * window.innerHeight;
+  const byDensity = Math.floor(area / PARTICLE_LIMITS.densityArea);
+  return Math.min(PARTICLE_LIMITS.maxParticles, byDensity);
+}
+
+function _clampParticleOptions(options) {
+  const max = _calcMaxParticles();
+  const cloned = JSON.parse(JSON.stringify(options));
+  if (cloned.particles?.number) {
+    cloned.particles.number.value = Math.min(cloned.particles.number.value, max);
+  }
+  return cloned;
+}
 
 export function completedLineKeys(size, marks) {
   const s = size;
@@ -231,8 +246,8 @@ export function setBingoMode(active) {
   if (!pJS) return;
 
   if (active) {
-    // Boost particles
-    pJS.particles.number.value = Math.min(pJS.particles.number.value * 2.5, 300);
+    const maxBingo = Math.min(PARTICLE_LIMITS.maxParticlesBingo, _calcMaxParticles() * 2);
+    pJS.particles.number.value = Math.min(pJS.particles.number.value * 2.5, maxBingo);
     pJS.particles.move.speed = pJS.particles.move.speed * 1.8;
     pJS.particles.size.value = pJS.particles.size.value * 1.3;
     pJS.particles.opacity.value = Math.min(pJS.particles.opacity.value * 1.4, 0.9);
@@ -244,7 +259,8 @@ export function setBingoMode(active) {
 }
 
 export function applyParticleTheme(name) {
-  const options = PARTICLE_THEME_OPTIONS[name] || PARTICLE_THEME_OPTIONS.twice;
+  const base = PARTICLE_THEME_OPTIONS[name] || PARTICLE_THEME_OPTIONS.twice;
+  const options = _clampParticleOptions(base);
   if (window.particlesJS) {
     if (window.pJSDom && window.pJSDom.length) {
       for (const item of window.pJSDom) {
@@ -257,3 +273,15 @@ export function applyParticleTheme(name) {
     window.particlesJS('tsparticles', options);
   }
 }
+
+let _resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => {
+    const theme = document.body.getAttribute('data-theme') || 'twice';
+    applyParticleTheme(theme);
+    if (_bingoMode) {
+      setBingoMode(true);
+    }
+  }, 300);
+});

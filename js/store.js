@@ -252,6 +252,15 @@ export function createApp() {
       ];
     },
 
+    get themeMode() {
+      return this.activeBoard?.themeMode ?? localStorage.getItem('krsoul-bingo-theme-mode') ?? 'dark';
+    },
+    set themeMode(val) {
+      const b = this.activeBoard;
+      if (b) b.themeMode = val;
+      try { localStorage.setItem('krsoul-bingo-theme-mode', val); } catch {}
+    },
+
     // ── Computed ──
     get cellCount() { return this.size * this.size; },
 
@@ -469,6 +478,7 @@ export function createApp() {
       this.allowCelebrate = true;
 
       document.body.setAttribute('data-theme', this.theme);
+      document.body.setAttribute('data-theme-mode', this.themeMode);
       applyParticleTheme(this.theme);
 
       onEmoteRefresh(() => { this.migrateCards(); this.emoteVersion++; });
@@ -647,6 +657,7 @@ export function createApp() {
       this.persist();
       this.$nextTick(() => {
         document.body.setAttribute('data-theme', this.theme);
+        document.body.setAttribute('data-theme-mode', this.themeMode);
         this.ensureActiveTabVisible();
       });
     },
@@ -661,6 +672,7 @@ export function createApp() {
       this.persist();
       this.$nextTick(() => this.ensureActiveTabVisible());
       document.body.setAttribute('data-theme', this.theme);
+      document.body.setAttribute('data-theme-mode', this.themeMode);
       applyParticleTheme(this.theme);
       audioManager.playTheme(this.theme);
     },
@@ -682,6 +694,7 @@ export function createApp() {
         this.history = [];
         this.redoHistory = [];
         document.body.setAttribute('data-theme', this.theme);
+        document.body.setAttribute('data-theme-mode', this.themeMode);
         applyParticleTheme(this.theme);
         audioManager.playTheme(this.theme);
       }
@@ -809,6 +822,7 @@ export function createApp() {
       this.redoHistory = [];
       this.persist();
       document.body.setAttribute('data-theme', this.theme);
+      document.body.setAttribute('data-theme-mode', this.themeMode);
       applyParticleTheme(this.theme);
       audioManager.playTheme(this.theme);
     },
@@ -900,9 +914,16 @@ export function createApp() {
     setTheme(name) {
       this.theme = name;
       document.body.setAttribute('data-theme', name);
+      document.body.setAttribute('data-theme-mode', this.themeMode);
       this.persist();
       applyParticleTheme(name);
       audioManager.playTheme(name);
+    },
+
+    toggleThemeMode() {
+      this.themeMode = this.themeMode === 'dark' ? 'light' : 'dark';
+      document.body.setAttribute('data-theme-mode', this.themeMode);
+      this.persist();
     },
 
     // ── Audio Controls ──

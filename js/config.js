@@ -85,10 +85,16 @@ export function getTwitchRedirectUri() {
   return window.location.href.split('?')[0].split('#')[0].replace(/\/$/, '');
 }
 
+export const PARTICLE_LIMITS = {
+  maxParticles: 150,
+  maxParticlesBingo: 300,
+  densityArea: 800
+};
+
 export const PARTICLE_THEME_OPTIONS = {
   twice: {
     particles: {
-      number: { value: 120, density: { enable: true, value_area: 800 } },
+      number: { value: 100, density: { enable: true, value_area: 800 } },
       color: { value: ['#ff7f00', '#ff007f', '#ffd3f0'] },
       shape: { type: ['circle', 'star'], stroke: { width: 0 } },
       opacity: { value: 0.5, random: true, anim: { enable: true, speed: 1.5, opacity_min: 0.1, sync: false } },
@@ -105,7 +111,7 @@ export const PARTICLE_THEME_OPTIONS = {
   },
   aespa: {
     particles: {
-      number: { value: 100, density: { enable: true, value_area: 900 } },
+      number: { value: 80, density: { enable: true, value_area: 900 } },
       color: { value: ['#00ffff', '#d900ff', '#5500ff'] },
       shape: { type: ['polygon', 'edge'], stroke: { width: 0 }, polygon: { nb_sides: 6 } },
       opacity: { value: 0.35, random: false, anim: { enable: false } },
@@ -122,7 +128,7 @@ export const PARTICLE_THEME_OPTIONS = {
   },
   nmixx: {
     particles: {
-      number: { value: 130, density: { enable: true, value_area: 800 } },
+      number: { value: 110, density: { enable: true, value_area: 800 } },
       color: { value: ['#ff0055', '#0033ff', '#00ffcc', '#ffffff'] },
       shape: { type: ['polygon', 'circle', 'triangle', 'star'], stroke: { width: 0 }, polygon: { nb_sides: 5 } },
       opacity: { value: 0.4, random: true, anim: { enable: true, speed: 2.0, opacity_min: 0.1, sync: false } },
@@ -139,7 +145,7 @@ export const PARTICLE_THEME_OPTIONS = {
   },
   newjeans: {
     particles: {
-      number: { value: 70, density: { enable: true, value_area: 800 } },
+      number: { value: 50, density: { enable: true, value_area: 800 } },
       color: { value: ['#ffee00', '#0055ff', '#ffffff'] },
       shape: { type: 'circle', stroke: { width: 0 } },
       opacity: { value: 0.4, random: true, anim: { enable: true, speed: 0.5, opacity_min: 0.1, sync: false } },
@@ -156,7 +162,7 @@ export const PARTICLE_THEME_OPTIONS = {
   },
   lesserafim: {
     particles: {
-      number: { value: 180, density: { enable: true, value_area: 800 } },
+      number: { value: 130, density: { enable: true, value_area: 800 } },
       color: { value: ['#ff0000', '#ffb3b3', '#ffffff'] },
       shape: { type: 'circle', stroke: { width: 0 } },
       opacity: { value: 0.5, random: true, anim: { enable: true, speed: 1.5, opacity_min: 0.1, sync: false } },
