@@ -1022,11 +1022,28 @@ body {
   overflow-x: auto;
   flex: 1;
   min-width: 0;
-  scrollbar-width: none;
-  padding: 2px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--purple) transparent;
+  padding: 2px 0 12px 0;
 }
 
-.board-tabs-scroll::-webkit-scrollbar { display: none; }
+.board-tabs-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.board-tabs-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.board-tabs-scroll::-webkit-scrollbar-thumb {
+  background: var(--purple);
+  border-radius: 3px;
+  box-shadow: 0 0 4px var(--purple);
+}
+
+.board-tabs-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--pink);
+}
 
 .board-tab {
   display: flex;
