@@ -1148,8 +1148,22 @@ body {
 
 .player-btn-mode {
   margin-left: auto;
-  font-size: 11px;
+  font-size: 9px;
   opacity: 0.6;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.player-btn-mode-icon {
+  font-size: 11px;
+  filter: grayscale(0.5);
+  opacity: 0.7;
+}
+
+.player-btn-mode-text {
+  font-size: 9px;
+  font-weight: 500;
 }
 
 .player-btn-mode:hover { opacity: 1; }

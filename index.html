@@ -88,9 +88,10 @@
               <button class="player-btn player-btn-play" @click="togglePlay()"
                 x-text="audioPlaying ? '&#x23F8;' : '&#x25B6;'"></button>
               <button class="player-btn" @click="nextTrack()" :disabled="!audioHasNext">&#9654;</button>
-              <button class="player-btn player-btn-mode" @click="toggleLoopMode()"
-                x-text="audioLoopMode === 'playlist' ? '&#x1F501;' : (audioLoopMode === 'song' ? '&#x1F502;' : '&#x1F500;')"
-                :title="audioLoopMode"></button>
+              <button class="player-btn player-btn-mode" @click="toggleLoopMode()">
+                <span class="player-btn-mode-icon" x-text="audioLoopMode === 'playlist' ? '&#x1F501;' : (audioLoopMode === 'song' ? '&#x1F502;' : '&#x1F500;')"></span>
+                <span class="player-btn-mode-text" x-text="audioLoopMode === 'playlist' ? 'Повторювати плейлист' : (audioLoopMode === 'song' ? 'Повторювати трек' : 'Випадково')"></span>
+              </button>
             </div>
 
             <div class="player-volume">
