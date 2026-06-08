@@ -72,6 +72,17 @@
               <div class="player-track-artist" x-text="audioCurrentTrack?.artist || ''"></div>
             </div>
 
+            <div class="player-progress-row">
+              <div class="player-progress-bar" @click="seekToPosition($event)">
+                <div class="player-progress-fill" :style="'width:' + ((audioProgress || 0) * 100) + '%'"></div>
+              </div>
+              <div class="player-progress-time">
+                <span x-text="formatTime(audioCurrentTime)"></span>
+                <span>/</span>
+                <span x-text="formatTime(audioDuration)"></span>
+              </div>
+            </div>
+
             <div class="player-controls">
               <button class="player-btn" @click="prevTrack()" :disabled="!audioHasPrev">&#9664;</button>
               <button class="player-btn player-btn-play" @click="togglePlay()"

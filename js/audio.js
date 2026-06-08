@@ -104,6 +104,7 @@ class AudioManager {
     this._isPaused = false;
     this._muted = false;
     this._mounted = false;
+    this._pendingSeek = null;
 
     this._loopMode = 'playlist';
     this._onUpdate = null;
@@ -201,6 +202,7 @@ class AudioManager {
       this._themeStates[this._currentTheme] = {};
     }
     this._themeStates[this._currentTheme].songIndex = this._currentSongIndex;
+    this._themeStates[this._currentTheme].position = this.currentTime || 0;
     this._saveState();
   }
 
@@ -253,6 +255,8 @@ class AudioManager {
         onReady: (e) => {
           this._ytReady = true;
           e.target.setVolume(this._volume);
+          const savedPos = this._themeStates[this._currentTheme]?.position || 0;
+          this._pendingSeek = savedPos;
           if (!this._isPaused) {
             e.target.mute();
             this._muted = true;
@@ -268,6 +272,10 @@ class AudioManager {
             this._onTrackEnded();
           } else if (e.data === window.YT.PlayerState.PLAYING) {
             this._isPaused = false;
+            if (this._pendingSeek !== null && this._pendingSeek > 0) {
+              e.target.seekTo(this._pendingSeek, true);
+              this._pendingSeek = null;
+            }
             this._notify();
           } else if (e.data === window.YT.PlayerState.PAUSED) {
             this._isPaused = true;
@@ -299,7 +307,11 @@ class AudioManager {
 
     const song = songs[this._currentSongIndex];
     if (song) {
-      this._ytPlayer?.loadVideoById(song.videoId);
+      this._pendingSeek = 0;
+      this._ytPlayer?.loadVideoById(song.videoId, 0);
+      if (this._themeStates[this._currentTheme]) {
+        this._themeStates[this._currentTheme].position = 0;
+      }
       this._saveThemeState();
     }
     this._notify();
@@ -312,6 +324,7 @@ class AudioManager {
     const prevTheme = this._currentTheme;
 
     if (prevTheme === themeId) {
+      this._saveThemeState();
       return;
     }
 
@@ -331,7 +344,9 @@ class AudioManager {
 
     const song = songs[idx];
     if (song && this._ytPlayer) {
-      this._ytPlayer.loadVideoById(song.videoId);
+      const savedPos = this._themeStates[themeId]?.position || 0;
+      this._pendingSeek = savedPos;
+      this._ytPlayer.loadVideoById(song.videoId, savedPos);
       if (this._isPaused) {
         this._ytPlayer.pauseVideo();
       }
@@ -362,8 +377,12 @@ class AudioManager {
 
     const song = songs[this._currentSongIndex];
     if (song && this._ytPlayer) {
-      this._ytPlayer.loadVideoById(song.videoId);
+      this._pendingSeek = 0;
+      this._ytPlayer.loadVideoById(song.videoId, 0);
       this._isPaused = false;
+      if (this._themeStates[this._currentTheme]) {
+        this._themeStates[this._currentTheme].position = 0;
+      }
     }
     this._saveThemeState();
     this._notify();
@@ -376,8 +395,12 @@ class AudioManager {
     this._currentSongIndex--;
     const song = songs[this._currentSongIndex];
     if (song && this._ytPlayer) {
-      this._ytPlayer.loadVideoById(song.videoId);
+      this._pendingSeek = 0;
+      this._ytPlayer.loadVideoById(song.videoId, 0);
       this._isPaused = false;
+      if (this._themeStates[this._currentTheme]) {
+        this._themeStates[this._currentTheme].position = 0;
+      }
     }
     this._saveThemeState();
     this._notify();
@@ -389,8 +412,12 @@ class AudioManager {
     this._currentSongIndex = index;
     const song = songs[index];
     if (song && this._ytPlayer) {
-      this._ytPlayer.loadVideoById(song.videoId);
+      this._pendingSeek = 0;
+      this._ytPlayer.loadVideoById(song.videoId, 0);
       this._isPaused = false;
+      if (this._themeStates[this._currentTheme]) {
+        this._themeStates[this._currentTheme].position = 0;
+      }
     }
     this._saveThemeState();
     this._notify();
@@ -401,6 +428,7 @@ class AudioManager {
     const dur = this._ytPlayer.getDuration();
     if (!dur) return;
     this._ytPlayer.seekTo(Math.max(0, Math.min(1, frac)) * dur, true);
+    this._saveThemeState();
   }
 
   toggleLoopMode() {
@@ -454,6 +482,7 @@ class AudioManager {
     if (this._isPaused || !this._ytPlayer?.pauseVideo) return;
     this._ytPlayer.pauseVideo();
     this._isPaused = true;
+    this._saveThemeState();
     this._saveState();
     this._notify();
   }
@@ -519,8 +548,14 @@ class AudioManager {
 
   _startProgressPolling() {
     this._stopProgressPolling();
+    this._positionSaveCounter = 0;
     this._progressTimer = setInterval(() => {
       this._notify();
+      this._positionSaveCounter++;
+      if (this._positionSaveCounter >= 5) {
+        this._positionSaveCounter = 0;
+        this._saveThemeState();
+      }
     }, 1000);
   }
 

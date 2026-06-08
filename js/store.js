@@ -970,6 +970,12 @@ export function createApp() {
       audioManager.seek(frac);
     },
 
+    seekToPosition(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      audioManager.seek(frac);
+    },
+
     nextTrack() {
       audioManager.nextTrack();
     },
