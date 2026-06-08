@@ -364,6 +364,7 @@
               </template>
               <div class="chat-login-prompt" x-show="!chatConnected && !isLoggedIn">
                 <p>Увійдіть через Twitch, щоб читати чат</p>
+                <button class="btn twitch-login" @click="login()">Увійти через Twitch</button>
               </div>
             </div>
             <div class="chat-footer">
