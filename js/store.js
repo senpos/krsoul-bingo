@@ -1,4 +1,4 @@
-import { STORAGE_KEYS, DEFAULT_TWITCH_USER_IDS, DEFAULT_CARDS, TWITCH_CLIENT_ID, generateBoardId, fromBase64, compress, decompress, DEFAULT_CHAT_HIDDEN_BOTS } from './config.js';
+import { STORAGE_KEYS, DEFAULT_TWITCH_USER_IDS, DEFAULT_CARDS, TWITCH_CLIENT_ID, generateBoardId, fromBase64, compress, decompress, compressUrl, decompressUrl, DEFAULT_CHAT_HIDDEN_BOTS } from './config.js';
 import { state, loadBoards, saveBoards, saveActiveBoardId, saveState } from './state.js';
 import { getEmoteEntry, splitCard, getAllEmotes, getEmotesBySource, scheduleEmoteRefresh, queueInitialEmoteRefresh, onEmoteRefresh, onEmoteStatus } from './emotes.js';
 import { loginWithTwitch, logout as authLogout, initAuth } from './auth.js';
@@ -729,11 +729,10 @@ export function createApp() {
       const board = this.activeBoard;
       if (!board) return '';
       const payload = {
-        id: board.id, name: board.name, size: board.size,
-        cards: board.cards, marks: board.marks, theme: board.theme,
-        twitchUserIds: state.twitchUserIds
+        name: board.name, size: board.size,
+        cards: board.cards, marks: board.marks, theme: board.theme
       };
-      const encoded = await compress(JSON.stringify(payload));
+      const encoded = await compressUrl(JSON.stringify(payload));
       const url = new URL(window.location.href.split('?')[0].split('#')[0]);
       url.searchParams.set('b', encoded);
       return url.toString();
@@ -761,9 +760,11 @@ export function createApp() {
       const text = prompt('Вставте дані дошки (base64 або JSON):');
       if (!text || text.length > 50000) return;
       let payload;
-      try { payload = JSON.parse(await decompress(text)); } catch {
-        try { payload = JSON.parse(fromBase64(text)); } catch {
-          try { payload = JSON.parse(text); } catch { return; }
+      try { payload = JSON.parse(await decompressUrl(text)); } catch {
+        try { payload = JSON.parse(await decompress(text)); } catch {
+          try { payload = JSON.parse(fromBase64(text)); } catch {
+            try { payload = JSON.parse(text); } catch { return; }
+          }
         }
       }
       if (this._validateImportPayload(payload)) {
@@ -777,17 +778,11 @@ export function createApp() {
       if (!encoded || encoded.length > 50000) return;
 
       try {
-        const dec = await decompress(encoded);
+        const dec = await decompressUrl(encoded);
         if (dec.length > 100000) return;
         const payload = JSON.parse(dec);
         if (this._validateImportPayload(payload)) {
           this._importBoardPayload(payload);
-          if (Array.isArray(payload.twitchUserIds)) {
-            const merged = new Set([...state.twitchUserIds, ...payload.twitchUserIds]);
-            this.twitchUserIds = [...merged];
-            saveState();
-            scheduleEmoteRefresh();
-          }
         }
       } catch {}
 
@@ -797,11 +792,15 @@ export function createApp() {
     },
 
     _validateImportPayload(p) {
-      if (!p || typeof p.id !== 'string' || p.id.length > 40) return false;
+      if (!p || typeof p !== 'object') return false;
       if (!Array.isArray(p.cards) || p.cards.length > 200) return false;
       const sz = Number(p.size);
       if (!Number.isFinite(sz) || sz < 3 || sz > 10) return false;
       return true;
+    },
+
+    _cardsFingerprint(cards) {
+      return JSON.stringify(cards.map(c => String(c || '')));
     },
 
     _importBoardPayload(payload) {
@@ -816,21 +815,239 @@ export function createApp() {
         : Array(total).fill(false);
       while (marks.length < total) marks.push(false);
 
-      const existing = this.boards.find(b => b.id === payload.id);
-      if (existing) {
-        this.activeBoardId = existing.id;
-      } else {
-        this.boards.push({ id: payload.id, name, size, cards, marks, theme });
-        this.activeBoardId = payload.id;
+      const fp = this._cardsFingerprint(cards);
+
+      const identical = this.boards.find(b => b.name === name && this._cardsFingerprint(b.cards.slice(0, total)) === fp);
+      if (identical) {
+        this.activeBoardId = identical.id;
+        this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
+        this.history = [];
+        this.redoHistory = [];
+        this.persist();
+        this._showImportToast(`Дошка "${name}" вже імпортована`);
+        this._applyThemeForActiveBoard();
+        return;
       }
+
+      const nameCollision = this.boards.find(b => b.name === name);
+      let finalName = name;
+      if (nameCollision) {
+        let suffix = 2;
+        while (this.boards.some(b => b.name === `${name} (${suffix})`)) suffix++;
+        finalName = `${name} (${suffix})`;
+      }
+
+      const newBoard = { id: generateBoardId(), name: finalName, size, cards, marks, theme };
+      this.boards.push(newBoard);
+      this.activeBoardId = newBoard.id;
       this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
       this.history = [];
       this.redoHistory = [];
       this.persist();
+      this._showImportToast(finalName !== name ? `Імпортовано як "${finalName}"` : `Дошку "${name}" імпортовано`);
+      this._applyThemeForActiveBoard();
+    },
+
+    _applyThemeForActiveBoard() {
       document.body.setAttribute('data-theme', this.theme);
       document.body.setAttribute('data-theme-mode', this.themeMode);
       applyParticleTheme(this.theme);
       audioManager.playTheme(this.theme);
+      this.$nextTick(() => this.ensureActiveTabVisible());
+    },
+
+    _showImportToast(msg) {
+      this.emoteStatusMsg = msg;
+      this.emoteStatusKind = '';
+      this.emoteVersion++;
+    },
+
+    exportAllSettings() {
+      const data = {
+        v: 1,
+        boards: this.boards,
+        activeBoardId: this.activeBoardId,
+        settings: {
+          twitchUserIds: state.twitchUserIds,
+          twitchChannelNames: state.twitchChannelNames,
+          themeMode: localStorage.getItem('krsoul-bingo-theme-mode') || 'dark',
+          chatFontSize: this.chatFontSize,
+          chatShowBots: this.chatShowBots,
+          chatShowBadges: this.chatShowBadges,
+          chatShowTimestamps: this.chatShowTimestamps,
+          chatHiddenBotsExtra: this.chatHiddenBotsExtra,
+          audioPlaylistOpen: this.audioPlaylistOpen,
+          allowCelebrate: this.allowCelebrate,
+          audioVolume: this.audioVolume,
+          audioMusicMuted: this.audioMusicMuted,
+          audioSfxEnabled: this.audioSfxEnabled,
+          audioLoopMode: this.audioLoopMode
+        }
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'krsoul-bingo-backup.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      this._showImportToast('Налаштування експортовано');
+    },
+
+    importAllSettings() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+          const text = await file.text();
+          const data = JSON.parse(text);
+          
+          if (data.twitchToken || data.settings?.twitchToken) {
+            this._showImportToast('Файл містить токен. Імпорт заборонено.');
+            return;
+          }
+          
+          if (data.v !== 1) {
+            this._showImportToast('Непідтримувана версія файлу');
+            return;
+          }
+          if (!Array.isArray(data.boards) || !data.boards.length) {
+            this._showImportToast('Невалідний файл: немає дошок');
+            return;
+          }
+
+          const validThemes = ['twice', 'aespa', 'nmixx', 'newjeans', 'lesserafim'];
+          const validLoopModes = ['playlist', 'song', 'random'];
+          
+          const validatedBoards = [];
+          for (const board of data.boards) {
+            if (!board || typeof board !== 'object') continue;
+            if (typeof board.id !== 'string' || !board.id) continue;
+            
+            const size = Number(board.size);
+            if (!Number.isFinite(size) || size < 3 || size > 10) continue;
+            
+            const total = size * size;
+            if (!Array.isArray(board.cards) || board.cards.length !== total) continue;
+            if (!Array.isArray(board.marks) || board.marks.length !== total) continue;
+            
+            const cards = board.cards.map(c => String(c || ''));
+            const marks = board.marks.map(m => Boolean(m));
+            const theme = validThemes.includes(board.theme) ? board.theme : 'twice';
+            const name = String(board.name || 'Без назви').slice(0, 50);
+            
+            validatedBoards.push({
+              id: board.id,
+              name,
+              size,
+              cards,
+              marks,
+              theme,
+              themeMode: board.themeMode === 'light' ? 'light' : 'dark'
+            });
+          }
+          
+          if (!validatedBoards.length) {
+            this._showImportToast('Невалідні дошки в файлі');
+            return;
+          }
+
+          this.boards = validatedBoards;
+          this.activeBoardId = validatedBoards[0].id;
+          if (typeof data.activeBoardId === 'string' && validatedBoards.some(b => b.id === data.activeBoardId)) {
+            this.activeBoardId = data.activeBoardId;
+          }
+
+          const s = data.settings || {};
+          
+          if (Array.isArray(s.twitchUserIds)) {
+            const validIds = s.twitchUserIds.filter(id => typeof id === 'string' && /^\d+$/.test(id));
+            if (validIds.length) {
+              state.twitchUserIds = validIds;
+              try { localStorage.setItem(STORAGE_KEYS.twitchUserIds, JSON.stringify(validIds)); } catch {}
+            }
+          }
+          
+          if (s.twitchChannelNames && typeof s.twitchChannelNames === 'object' && !Array.isArray(s.twitchChannelNames)) {
+            const validNames = {};
+            for (const [k, v] of Object.entries(s.twitchChannelNames)) {
+              if (/^\d+$/.test(k) && typeof v === 'string' && v.length <= 50) {
+                validNames[k] = v;
+              }
+            }
+            state.twitchChannelNames = validNames;
+            try { localStorage.setItem(STORAGE_KEYS.twitchChannelNames, JSON.stringify(validNames)); } catch {}
+          }
+          
+          if (s.themeMode === 'dark' || s.themeMode === 'light') {
+            try { localStorage.setItem('krsoul-bingo-theme-mode', s.themeMode); } catch {}
+          }
+          
+          const chatFontSize = Number(s.chatFontSize);
+          if (Number.isFinite(chatFontSize) && chatFontSize >= 9 && chatFontSize <= 24) {
+            this.chatFontSize = chatFontSize;
+            try { localStorage.setItem(STORAGE_KEYS.chatFontSize, String(chatFontSize)); } catch {}
+          }
+          
+          if (typeof s.chatShowBots === 'boolean') {
+            this.chatShowBots = s.chatShowBots;
+            try { localStorage.setItem(STORAGE_KEYS.chatShowBots, String(s.chatShowBots)); } catch {}
+          }
+          if (typeof s.chatShowBadges === 'boolean') {
+            this.chatShowBadges = s.chatShowBadges;
+            try { localStorage.setItem(STORAGE_KEYS.chatShowBadges, String(s.chatShowBadges)); } catch {}
+          }
+          if (typeof s.chatShowTimestamps === 'boolean') {
+            this.chatShowTimestamps = s.chatShowTimestamps;
+            try { localStorage.setItem(STORAGE_KEYS.chatShowTimestamps, String(s.chatShowTimestamps)); } catch {}
+          }
+          
+          if (Array.isArray(s.chatHiddenBotsExtra)) {
+            const validBots = s.chatHiddenBotsExtra.filter(b => typeof b === 'string' && b.length <= 50);
+            this.chatHiddenBotsExtra = validBots;
+            try { localStorage.setItem(STORAGE_KEYS.chatHiddenBots, JSON.stringify(validBots)); } catch {}
+          }
+          
+          if (typeof s.audioPlaylistOpen === 'boolean') {
+            this.audioPlaylistOpen = s.audioPlaylistOpen;
+            try { localStorage.setItem(STORAGE_KEYS.audioPlaylistOpen, String(s.audioPlaylistOpen)); } catch {}
+          }
+          if (typeof s.allowCelebrate === 'boolean') {
+            this.allowCelebrate = s.allowCelebrate;
+          }
+          
+          const audioVolume = Number(s.audioVolume);
+          if (Number.isFinite(audioVolume) && audioVolume >= 0 && audioVolume <= 100) {
+            this.audioVolume = audioVolume;
+          }
+          
+          if (typeof s.audioMusicMuted === 'boolean') this.audioMusicMuted = s.audioMusicMuted;
+          if (typeof s.audioSfxEnabled === 'boolean') this.audioSfxEnabled = s.audioSfxEnabled;
+          
+          if (validLoopModes.includes(s.audioLoopMode)) {
+            this.audioLoopMode = s.audioLoopMode;
+          }
+
+          this.persist();
+          this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
+          this.history = [];
+          this.redoHistory = [];
+
+          this._applyThemeForActiveBoard();
+          audioManager.setVolume(this.audioVolume);
+          audioManager.setMusicMuted(this.audioMusicMuted);
+          audioManager.setSfxEnabled(this.audioSfxEnabled);
+          audioManager.setLoopMode(this.audioLoopMode);
+
+          this._showImportToast('Налаштування імпортовано');
+        } catch (err) {
+          this._showImportToast('Помилка імпорту: ' + err.message);
+        }
+      };
+      input.click();
     },
 
     // ── Actions ──

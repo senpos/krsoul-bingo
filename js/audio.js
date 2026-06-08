@@ -461,6 +461,10 @@ class AudioManager {
     this._setMuted(!this._muted);
   }
 
+  setMusicMuted(muted) {
+    this._setMuted(Boolean(muted));
+  }
+
   setFxVolume(v) {
     this._fxVolume = Math.max(0, Math.min(1, v));
     if (this._sfxGain) {

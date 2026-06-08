@@ -215,6 +215,15 @@
                   </div>
                 </div>
               </div>
+
+              <div class="editor-section">
+                <div class="editor-section-title">Резервна копія</div>
+                <div class="backup-controls">
+                  <button class="btn btn-action" @click="exportAllSettings()">Експорт</button>
+                  <button class="btn btn-action" @click="importAllSettings()">Імпорт</button>
+                </div>
+                <div class="backup-note">Зберігає всі дошки та налаштування. Twitch токен не експортується з міркувань безпеки.</div>
+              </div>
             </div>
           </div>
 

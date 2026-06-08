@@ -68,6 +68,26 @@ export async function decompress(b64) {
   } catch { return fromBase64(b64); }
 }
 
+export function toBase64Url(b64) {
+  return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+export function fromBase64Url(b64url) {
+  let b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+  const pad = b64.length % 4;
+  if (pad === 2) b64 += '==';
+  else if (pad === 3) b64 += '=';
+  return b64;
+}
+
+export async function compressUrl(str) {
+  return toBase64Url(await compress(str));
+}
+
+export async function decompressUrl(b64url) {
+  return decompress(fromBase64Url(b64url));
+}
+
 /*
   Twitch App Setup:
   1. Go to https://dev.twitch.tv/console/apps → Register Your Application
