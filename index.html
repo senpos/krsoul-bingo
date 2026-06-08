@@ -300,18 +300,22 @@
               <template x-for="msg in visibleChatMessages" :key="msg.id">
                 <div class="chat-message" :class="{ restored: msg.isRestored }"
                   :style="{ fontSize: chatFontSize + 'px' }">
-                  <span class="chat-time" x-text="msg.timeStr"></span>
-                  <template x-if="chatShowBadges && msg.badges && msg.badges.length">
-                    <span class="chat-badges">
-                      <template x-for="badge in msg.badges" :key="badge.setId + '/' + badge.id">
-                        <img class="chat-badge" :src="badge.url" :alt="badge.setId" loading="lazy"
-                          crossorigin="anonymous">
-                      </template>
-                    </span>
-                  </template>
-                  <span class="chat-name" :style="{ color: msg.color }" x-text="msg.displayName"></span>
-                  <span class="chat-colon">:</span>
-                  <span class="chat-text" x-html="msg.renderedText"></span>
+                  <div class="chat-time-col" x-show="chatShowTimestamps">
+                    <span class="chat-time" :title="msg.timeFull" x-text="msg.timeStr"></span>
+                  </div>
+                  <div class="chat-content-col">
+                    <template x-if="chatShowBadges && msg.badges && msg.badges.length">
+                      <span class="chat-badges">
+                        <template x-for="badge in msg.badges" :key="badge.setId + '/' + badge.id">
+                          <img class="chat-badge" :src="badge.url" :alt="badge.setId" loading="lazy"
+                            crossorigin="anonymous">
+                        </template>
+                      </span>
+                    </template>
+                    <span class="chat-name" :style="{ color: msg.color }" x-text="msg.displayName"></span>
+                    <span class="chat-colon">:</span>
+                    <span class="chat-text" x-html="msg.renderedText"></span>
+                  </div>
                 </div>
               </template>
               <div class="chat-login-prompt" x-show="!chatConnected && !isLoggedIn">
@@ -324,6 +328,13 @@
               <span class="chat-reconnect-countdown" x-show="chatReconnectStatus.attempts > 0 && chatReconnectCountdown"
                 x-text="'спроба ' + chatReconnectStatus.attempts + '/10 · ' + chatReconnectCountdown"></span>
               <button class="chat-reconnect-btn" x-show="chatReconnectStatus.stopped" @click="manualReconnect()">Перепідключити</button>
+              <button class="chat-time-toggle" @click="toggleChatTimestamps()" :class="{ active: chatShowTimestamps }"
+                :title="chatShowTimestamps ? 'Час показаний' : 'Час прихований'">
+                <svg x-show="chatShowTimestamps" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg x-show="!chatShowTimestamps" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                <span>Час</span>
+              </button>
+              <span class="chat-toggle-separator"></span>
               <button class="chat-bot-toggle" @click="toggleChatBots()" :class="{ active: chatShowBots }"
                 :title="chatShowBots ? 'Боти показані' : 'Боти приховані'">
                 <svg x-show="chatShowBots" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>

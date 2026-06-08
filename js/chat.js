@@ -91,14 +91,14 @@ export function formatChatTime(iso) {
   if (!iso) return '';
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '';
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const msgDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const diffDays = Math.round((today - msgDay) / 86400000);
-  const time = pad2(d.getHours()) + ':' + pad2(d.getMinutes());
-  if (diffDays === 0) return time;
-  if (diffDays === 1) return 'Вчора ' + time;
-  return pad2(d.getDate()) + '.' + pad2(d.getMonth() + 1) + ' ' + time;
+  return pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+}
+
+export function formatChatTimeFull(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return pad2(d.getDate()) + '.' + pad2(d.getMonth() + 1) + '.' + d.getFullYear() + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
 }
 
 function escapeHtml(str) {
@@ -400,6 +400,7 @@ class ChatManager {
       badges: badges,
       renderedText: renderChatMessage(event),
       timeStr: formatChatTime(timestamp),
+      timeFull: formatChatTimeFull(timestamp),
       timestamp: timestamp || '',
     });
   }

@@ -1307,9 +1307,25 @@ body {
   word-break: break-word;
   animation: chatFadeIn 0.15s ease;
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  display: flex;
+  align-items: baseline;
 }
 
-.chat-time { color: rgba(255, 255, 255, 0.3); font-size: 0.75em; margin-right: 4px; font-variant-numeric: tabular-nums; }
+.chat-time-col {
+  flex-shrink: 0;
+  width: 3.5em;
+  text-align: right;
+  padding-right: 8px;
+  margin-right: 8px;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.chat-content-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-time { color: rgba(255, 255, 255, 0.3); font-size: 0.75em; font-variant-numeric: tabular-nums; }
 .chat-badges { display: inline-flex; align-items: center; gap: 2px; margin-right: 3px; vertical-align: text-bottom; }
 .chat-badge { width: 1.1em; height: 1.1em; display: inline-block; image-rendering: auto; }
 .chat-message.restored { opacity: 0.7; }
@@ -1356,6 +1372,7 @@ body {
 .chat-reconnect-btn:hover { background: rgba(255, 255, 255, 0.12); border-color: var(--cyan); color: var(--cyan); }
 .chat-reconnect-countdown { font-size: 9px; color: rgba(255, 255, 255, 0.4); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
+.chat-time-toggle,
 .chat-bot-toggle,
 .chat-badge-toggle {
   background: none;
@@ -1372,7 +1389,7 @@ body {
   font-size: 10px;
 }
 
-.chat-bot-toggle { margin-left: auto; }
+.chat-time-toggle { margin-left: auto; }
 
 .chat-toggle-separator {
   width: 1px;
@@ -1381,7 +1398,9 @@ body {
   margin: 0 2px;
 }
 
+.chat-time-toggle:hover,
 .chat-bot-toggle:hover, .chat-badge-toggle:hover { color: rgba(255, 255, 255, 0.5); background: rgba(255, 255, 255, 0.06); }
+.chat-time-toggle.active { color: var(--cyan); }
 .chat-bot-toggle.active { color: #4caf50; }
 .chat-badge-toggle.active { color: #ffd700; }
 

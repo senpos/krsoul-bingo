@@ -4,7 +4,7 @@ import { getEmoteEntry, splitCard, getAllEmotes, getEmotesBySource, scheduleEmot
 import { loginWithTwitch, logout as authLogout, initAuth } from './auth.js';
 import { completedLineKeys, drawBingoLines, launchConfetti, applyParticleTheme, bingoCellBurst, setBingoMode } from './game.js';
 import { audioManager } from './audio.js';
-import { chatManager, isKnownBot, renderMessageFromFragments, formatChatTime, refreshBadgesCache, resolveBadgeUrls } from './chat.js';
+import { chatManager, isKnownBot, renderMessageFromFragments, formatChatTime, formatChatTimeFull, refreshBadgesCache, resolveBadgeUrls } from './chat.js';
 
 export function createApp() {
   return {
@@ -197,6 +197,7 @@ export function createApp() {
     chatFontSize: Number(localStorage.getItem(STORAGE_KEYS.chatFontSize)) || 12,
     chatShowBots: localStorage.getItem(STORAGE_KEYS.chatShowBots) === 'true',
     chatShowBadges: localStorage.getItem(STORAGE_KEYS.chatShowBadges) !== 'false',
+    chatShowTimestamps: localStorage.getItem(STORAGE_KEYS.chatShowTimestamps) === 'true',
     chatHiddenBotsExtra: JSON.parse(localStorage.getItem(STORAGE_KEYS.chatHiddenBots) || '[]'),
     chatHiddenBotInput: '',
     chatTargetChannel: '',
@@ -1089,6 +1090,10 @@ export function createApp() {
       if (idx !== -1) this.chatHiddenBotsExtra.splice(idx, 1);
       try { localStorage.setItem(STORAGE_KEYS.chatHiddenBots, JSON.stringify(this.chatHiddenBotsExtra)); } catch {}
     },
+    toggleChatTimestamps() {
+      this.chatShowTimestamps = !this.chatShowTimestamps;
+      try { localStorage.setItem(STORAGE_KEYS.chatShowTimestamps, String(this.chatShowTimestamps)); } catch {}
+    },
     toggleChatBots() {
       this.chatShowBots = !this.chatShowBots;
       try { localStorage.setItem(STORAGE_KEYS.chatShowBots, String(this.chatShowBots)); } catch {}
@@ -1162,6 +1167,7 @@ export function createApp() {
           badges: resolveBadgeUrls(m.badges || []),
           renderedText,
           timeStr: m.timestamp ? formatChatTime(m.timestamp) : '',
+          timeFull: m.timestamp ? formatChatTimeFull(m.timestamp) : '',
           timestamp: m.timestamp || '',
           isRestored: true,
         });
