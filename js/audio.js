@@ -440,6 +440,14 @@ class AudioManager {
     this._notify();
   }
 
+  setLoopMode(mode) {
+    if (mode === 'playlist' || mode === 'song' || mode === 'random') {
+      this._loopMode = mode;
+      this._saveState();
+      this._notify();
+    }
+  }
+
   setVolume(v) {
     this._volume = Math.max(0, Math.min(100, Math.round(v)));
     if (this._ytPlayer?.setVolume) {
