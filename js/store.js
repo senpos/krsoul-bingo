@@ -2,7 +2,7 @@ import { STORAGE_KEYS, DEFAULT_TWITCH_USER_IDS, DEFAULT_CARDS, TWITCH_CLIENT_ID,
 import { state, loadBoards, saveBoards, saveActiveBoardId, saveState } from './state.js';
 import { getEmoteEntry, splitCard, getAllEmotes, getEmotesBySource, scheduleEmoteRefresh, queueInitialEmoteRefresh, onEmoteRefresh, onEmoteStatus } from './emotes.js';
 import { loginWithTwitch, logout as authLogout, initAuth } from './auth.js';
-import { completedLineKeys, drawBingoLines, launchConfetti, applyParticleTheme, bingoCellBurst, setBingoMode } from './game.js';
+import { completedLineKeys, drawBingoLines, updateLinePositions, clearBingoLines, launchConfetti, applyParticleTheme, bingoCellBurst, setBingoMode } from './game.js';
 import { audioManager } from './audio.js';
 import { chatManager, isKnownBot, renderMessageFromFragments, formatChatTime, formatChatTimeFull, refreshBadgesCache, resolveBadgeUrls } from './chat.js';
 
@@ -480,10 +480,11 @@ export function createApp() {
       const drawLines = () => requestAnimationFrame(() => drawBingoLines([...this.bingoKeys]));
 
       this.$watch('marks', () => this.$nextTick(drawLines));
-      this.$watch('cards', () => this.$nextTick(drawLines));
-      this.$watch('size', () => this.$nextTick(drawLines));
+      this.$watch('cards', () => this.$nextTick(() => { clearBingoLines(); drawLines(); }));
+      this.$watch('size', () => this.$nextTick(() => { clearBingoLines(); drawLines(); }));
       this.$watch('pickerOpen', val => { document.body.style.overflow = val ? 'hidden' : ''; });
-      window.addEventListener('resize', () => requestAnimationFrame(() => drawBingoLines([...this.bingoKeys])));
+      const ro = new ResizeObserver(() => requestAnimationFrame(updateLinePositions));
+      ro.observe(document.getElementById('bingoGrid'));
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape') this.cancelDelete(); });
       document.addEventListener('click', (e) => { if (this.pendingDeleteBoardId && !e.target.closest('.board-tabs')) this.cancelDelete(); });
 

@@ -12,53 +12,84 @@ export function completedLineKeys(size, marks) {
   return new Set(lines.filter(l => l.every(idx => marks[idx])).map(l => l.join(',')));
 }
 
-let _lastDrawnKeys = [];
+const _lineMap = new Map();
+
+function _cellCenter(index, svgRect, grid) {
+  const cell = grid.querySelectorAll('.cell')[index];
+  if (!cell) return null;
+  const r = cell.getBoundingClientRect();
+  return { x: r.left + r.width / 2 - svgRect.left, y: r.top + r.height / 2 - svgRect.top };
+}
+
+function _createLineEl(indices, svg, grid) {
+  const svgRect = svg.getBoundingClientRect();
+  const a = _cellCenter(indices[0], svgRect, grid);
+  const b = _cellCenter(indices[indices.length - 1], svgRect, grid);
+  if (!a || !b) return null;
+
+  const len = Math.hypot(b.x - a.x, b.y - a.y);
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('class', 'bingo-line');
+  line.setAttribute('x1', a.x);
+  line.setAttribute('y1', a.y);
+  line.setAttribute('x2', b.x);
+  line.setAttribute('y2', b.y);
+  line.style.strokeDasharray = len;
+  line.style.setProperty('--line-length', len);
+  svg.appendChild(line);
+  return line;
+}
+
+function _updateLineEl(el, indices, svg, grid) {
+  const svgRect = svg.getBoundingClientRect();
+  const a = _cellCenter(indices[0], svgRect, grid);
+  const b = _cellCenter(indices[indices.length - 1], svgRect, grid);
+  if (!a || !b) return;
+
+  const len = Math.hypot(b.x - a.x, b.y - a.y);
+  el.setAttribute('x1', a.x);
+  el.setAttribute('y1', a.y);
+  el.setAttribute('x2', b.x);
+  el.setAttribute('y2', b.y);
+  el.style.strokeDasharray = len;
+  el.style.strokeDashoffset = '0';
+}
 
 export function drawBingoLines(keys) {
   const svg = document.getElementById('bingoLines');
   const grid = document.getElementById('bingoGrid');
   if (!svg || !grid) return;
 
-  const cells = grid.querySelectorAll('.cell');
-  if (cells.length === 0) return;
-
-  const sortedKeys = [...keys].sort();
-  if (sortedKeys.length === _lastDrawnKeys.length && sortedKeys.every((k, i) => k === _lastDrawnKeys[i])) {
-    return;
-  }
-  _lastDrawnKeys = sortedKeys;
-
-  const wrapperRect = svg.getBoundingClientRect();
-  while (svg.firstChild) svg.removeChild(svg.firstChild);
-
   const keySet = new Set(keys);
-  keySet.forEach(k => {
-    const indices = k.split(',').map(Number);
-    const first = cells[indices[0]];
-    const last = cells[indices[indices.length - 1]];
-    if (!first || !last) return;
 
-    const r1 = first.getBoundingClientRect();
-    const r2 = last.getBoundingClientRect();
+  for (const [key, data] of _lineMap) {
+    if (!keySet.has(key)) {
+      data.el.remove();
+      _lineMap.delete(key);
+    }
+  }
 
-    const x1 = r1.left + r1.width / 2 - wrapperRect.left;
-    const y1 = r1.top + r1.height / 2 - wrapperRect.top;
-    const x2 = r2.left + r2.width / 2 - wrapperRect.left;
-    const y2 = r2.top + r2.height / 2 - wrapperRect.top;
+  for (const key of keySet) {
+    if (!_lineMap.has(key)) {
+      const indices = key.split(',').map(Number);
+      const el = _createLineEl(indices, svg, grid);
+      if (el) _lineMap.set(key, { el, indices });
+    }
+  }
+}
 
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('class', 'bingo-line');
-    line.setAttribute('x1', x1);
-    line.setAttribute('y1', y1);
-    line.setAttribute('x2', x2);
-    line.setAttribute('y2', y2);
+export function updateLinePositions() {
+  const svg = document.getElementById('bingoLines');
+  const grid = document.getElementById('bingoGrid');
+  if (!svg || !grid || _lineMap.size === 0) return;
+  for (const data of _lineMap.values()) {
+    _updateLineEl(data.el, data.indices, svg, grid);
+  }
+}
 
-    const length = Math.hypot(x2 - x1, y2 - y1);
-    line.style.strokeDasharray = length;
-    line.style.setProperty('--line-length', length);
-
-    svg.appendChild(line);
-  });
+export function clearBingoLines() {
+  for (const data of _lineMap.values()) data.el.remove();
+  _lineMap.clear();
 }
 
 export function launchConfetti() {
