@@ -1434,7 +1434,7 @@ export function createApp() {
       }
       this.persist();
     },
-    login() { loginWithTwitch(); },
+    async login() { await sfxManager.playBlocking('login'); loginWithTwitch(); },
     logout() {
       sfxManager.play('logout');
       authLogout(this);
