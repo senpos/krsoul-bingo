@@ -497,6 +497,7 @@ export function createApp() {
       this.activeBoardId = activeBoardId;
       for (const b of this.boards) {
         if (b.size < 3) b.size = 3;
+        if (b.size > 7) b.size = 7;
       }
 
       const board = this.activeBoard;
@@ -758,7 +759,7 @@ export function createApp() {
     },
 
     setSize(newSize) {
-      if (newSize < 3 || newSize > 10) return;
+      if (newSize < 3 || newSize > 7) return;
       const board = this.activeBoard;
       if (!board) return;
       board.size = newSize;
@@ -851,7 +852,7 @@ export function createApp() {
       if (!Array.isArray(p.cards)) return { valid: false, error: 'Відсутні картки' };
       
       const sz = Number(p.size);
-      if (!Number.isFinite(sz) || sz < 3 || sz > 10) return { valid: false, error: 'Невалідний розмір (має бути 3-10)' };
+      if (!Number.isFinite(sz) || sz < 3 || sz > 7) return { valid: false, error: 'Невалідний розмір (має бути 3-7)' };
       
       const total = sz * sz;
       if (p.cards.length !== total) return { valid: false, error: `Кількість карток (${p.cards.length}) не відповідає розміру (${total})` };
@@ -1037,7 +1038,7 @@ export function createApp() {
             if (typeof board.id !== 'string' || !board.id) continue;
 
             const size = Number(board.size);
-            if (!Number.isFinite(size) || size < 3 || size > 10) continue;
+            if (!Number.isFinite(size) || size < 3 || size > 7) continue;
 
             const total = size * size;
             if (!Array.isArray(board.cards) || board.cards.length !== total) continue;

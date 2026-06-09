@@ -354,7 +354,7 @@
             <div class="controls-sep"></div>
             <div class="size-select-wrap">
               <select class="size-select" @change="setSize(Number($el.value))">
-                <template x-for="s in [3,4,5,6,7,8,9,10]" :key="s">
+                <template x-for="s in [3,4,5,6,7]" :key="s">
                   <option :value="s" :selected="size === s" x-text="s + '\u00D7' + s"></option>
                 </template>
               </select>

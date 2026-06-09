@@ -2420,10 +2420,10 @@ body {
 /* ── Bingo Grid ── */
 .bingo-grid {
   display: grid;
-  gap: clamp(4px, 0.8vw, 10px);
+  gap: clamp(3px, 0.5vw, 8px);
   height: 100%;
   width: auto;
-  aspect-ratio: 1;
+  aspect-ratio: 1.02;
   max-width: 100%;
   max-height: 100%;
   position: relative;
@@ -2431,11 +2431,10 @@ body {
 
 .cell {
   background: var(--card);
-  border: 2px solid rgba(150, 150, 150, 0.4);
+  border: 1px solid rgba(150, 150, 150, 0.4);
   border-radius: var(--cell-radius);
   min-height: 0;
-  aspect-ratio: 1;
-  padding: clamp(0.2rem, 0.6vw, 0.6rem);
+  padding: clamp(0.15rem, 0.4vw, 0.4rem);
   text-align: center;
   cursor: pointer;
   display: flex;
@@ -2530,65 +2529,47 @@ body {
 @keyframes drawLine { from { stroke-dashoffset: var(--line-length, 2000); } to { stroke-dashoffset: 0; } }
 
 /* ── Cell Content ── */
-.cell-icon { display: flex; justify-content: center; align-items: center; margin-bottom: 2px; transition: transform 0.15s; }
+.cell-icon { display: flex; justify-content: center; align-items: center; margin-bottom: 3px; transition: transform 0.15s; }
 .cell:not(.marked):not(.bingo-active):hover:not(.free) .cell-icon { transform: scale(1.05); }
 .cell.marked:hover .cell-icon { transform: scale(1.05); }
 .cell.bingo-active:hover .cell-icon { transform: scale(1.05); }
 
-.cell-icon>span { display: flex; align-items: center; justify-content: center; width: clamp(20px, 5vw, 40px); height: clamp(20px, 5vw, 40px); font-size: clamp(16px, 3.5vw, 30px); line-height: 1; overflow: hidden; white-space: nowrap; }
-.cell-icon img.emote { width: clamp(20px, 5vw, 40px); height: clamp(20px, 5vw, 40px); object-fit: contain; display: block; }
+.cell-icon>span { display: flex; align-items: center; justify-content: center; width: clamp(32px, 7vw, 60px); height: clamp(32px, 7vw, 60px); font-size: clamp(24px, 5vw, 48px); line-height: 1; overflow: hidden; white-space: nowrap; }
+.cell-icon img.emote { width: clamp(32px, 7vw, 60px); height: clamp(32px, 7vw, 60px); object-fit: contain; display: block; }
 .emote { vertical-align: text-bottom; }
 
-.cell-text { font-weight: 700; color: var(--text); line-height: 1.15; text-align: center; overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; transition: color 0.5s; }
+.cell-text { font-weight: 700; color: var(--text); line-height: 1.05; text-align: center; overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; transition: color 0.5s; }
 
 /* ── Board Size Adaptive ── */
-[data-size="3"] .cell { padding: clamp(0.4rem, 1.2vw, 0.8rem); }
-[data-size="3"] .cell-text { font-size: clamp(11px, 2.2vw, 15px); -webkit-line-clamp: 3; }
-[data-size="3"] .cell-icon { margin-bottom: 6px; }
-[data-size="3"] .cell-icon>span { width: clamp(36px, 9vw, 60px); height: clamp(36px, 9vw, 60px); font-size: clamp(24px, 5vw, 38px); }
-[data-size="3"] .cell-icon img.emote { width: clamp(36px, 9vw, 60px); height: clamp(36px, 9vw, 60px); }
+[data-size="3"] .cell { padding: clamp(0.3rem, 1vw, 0.6rem); }
+[data-size="3"] .cell-text { font-size: clamp(12px, 2.4vw, 17px); }
+[data-size="3"] .cell-icon { margin-bottom: 5px; }
+[data-size="3"] .cell-icon>span { width: clamp(52px, 13vw, 92px); height: clamp(52px, 13vw, 92px); font-size: clamp(38px, 7vw, 62px); }
+[data-size="3"] .cell-icon img.emote { width: clamp(52px, 13vw, 92px); height: clamp(52px, 13vw, 92px); }
 
-[data-size="4"] .cell { padding: clamp(0.3rem, 0.8vw, 0.6rem); }
-[data-size="4"] .cell-text { font-size: clamp(9px, 1.8vw, 13px); -webkit-line-clamp: 2; }
-[data-size="4"] .cell-icon { margin-bottom: 5px; }
-[data-size="4"] .cell-icon>span { width: clamp(28px, 7vw, 48px); height: clamp(28px, 7vw, 48px); font-size: clamp(20px, 4vw, 34px); }
-[data-size="4"] .cell-icon img.emote { width: clamp(28px, 7vw, 48px); height: clamp(28px, 7vw, 48px); }
+[data-size="4"] .cell { padding: clamp(0.25rem, 0.7vw, 0.5rem); }
+[data-size="4"] .cell-text { font-size: clamp(11px, 2vw, 15px); }
+[data-size="4"] .cell-icon { margin-bottom: 4px; }
+[data-size="4"] .cell-icon>span { width: clamp(44px, 11vw, 72px); height: clamp(44px, 11vw, 72px); font-size: clamp(34px, 6vw, 56px); }
+[data-size="4"] .cell-icon img.emote { width: clamp(44px, 11vw, 72px); height: clamp(44px, 11vw, 72px); }
 
-[data-size="5"] .cell { padding: clamp(0.2rem, 0.6vw, 0.45rem); }
-[data-size="5"] .cell-text { font-size: clamp(8px, 1.3vw, 11px); -webkit-line-clamp: 3; }
+[data-size="5"] .cell { padding: clamp(0.15rem, 0.5vw, 0.35rem); }
+[data-size="5"] .cell-text { font-size: clamp(10px, 1.5vw, 13px); }
 [data-size="5"] .cell-icon { margin-bottom: 3px; }
-[data-size="5"] .cell-icon>span { width: clamp(24px, 5vw, 38px); height: clamp(24px, 5vw, 38px); font-size: clamp(16px, 3.5vw, 28px); }
-[data-size="5"] .cell-icon img.emote { width: clamp(24px, 5vw, 38px); height: clamp(24px, 5vw, 38px); }
+[data-size="5"] .cell-icon>span { width: clamp(38px, 8vw, 62px); height: clamp(38px, 8vw, 62px); font-size: clamp(30px, 5.2vw, 50px); }
+[data-size="5"] .cell-icon img.emote { width: clamp(38px, 8vw, 62px); height: clamp(38px, 8vw, 62px); }
 
-[data-size="6"] .cell { padding: clamp(0.15rem, 0.4vw, 0.35rem); }
-[data-size="6"] .cell-text { font-size: clamp(7px, 1.1vw, 9px); -webkit-line-clamp: 2; }
-[data-size="6"] .cell-icon { margin-bottom: 4px; }
-[data-size="6"] .cell-icon>span { width: clamp(20px, 4.5vw, 32px); height: clamp(20px, 4.5vw, 32px); font-size: clamp(14px, 3vw, 24px); }
-[data-size="6"] .cell-icon img.emote { width: clamp(20px, 4.5vw, 32px); height: clamp(20px, 4.5vw, 32px); }
+[data-size="6"] .cell { padding: clamp(0.12rem, 0.35vw, 0.25rem); }
+[data-size="6"] .cell-text { font-size: clamp(9px, 1.2vw, 11px); }
+[data-size="6"] .cell-icon { margin-bottom: 3px; }
+[data-size="6"] .cell-icon>span { width: clamp(34px, 7vw, 56px); height: clamp(34px, 7vw, 56px); font-size: clamp(26px, 4.5vw, 42px); }
+[data-size="6"] .cell-icon img.emote { width: clamp(34px, 7vw, 56px); height: clamp(34px, 7vw, 56px); }
 
-[data-size="7"] .cell { padding: clamp(0.12rem, 0.35vw, 0.3rem); }
-[data-size="7"] .cell-text { font-size: clamp(6px, 1vw, 8px); -webkit-line-clamp: 2; }
-[data-size="7"] .cell-icon { margin-bottom: 3px; }
-[data-size="7"] .cell-icon>span { width: clamp(18px, 4vw, 28px); height: clamp(18px, 4vw, 28px); font-size: clamp(12px, 2.5vw, 20px); }
-[data-size="7"] .cell-icon img.emote { width: clamp(18px, 4vw, 28px); height: clamp(18px, 4vw, 28px); }
-
-[data-size="8"] .cell { padding: clamp(0.1rem, 0.25vw, 0.25rem); }
-[data-size="8"] .cell-text { font-size: clamp(6px, 0.9vw, 7px); -webkit-line-clamp: 2; }
-[data-size="8"] .cell-icon { margin-bottom: 3px; }
-[data-size="8"] .cell-icon>span { width: clamp(16px, 3.5vw, 24px); height: clamp(16px, 3.5vw, 24px); font-size: clamp(10px, 2.2vw, 18px); }
-[data-size="8"] .cell-icon img.emote { width: clamp(16px, 3.5vw, 24px); height: clamp(16px, 3.5vw, 24px); }
-
-[data-size="9"] .cell { padding: clamp(0.08rem, 0.2vw, 0.2rem); }
-[data-size="9"] .cell-text { font-size: clamp(5px, 0.8vw, 7px); -webkit-line-clamp: 2; }
-[data-size="9"] .cell-icon { margin-bottom: 3px; }
-[data-size="9"] .cell-icon>span { width: clamp(14px, 3vw, 22px); height: clamp(14px, 3vw, 22px); font-size: clamp(9px, 2vw, 16px); }
-[data-size="9"] .cell-icon img.emote { width: clamp(14px, 3vw, 22px); height: clamp(14px, 3vw, 22px); }
-
-[data-size="10"] .cell { padding: clamp(0.06rem, 0.15vw, 0.15rem); }
-[data-size="10"] .cell-text { font-size: clamp(5px, 0.7vw, 6px); -webkit-line-clamp: 1; }
-[data-size="10"] .cell-icon { margin-bottom: 2px; }
-[data-size="10"] .cell-icon>span { width: clamp(12px, 2.5vw, 18px); height: clamp(12px, 2.5vw, 18px); font-size: clamp(8px, 1.8vw, 14px); }
-[data-size="10"] .cell-icon img.emote { width: clamp(12px, 2.5vw, 18px); height: clamp(12px, 2.5vw, 18px); }
+[data-size="7"] .cell { padding: clamp(0.1rem, 0.3vw, 0.2rem); }
+[data-size="7"] .cell-text { font-size: clamp(8px, 1vw, 10px); }
+[data-size="7"] .cell-icon { margin-bottom: 2px; }
+[data-size="7"] .cell-icon>span { width: clamp(30px, 6vw, 48px); height: clamp(30px, 6vw, 48px); font-size: clamp(22px, 4vw, 36px); }
+[data-size="7"] .cell-icon img.emote { width: clamp(30px, 6vw, 48px); height: clamp(30px, 6vw, 48px); }
 
 /* ── Bingo Celebration Overlay ── */
 .bingo-overlay {
