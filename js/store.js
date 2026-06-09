@@ -8,6 +8,27 @@ import { audioManager } from './audio.js';
 import { sfxManager } from './sfx.js';
 import { chatManager, isKnownBot, renderMessageFromFragments, formatChatTime, formatChatTimeFull, refreshBadgesCache, resolveBadgeUrls } from './chat.js';
 
+const THEME_FONT_FAMILIES = {
+  twice:      ['Literata:wght@400;600;700', 'Lobster'],
+  aespa:      ['Jura:wght@400;600;700', 'Oranienbaum'],
+  nmixx:      ['Exo+2:wght@400;600;700', 'Alumni+Sans:wght@400;600;700;900'],
+  newjeans:   ['Pixelify+Sans:wght@400;500;600;700', 'Press+Start+2P'],
+  lesserafim: ['Spectral:wght@400;600;700', 'Playfair+Display:wght@400;700;900'],
+};
+
+function loadThemeFonts(theme) {
+  const families = THEME_FONT_FAMILIES[theme];
+  if (!families) return;
+  const id = `theme-fonts-${theme}`;
+  if (document.getElementById(id)) return;
+  const link = document.createElement('link');
+  link.id = id;
+  link.rel = 'stylesheet';
+  const query = families.map(f => `family=${f}`).join('&');
+  link.href = `https://fonts.googleapis.com/css2?${query}&display=swap`;
+  document.head.appendChild(link);
+}
+
 export function createApp() {
   return {
     boards: [],
@@ -242,14 +263,21 @@ export function createApp() {
     chatReconnectStatus: { attempts: 0, nextReconnectAt: null, stopped: false, reason: null },
     chatReconnectCountdown: '',
     _chatMessageIds: new Set(),
+    _chatScrollPending: false,
+
+    // ── Cells memoization ──
+    _cellsCacheKey: '',
+    _cachedCells: null,
 
     get chatHiddenBots() {
       return DEFAULT_CHAT_HIDDEN_BOTS.concat(this.chatHiddenBotsExtra.map(b => String(b || '').toLowerCase().trim()).filter(Boolean));
     },
 
     get visibleChatMessages() {
-      if (this.chatShowBots) return this.chatMessages;
-      return this.chatMessages.filter(m => !isKnownBot(m.username, this.chatHiddenBotsExtra));
+      const msgs = this.chatShowBots
+        ? this.chatMessages
+        : this.chatMessages.filter(m => !isKnownBot(m.username, this.chatHiddenBotsExtra));
+      return msgs.slice(-50);
     },
 
     get isIOS() {
@@ -453,6 +481,15 @@ export function createApp() {
     get cells() {
       this.emoteVersion;
       const total = this.cellCount;
+      const marksStr = this.marks.slice(0, total).map(m => m ? 1 : 0).join('');
+      const cardsStr = this.cards.slice(0, total).join('\n');
+      const lastKeysStr = [...this.lastCompletedKeys].sort().join(';');
+      const cacheKey = `${this.size}|${this.emoteVersion}|${this.allowCelebrate ? 1 : 0}|${marksStr}|${cardsStr}|${lastKeysStr}`;
+
+      if (this._cellsCacheKey === cacheKey && this._cachedCells) {
+        return this._cachedCells;
+      }
+
       const displayed = this.cards.slice(0, total)
         .concat(Array(total).fill(''))
         .slice(0, total);
@@ -467,7 +504,7 @@ export function createApp() {
           .forEach(k => k.split(',').forEach(n => newSet.add(Number(n))));
       }
 
-      return displayed.map((entry, i) => {
+      const result = displayed.map((entry, i) => {
         const { icon, label, iconIsEmote } = splitCard(entry);
         const iconWords = (icon || '').split(/\s+/).filter(Boolean);
         const iconParts = [];
@@ -491,6 +528,10 @@ export function createApp() {
           index: i,
         };
       });
+
+      this._cellsCacheKey = cacheKey;
+      this._cachedCells = result;
+      return result;
     },
 
     // ═══════════════════════════════════════════════
@@ -559,10 +600,14 @@ export function createApp() {
           if (removed.messageId) this._chatMessageIds.delete(removed.messageId);
         }
         this._persistChatHistory();
-        this.$nextTick(() => {
-          const el = this.$refs?.chatMessages;
-          if (el) el.scrollTop = el.scrollHeight;
-        });
+        if (!this._chatScrollPending) {
+          this._chatScrollPending = true;
+          this.$nextTick(() => {
+            this._chatScrollPending = false;
+            const el = this.$refs?.chatMessages;
+            if (el) el.scrollTop = el.scrollHeight;
+          });
+        }
       };
       chatManager.onMessageDelete = (messageId) => {
         const idx = this.chatMessages.findIndex(m => m.messageId === messageId);
@@ -640,7 +685,7 @@ export function createApp() {
         if (el) audioManager.mountPlayer(el);
       });
 
-      const pollProgress = () => {
+      this._pollTimer = setInterval(() => {
         this.audioProgress = audioManager.progress;
         this.audioCurrentTime = audioManager.currentTime;
         this.audioDuration = audioManager.duration;
@@ -651,9 +696,7 @@ export function createApp() {
         this.audioSongIndex = audioManager.currentSongIndex;
         this.audioLoopMode = audioManager.loopMode;
         this.audioMounted = audioManager.mounted;
-        this._raf = requestAnimationFrame(pollProgress);
-      };
-      this._raf = requestAnimationFrame(pollProgress);
+      }, 250);
 
       this.checkImportUrl();
     },
@@ -736,6 +779,7 @@ export function createApp() {
       document.body.setAttribute('data-theme-mode', this.themeMode);
       applyParticleTheme(this.theme);
       audioManager.playTheme(this.theme);
+      loadThemeFonts(this.theme);
     },
 
     requestDelete(id) {
@@ -757,6 +801,7 @@ export function createApp() {
         document.body.setAttribute('data-theme', this.theme);
         document.body.setAttribute('data-theme-mode', this.themeMode);
         applyParticleTheme(this.theme);
+        loadThemeFonts(this.theme);
         audioManager.playTheme(this.theme);
       }
       this.persist();
@@ -964,6 +1009,7 @@ export function createApp() {
       document.body.setAttribute('data-theme-mode', this.themeMode);
       applyParticleTheme(this.theme);
       audioManager.playTheme(this.theme);
+      loadThemeFonts(this.theme);
       this.$nextTick(() => this.ensureActiveTabVisible());
     },
 
@@ -1273,6 +1319,7 @@ export function createApp() {
       this.persist();
       applyParticleTheme(name);
       audioManager.playTheme(name);
+      loadThemeFonts(name);
     },
 
     toggleThemeMode() {

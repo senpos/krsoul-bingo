@@ -1,5 +1,16 @@
 import { PARTICLE_THEME_OPTIONS, PARTICLE_LIMITS, BINGO_EMOJIS } from './config.js';
 
+function _isMobile() {
+  return window.matchMedia('(hover: none)').matches || window.matchMedia('(pointer: coarse)').matches;
+}
+
+function _isLiteMode() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return true;
+  const hw = navigator.hardwareConcurrency || 99;
+  const mem = navigator.deviceMemory || 99;
+  return hw <= 4 && mem < 4;
+}
+
 function _calcMaxParticles() {
   const area = window.innerWidth * window.innerHeight;
   const byDensity = Math.floor(area / PARTICLE_LIMITS.densityArea);
@@ -11,6 +22,11 @@ function _clampParticleOptions(options) {
   const cloned = JSON.parse(JSON.stringify(options));
   if (cloned.particles?.number) {
     cloned.particles.number.value = Math.min(cloned.particles.number.value, max);
+  }
+  // Disable interactivity on touch devices even when running on desktop-capable hardware
+  if (_isMobile() && cloned.interactivity?.events) {
+    cloned.interactivity.events.onhover = { enable: false, mode: 'none' };
+    cloned.interactivity.events.onclick = { enable: false, mode: 'none' };
   }
   return cloned;
 }
@@ -28,18 +44,32 @@ export function completedLineKeys(size, marks) {
 }
 
 const _lineMap = new Map();
+let _cellCache = [];
 
-function _cellCenter(index, svgRect, grid) {
-  const cell = grid.querySelectorAll('.cell')[index];
-  if (!cell) return null;
-  const r = cell.getBoundingClientRect();
-  return { x: r.left + r.width / 2 - svgRect.left, y: r.top + r.height / 2 - svgRect.top };
+function _rebuildCellCache() {
+  const grid = document.getElementById('bingoGrid');
+  if (!grid) return;
+  const cells = grid.querySelectorAll('.cell');
+  _cellCache = Array.from(cells).map(cell => {
+    const r = cell.getBoundingClientRect();
+    return {
+      x: r.left + r.width / 2,
+      y: r.top + r.height / 2,
+      size: Math.min(r.width, r.height)
+    };
+  });
 }
 
-function _createLineEl(indices, svg, grid) {
+function _cellCenter(index, svgRect) {
+  const cached = _cellCache[index];
+  if (!cached) return null;
+  return { x: cached.x - svgRect.left, y: cached.y - svgRect.top };
+}
+
+function _createLineEl(indices, svg) {
   const svgRect = svg.getBoundingClientRect();
-  const a = _cellCenter(indices[0], svgRect, grid);
-  const b = _cellCenter(indices[indices.length - 1], svgRect, grid);
+  const a = _cellCenter(indices[0], svgRect);
+  const b = _cellCenter(indices[indices.length - 1], svgRect);
   if (!a || !b) return null;
 
   const len = Math.hypot(b.x - a.x, b.y - a.y);
@@ -55,10 +85,10 @@ function _createLineEl(indices, svg, grid) {
   return line;
 }
 
-function _updateLineEl(el, indices, svg, grid) {
+function _updateLineEl(el, indices, svg) {
   const svgRect = svg.getBoundingClientRect();
-  const a = _cellCenter(indices[0], svgRect, grid);
-  const b = _cellCenter(indices[indices.length - 1], svgRect, grid);
+  const a = _cellCenter(indices[0], svgRect);
+  const b = _cellCenter(indices[indices.length - 1], svgRect);
   if (!a || !b) return;
 
   const len = Math.hypot(b.x - a.x, b.y - a.y);
@@ -75,6 +105,8 @@ export function drawBingoLines(keys) {
   const grid = document.getElementById('bingoGrid');
   if (!svg || !grid) return;
 
+  _rebuildCellCache();
+
   const keySet = new Set(keys);
 
   for (const [key, data] of _lineMap) {
@@ -87,7 +119,7 @@ export function drawBingoLines(keys) {
   for (const key of keySet) {
     if (!_lineMap.has(key)) {
       const indices = key.split(',').map(Number);
-      const el = _createLineEl(indices, svg, grid);
+      const el = _createLineEl(indices, svg);
       if (el) _lineMap.set(key, { el, indices });
     }
   }
@@ -97,30 +129,37 @@ export function updateLinePositions() {
   const svg = document.getElementById('bingoLines');
   const grid = document.getElementById('bingoGrid');
   if (!svg || !grid || _lineMap.size === 0) return;
+  _rebuildCellCache();
   for (const data of _lineMap.values()) {
-    _updateLineEl(data.el, data.indices, svg, grid);
+    _updateLineEl(data.el, data.indices, svg);
   }
 }
 
 export function clearBingoLines() {
   for (const data of _lineMap.values()) data.el.remove();
   _lineMap.clear();
+  _cellCache = [];
 }
 
 export function launchConfetti() {
+  if (_isLiteMode()) return;
+  const isMobile = _isMobile();
+  const count = isMobile ? 40 : 140;
   const colors = ['#ff007f', '#00ffff', '#ffee00', '#5500ff', '#ffffff', '#ff0055'];
-  for (let i = 0; i < 140; i++) {
+  const stagger = isMobile ? 25 : 15;
+  for (let i = 0; i < count; i++) {
     setTimeout(() => {
       const c = document.createElement('div');
       c.className = 'confetti-piece';
       c.style.cssText = `left:${Math.random() * 100}vw; width:${6 + Math.random() * 8}px; height:${6 + Math.random() * 8}px; background:${colors[Math.floor(Math.random() * colors.length)]}; animation-duration:${1.5 + Math.random() * 2.5}s;`;
       document.body.appendChild(c);
       setTimeout(() => c.remove(), 4000);
-    }, i * 15);
+    }, i * stagger);
   }
 }
 
 export function launchBingoEmojis(themeName) {
+  if (_isLiteMode()) return;
   const container = document.getElementById('bingoEmojis');
   if (!container) return;
 
@@ -153,19 +192,21 @@ export function launchBingoEmojis(themeName) {
  * Creates a temporary canvas overlay that is removed after animation.
  */
 export function bingoCellBurst(indices) {
+  if (_isLiteMode()) return;
   const grid = document.getElementById('bingoGrid');
   if (!grid) return;
 
-  const cells = grid.querySelectorAll('.cell');
+  _rebuildCellCache();
+  if (_cellCache.length === 0) return;
+
   const origins = [];
   indices.forEach(i => {
-    const cell = cells[i];
-    if (!cell) return;
-    const r = cell.getBoundingClientRect();
+    const cached = _cellCache[i];
+    if (!cached) return;
     origins.push({
-      x: r.left + r.width / 2,
-      y: r.top + r.height / 2,
-      size: Math.min(r.width, r.height)
+      x: cached.x,
+      y: cached.y,
+      size: cached.size
     });
   });
 
@@ -180,13 +221,13 @@ export function bingoCellBurst(indices) {
   document.body.appendChild(canvas);
 
   const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
   canvas.width = window.innerWidth * dpr;
   canvas.height = window.innerHeight * dpr;
   ctx.scale(dpr, dpr);
 
   const particles = [];
-  const PARTICLES_PER_CELL = 80;
+  const PARTICLES_PER_CELL = _isMobile() ? 20 : 80;
   const GRAVITY = 0.25;
   const FRICTION = 0.96;
 
@@ -269,6 +310,9 @@ export function setBingoMode(active) {
   if (_bingoMode === active) return;
   _bingoMode = active;
 
+  // Skip dynamic particle mutations on mobile/lite since we use CSS particles there
+  if (_isMobile() || _isLiteMode()) return;
+
   if (!window.pJSDom || !window.pJSDom.length) return;
   const pJS = window.pJSDom[0].pJS;
   if (!pJS) return;
@@ -286,8 +330,50 @@ export function setBingoMode(active) {
   }
 }
 
+function _clearCssParticles(container) {
+  if (!container) return;
+  container.querySelectorAll('.css-particle').forEach(el => el.remove());
+}
+
+function _injectCssParticles(container, themeName) {
+  if (!container) return;
+  _clearCssParticles(container);
+  const options = PARTICLE_THEME_OPTIONS[themeName] || PARTICLE_THEME_OPTIONS.twice;
+  const colors = options?.particles?.color?.value || ['#ffffff'];
+  const count = 15;
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'css-particle';
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const size = 4 + Math.random() * 8;
+    const left = Math.random() * 100;
+    const top = Math.random() * 100;
+    const duration = 8 + Math.random() * 12;
+    const delay = Math.random() * 10;
+    el.style.cssText = `background:${color};width:${size}px;height:${size}px;left:${left}%;top:${top}%;animation-duration:${duration}s;animation-delay:${delay}s;`;
+    container.appendChild(el);
+  }
+}
+
 export function applyParticleTheme(name) {
+  const container = document.getElementById('tsparticles');
   const base = PARTICLE_THEME_OPTIONS[name] || PARTICLE_THEME_OPTIONS.twice;
+
+  if (_isMobile() || _isLiteMode()) {
+    if (window.pJSDom && window.pJSDom.length) {
+      for (const item of window.pJSDom) {
+        if (item?.pJS?.fn?.vendors?.destroypJS) {
+          item.pJS.fn.vendors.destroypJS();
+        }
+      }
+      window.pJSDom = [];
+    }
+    _injectCssParticles(container, name);
+    return;
+  }
+
+  _clearCssParticles(container);
+
   const options = _clampParticleOptions(base);
   if (window.particlesJS) {
     if (window.pJSDom && window.pJSDom.length) {
@@ -308,6 +394,8 @@ window.addEventListener('resize', () => {
   _resizeTimer = setTimeout(() => {
     const theme = document.body.getAttribute('data-theme') || 'twice';
     applyParticleTheme(theme);
+    _rebuildCellCache();
+    updateLinePositions();
     if (_bingoMode) {
       setBingoMode(true);
     }

@@ -3008,3 +3008,50 @@ body {
   .btn { font-size: 12px; padding: 8px 18px; }
   .stat-value { font-size: 18px; }
 }
+
+/* ── CSS Particle Fallback (mobile / lite mode) ── */
+.css-particle {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.35;
+  pointer-events: none;
+  will-change: transform, opacity;
+  animation-name: cssParticleFloat;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes cssParticleFloat {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.35; }
+  50% { transform: translateY(-30px) scale(1.1); opacity: 0.6; }
+}
+
+/* ── Mobile / touch device performance overrides ── */
+@media (hover: none) and (pointer: coarse) {
+  .app-header { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .bingo-banner {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow:
+      0 0 30px rgba(var(--bingo-rgb), 0.25),
+      0 10px 30px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+  .right-col { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .notification-toast { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .picker-panel { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .context-menu { backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+
+/* ── Reduced motion / lite mode overrides ── */
+@media (prefers-reduced-motion: reduce) {
+  .title { animation: none; background-position: 0% center; }
+  .cell.marked { animation: none; box-shadow: inset 0 0 14px rgba(160, 32, 255, 0.35); }
+  .cell.marked::before { animation: none; }
+  .cell.bingo-active { animation: none; box-shadow: inset 0 0 24px rgba(var(--bingo-rgb), 0.6); }
+  .cell.bingo-active::before { animation: none; }
+  .player-mute-hint { animation: none; box-shadow: none; }
+  .bingo-glow-ring { animation: none; opacity: 0; }
+  .bingo-text span { animation: none; opacity: 1; transform: none; }
+  .css-particle { animation: none; opacity: 0.25; }
+}
