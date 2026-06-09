@@ -1274,7 +1274,8 @@ export function createApp() {
     },
 
     toggleMusicMute() {
-      audioManager.toggleMusicMute();
+      this.audioMusicMuted = !this.audioMusicMuted;
+      audioManager.setMusicMuted(this.audioMusicMuted);
     },
 
     togglePlay() {
