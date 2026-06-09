@@ -442,12 +442,6 @@ body[data-theme]:not([data-theme-mode]) {
   color: rgba(0, 0, 0, 0.3);
 }
 
-[data-theme-mode="light"] .player-sfx-btn {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.1);
-  color: rgba(0, 0, 0, 0.4);
-}
-
 [data-theme-mode="light"] .player-playlist-toggle {
   background: rgba(0, 0, 0, 0.03);
   border-color: rgba(0, 0, 0, 0.08);
@@ -1209,6 +1203,23 @@ body {
   white-space: nowrap;
 }
 
+.player-vol-icon {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.player-vol-icon:hover {
+  opacity: 1;
+}
+
 .player-vol-slider {
   -webkit-appearance: none;
   appearance: none;
@@ -1243,7 +1254,7 @@ body {
   font-size: 9px;
   color: var(--dim);
   min-width: 18px;
-  text-align: right;
+  text-align: left;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1257,25 +1268,6 @@ body {
 .player-sfx-label {
   font-size: 9px;
   color: var(--dim);
-}
-
-.player-sfx-btn {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 4px;
-  padding: 2px 8px;
-  font-size: 9px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.4);
-  cursor: pointer;
-  transition: all 0.15s;
-  font-family: inherit;
-}
-
-.player-sfx-btn.active {
-  color: #4caf50;
-  border-color: rgba(76, 175, 80, 0.3);
-  background: rgba(76, 175, 80, 0.08);
 }
 
 .player-playlist-toggle {

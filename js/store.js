@@ -5,6 +5,7 @@ import { getEmoteEntry, splitCard, getAllEmotes, getEmotesBySource, scheduleEmot
 import { loginWithTwitch, logout as authLogout, initAuth } from './auth.js';
 import { completedLineKeys, drawBingoLines, updateLinePositions, clearBingoLines, launchConfetti, applyParticleTheme, bingoCellBurst, setBingoMode } from './game.js';
 import { audioManager } from './audio.js';
+import { sfxManager } from './sfx.js';
 import { chatManager, isKnownBot, renderMessageFromFragments, formatChatTime, formatChatTimeFull, refreshBadgesCache, resolveBadgeUrls } from './chat.js';
 
 export function createApp() {
@@ -251,10 +252,10 @@ export function createApp() {
     },
 
     // ── Audio / Music ──
-    audioVolume: 40,
+    audioVolume: 25,
     audioMusicMuted: false,
     audioPlaying: false,
-    audioFxVolume: 0.75,
+    audioFxVolume: 50,
     audioSfxEnabled: true,
     audioCurrentTrack: null,
     audioReady: false,
@@ -610,7 +611,7 @@ export function createApp() {
         this.audioVolume = state.volume;
         this.audioMusicMuted = state.musicMuted;
         this.audioPlaying = state.playing;
-        this.audioFxVolume = state.fxVolume;
+        this.audioFxVolume = Math.round(state.fxVolume * 100);
         this.audioSfxEnabled = state.sfxEnabled;
         this.audioCurrentTrack = state.currentTrack;
         this.audioReady = state.ready;
@@ -621,6 +622,10 @@ export function createApp() {
         this.audioLoopMode = state.loopMode;
         this.audioMounted = state.mounted;
       });
+
+      sfxManager.init(audioManager);
+      sfxManager.setVolume(this.audioFxVolume / 100);
+      sfxManager.setMuted(!this.audioSfxEnabled);
 
       this.audioMounted = true;
       this.$nextTick(() => {
@@ -1176,7 +1181,7 @@ export function createApp() {
         this._toastTimer = setTimeout(() => { this.toastVisible = false; }, 1200);
         launchConfetti();
         bingoCellBurst([...newIndices]);
-        audioManager.playBingo();
+        sfxManager.play('bingo');
       }
 
       // Toggle background particle intensity
@@ -1278,13 +1283,15 @@ export function createApp() {
 
     setFxVolume(v) {
       this.audioFxVolume = v;
-      audioManager.setFxVolume(v);
+      audioManager.setFxVolume(v / 100);
+      sfxManager.setVolume(v / 100);
     },
 
     toggleSfx() {
       const enabled = !this.audioSfxEnabled;
       this.audioSfxEnabled = enabled;
       audioManager.setSfxEnabled(enabled);
+      sfxManager.setMuted(!enabled);
     },
 
     seek(frac) {
@@ -1410,6 +1417,7 @@ export function createApp() {
     },
     login() { loginWithTwitch(); },
     logout() {
+      sfxManager.play('logout');
       authLogout(this);
       this.chatMessages = [];
       this._chatMessageIds.clear();
