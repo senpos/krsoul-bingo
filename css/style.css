@@ -2670,11 +2670,13 @@ body {
 @media (max-width: 1023px) {
   :root { --right-col-w: 0px; }
 
+  body.chat-open { overflow: hidden; }
+
   .game-view { grid-template-columns: var(--left-col-w) 1fr; }
 
   .right-col {
     position: fixed;
-    top: 49px;
+    top: 0;
     right: 0;
     bottom: 0;
     width: 340px;
@@ -2690,6 +2692,18 @@ body {
   .right-col.open { transform: translateX(0); }
 
   .chat-toggle-btn { display: flex; }
+
+  .app-header {
+    padding: 8px 10px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 101;
+  }
+
+  .app-wrapper { padding-top: 46px; }
+  .chat-panel { padding-top: 46px; }
 }
 
 /* ── Responsive: Mobile ── */
@@ -2700,31 +2714,57 @@ body {
     height: auto;
     min-height: 100dvh;
     overflow: visible;
+    padding-top: 76px;
   }
 
   .game-view {
     grid-template-columns: 1fr;
+    overflow: visible;
+    min-height: auto;
   }
 
   .left-col {
     border-right: none;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    max-height: 45vh;
-    overflow-y: auto;
   }
 
   .center-col { padding: 10px; }
 
   .right-col {
     position: fixed;
-    top: 49px;
+    top: 0;
     right: 0;
     bottom: 0;
     width: 100%;
     max-width: 340px;
   }
 
-  .app-header { padding: 8px 10px; }
+  .chat-panel {
+    padding-top: 76px;
+  }
+
+  .app-header {
+    padding: 8px 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 101;
+  }
+
+  .header-left {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .header-right {
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+    justify-content: center;
+  }
 
   .title { font-size: 18px; letter-spacing: 3px; }
   .badge { font-size: 8px; padding: 2px 8px; }
@@ -2738,7 +2778,9 @@ body {
   .btn, .btn-sm { width: 100%; min-width: 0; padding: 6px 4px; font-size: 10px; }
   .controls { flex-direction: column; align-items: stretch; }
   .controls-sep { width: 100%; height: 1px; }
+  .controls-sep:last-of-type { display: none; }
   .stats-panel { width: 100%; justify-content: center; }
+  .size-select-wrap { align-self: center; }
 
   .board-tab-name { max-width: 100px; font-size: 10px; }
 

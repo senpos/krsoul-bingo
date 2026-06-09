@@ -19,7 +19,7 @@
   <div class="orb orb-3"></div>
   <div class="theme-watermark">KRSoul</div>
 
-  <div x-data="app" x-init="init()" x-cloak>
+  <div x-data="app" x-init="init()" x-cloak x-effect="document.body.classList.toggle('chat-open', chatPanelOpen)">
     <div class="toast" :class="{ show: toastVisible }" @click="hideToast()">
       <span class="toast-title">BINGO!</span>
     </div>
