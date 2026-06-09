@@ -2852,6 +2852,19 @@ body {
 .disclaimer a { color: var(--cyan); text-decoration: none; opacity: 0.7; }
 .disclaimer a:hover { opacity: 1; text-decoration: underline; }
 
+/* ── Vibe Credit ── */
+.vibe-credit {
+  position: fixed;
+  bottom: 4px;
+  right: 8px;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.12);
+  font-family: var(--font-body, sans-serif);
+  pointer-events: none;
+  z-index: 1;
+  letter-spacing: 0.3px;
+}
+
 /* ── Responsive: Tablet ── */
 @media (max-width: 1023px) {
   :root { --right-col-w: 0px; }
