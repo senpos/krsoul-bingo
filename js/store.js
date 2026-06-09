@@ -252,10 +252,10 @@ export function createApp() {
     },
 
     // ── Audio / Music ──
-    audioVolume: 25,
+    audioVolume: 20,
     audioMusicMuted: false,
     audioPlaying: false,
-    audioFxVolume: 50,
+    audioFxVolume: 80,
     audioSfxEnabled: true,
     audioCurrentTrack: null,
     audioReady: false,

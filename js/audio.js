@@ -99,8 +99,8 @@ class AudioManager {
     this._currentTheme = null;
     this._themeStates = {};
 
-    this._volume = 40;
-    this._fxVolume = 0.75;
+    this._volume = 20;
+    this._fxVolume = 0.80;
     this._sfxMuted = false;
     this._isPaused = false;
     this._muted = false;
@@ -532,31 +532,6 @@ class AudioManager {
     this._sfxGain = this._sfxCtx.createGain();
     this._sfxGain.gain.value = this._sfxMuted ? 0 : this._fxVolume;
     this._sfxGain.connect(this._sfxCtx.destination);
-  }
-
-  playBingo() {
-    if (this._sfxMuted) return;
-    this._ensureSfxCtx();
-    if (!this._sfxCtx || !this._sfxGain) return;
-
-    const ctx = this._sfxCtx;
-    const now = ctx.currentTime;
-    const notes = [523.25, 659.25, 783.99];
-    const noteLen = 0.15;
-
-    notes.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const env = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now + i * noteLen);
-      env.gain.setValueAtTime(0, now + i * noteLen);
-      env.gain.linearRampToValueAtTime(0.8, now + i * noteLen + 0.02);
-      env.gain.linearRampToValueAtTime(0, now + i * noteLen + noteLen);
-      osc.connect(env);
-      env.connect(this._sfxGain);
-      osc.start(now + i * noteLen);
-      osc.stop(now + i * noteLen + noteLen + 0.05);
-    });
   }
 
   _startProgressPolling() {
