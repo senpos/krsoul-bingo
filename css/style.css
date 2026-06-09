@@ -141,17 +141,17 @@ body[data-theme="nmixx"][data-theme-mode="light"] {
 body[data-theme="newjeans"][data-theme-mode="dark"] {
   --pink: #0055ff;
   --purple: #ff00cc;
-  --cyan: #ffee00;
+  --cyan: #d4a800;
   --dark: #00102a;
   --card: rgba(0, 85, 255, 0.08);
-  --border: rgba(255, 238, 0, 0.4);
+  --border: rgba(212, 168, 0, 0.6);
   --text: #ffffff;
   --dim: rgba(255, 0, 204, 0.8);
-  --bg-pattern: radial-gradient(circle, rgba(255, 238, 0, 0.15) 4px, transparent 4px);
+  --bg-pattern: radial-gradient(circle, rgba(212, 168, 0, 0.25) 4px, transparent 4px);
   --bg-size: 25px 25px;
   --cell-radius: 25px;
-  --bingo: #ffee00;
-  --bingo-rgb: 255, 238, 0;
+  --bingo: #d4a800;
+  --bingo-rgb: 212, 168, 0;
   --font-body: 'Pixelify Sans', 'Noto Sans', 'Noto Sans KR', monospace;
   --font-title: 'Press Start 2P', 'Noto Sans', 'Noto Sans KR', cursive;
 }
@@ -159,7 +159,7 @@ body[data-theme="newjeans"][data-theme-mode="dark"] {
 body[data-theme="newjeans"][data-theme-mode="light"] {
   --pink: #4488ff;
   --purple: #cc44aa;
-  --cyan: #FFB703;
+  --cyan: #e69500;
   --dark: #e8f0ff;
   --card: rgba(68, 136, 255, 0.1);
   --border: rgba(68, 136, 255, 0.3);
@@ -168,8 +168,8 @@ body[data-theme="newjeans"][data-theme-mode="light"] {
   --bg-pattern: radial-gradient(circle, rgba(68, 136, 255, 0.12) 4px, transparent 4px);
   --bg-size: 25px 25px;
   --cell-radius: 25px;
-  --bingo: #FFB703;
-  --bingo-rgb: 255, 183, 3;
+  --bingo: #e69500;
+  --bingo-rgb: 230, 149, 0;
   --font-body: 'Pixelify Sans', 'Noto Sans', 'Noto Sans KR', monospace;
   --font-title: 'Press Start 2P', 'Noto Sans', 'Noto Sans KR', cursive;
 }
@@ -397,8 +397,15 @@ body[data-theme]:not([data-theme-mode]) {
 
 [data-theme-mode="light"] .theme-watermark { mix-blend-mode: multiply; opacity: .04; }
 
-[data-theme-mode="light"] .toast {
-  background: rgba(255, 255, 255, 0.35);
+[data-theme-mode="light"] .bingo-banner {
+  background: rgba(255, 255, 255, 0.55);
+  border-color: rgba(var(--bingo-rgb), 0.3);
+  box-shadow:
+    0 0 60px rgba(var(--bingo-rgb), 0.25),
+    0 0 120px rgba(var(--bingo-rgb), 0.1),
+    0 20px 60px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05);
 }
 
 [data-theme-mode="light"] .context-menu {
@@ -2583,36 +2590,173 @@ body {
 [data-size="10"] .cell-icon>span { width: clamp(12px, 2.5vw, 18px); height: clamp(12px, 2.5vw, 18px); font-size: clamp(8px, 1.8vw, 14px); }
 [data-size="10"] .cell-icon img.emote { width: clamp(12px, 2.5vw, 18px); height: clamp(12px, 2.5vw, 18px); }
 
-/* ── Toast & Confetti ── */
-.toast {
+/* ── Bingo Celebration Overlay ── */
+.bingo-overlay {
   position: fixed;
-  top: 50%;
-  left: 50%;
+  inset: 0;
   z-index: 9999;
-  transform: translate(-50%, -50%) scale(0);
-  background: rgba(0, 0, 0, 0.2);
-  border: 3px solid var(--pink);
-  border-radius: 24px;
-  padding: 16px 32px;
-  box-shadow: 0 0 80px var(--pink), 0 0 150px var(--purple);
-  pointer-events: none;
-  transition: transform 0.2s cubic-bezier(.34, 1.56, .64, 1);
-  backdrop-filter: blur(20px);
   display: grid;
   place-items: center;
-  overflow: visible;
+  pointer-events: none;
+  visibility: hidden;
+  will-change: opacity;
+  transform: translateZ(0);
 }
 
-.toast.show { transform: translate(-50%, -50%) scale(1); }
+.bingo-overlay.show {
+  visibility: visible;
+}
 
-.toast-title {
-  font-family: var(--font-title);
-  font-size: 64px;
+.bingo-overlay.hiding {
+  visibility: hidden;
+}
+
+.bingo-glow-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300px;
+  height: 300px;
+  margin: -150px 0 0 -150px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--bingo-rgb), 0.3) 0%, transparent 70%);
+  animation: bingoGlowPulse 2s ease-out infinite;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.bingo-glow-ring.ring-2 {
+  animation-delay: 0.6s;
+  width: 200px;
+  height: 200px;
+  margin: -100px 0 0 -100px;
+}
+
+@keyframes bingoGlowPulse {
+  0% { transform: scale(0.3); opacity: 0.8; }
+  100% { transform: scale(3); opacity: 0; }
+}
+
+.bingo-banner {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+  cursor: pointer;
+  background: rgba(10, 0, 20, 0.65);
+  border: 1px solid rgba(var(--bingo-rgb), 0.5);
+  border-radius: 28px;
+  padding: 28px 56px;
+  backdrop-filter: blur(24px) saturate(1.8) brightness(1.1);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8) brightness(1.1);
+  box-shadow:
+    0 0 60px rgba(var(--bingo-rgb), 0.35),
+    0 0 120px rgba(var(--bingo-rgb), 0.2),
+    0 20px 60px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  animation: bingoBannerIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.bingo-overlay.hiding .bingo-banner {
+  animation: bingoBannerOut 0.35s ease forwards;
+}
+
+@keyframes bingoBannerIn {
+  0% { transform: scale(0.3) rotate(-5deg); opacity: 0; }
+  60% { transform: scale(1.08) rotate(1deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes bingoBannerOut {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.15); opacity: 0; }
+}
+
+.bingo-text {
   text-align: center;
-  background: linear-gradient(90deg, var(--pink), var(--cyan));
+  font-family: var(--font-title);
+  font-size: clamp(48px, 10vw, 80px);
+  line-height: 1;
+}
+
+.bingo-text span {
+  display: inline;
+  opacity: 0;
+  transform: scale(0) rotate(-20deg);
+  animation: bingoLetterIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation-delay: calc(var(--i) * 0.08s + 0.15s);
+  background: linear-gradient(
+    135deg,
+    var(--bingo) 0%,
+    var(--pink) 30%,
+    var(--cyan) 60%,
+    var(--bingo) 100%
+  );
+  background-size: 300% 300%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation:
+    bingoLetterIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+    bingoShimmer 3s ease-in-out infinite;
+  animation-delay:
+    calc(var(--i) * 0.08s + 0.15s),
+    calc(var(--i) * 0.15s);
+  text-shadow: none;
+  filter: drop-shadow(0 0 12px rgba(var(--bingo-rgb), 0.6));
 }
+
+@keyframes bingoLetterIn {
+  0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+  70% { transform: scale(1.3) rotate(3deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes bingoShimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.bingo-emojis {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.bingo-emoji {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-size: var(--size, 28px);
+  opacity: 0;
+  animation: bingoEmojiFloat 2.5s ease-out forwards;
+  animation-delay: var(--delay, 0s);
+  filter: drop-shadow(0 0 6px rgba(var(--bingo-rgb), 0.5));
+  user-select: none;
+}
+
+@keyframes bingoEmojiFloat {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translate(0, 0) rotate(0deg) scale(0.5);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -50%) translate(calc(var(--dx) * 0.3), calc(var(--dy) * 0.3)) rotate(calc(var(--rot) * 0.3)) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translate(var(--dx), calc(var(--dy) + 60px)) rotate(var(--rot)) scale(0.6);
+  }
+}
+
+.confetti-piece { position: fixed; top: -20px; pointer-events: none; z-index: 9998; animation: cFall linear forwards; border-radius: 4px; }
+
+@keyframes cFall { 0% { transform: translateY(0) rotate(0deg) scaleX(1); opacity: 1 } 100% { transform: translateY(110vh) rotate(800deg) scaleX(-1); opacity: 0 } }
 
 .notification-toast {
   position: fixed;
@@ -2845,8 +2989,8 @@ body {
 
   .board-tab-name { max-width: 100px; font-size: 10px; }
 
-  .toast { padding: 12px 20px; }
-  .toast-title { font-size: clamp(36px, 12vw, 60px); }
+  .bingo-banner { padding: 20px 32px; }
+  .bingo-text { font-size: clamp(36px, 12vw, 60px); }
 
   .orb-1 { width: 320px; height: 320px; top: -140px; left: -110px; }
   .orb-2 { width: 280px; height: 280px; bottom: -120px; right: -110px; }

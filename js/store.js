@@ -3,7 +3,7 @@ import { shareBoard, unshareBoard } from './codec.js';
 import { state, loadBoards, saveBoards, saveActiveBoardId, saveState } from './state.js';
 import { getEmoteEntry, splitCard, getAllEmotes, getEmotesBySource, scheduleEmoteRefresh, queueInitialEmoteRefresh, onEmoteRefresh, onEmoteStatus } from './emotes.js';
 import { loginWithTwitch, logout as authLogout, initAuth } from './auth.js';
-import { completedLineKeys, drawBingoLines, updateLinePositions, clearBingoLines, launchConfetti, applyParticleTheme, bingoCellBurst, setBingoMode } from './game.js';
+import { completedLineKeys, drawBingoLines, updateLinePositions, clearBingoLines, launchConfetti, applyParticleTheme, bingoCellBurst, setBingoMode, launchBingoEmojis } from './game.js';
 import { audioManager } from './audio.js';
 import { sfxManager } from './sfx.js';
 import { chatManager, isKnownBot, renderMessageFromFragments, formatChatTime, formatChatTimeFull, refreshBadgesCache, resolveBadgeUrls } from './chat.js';
@@ -195,6 +195,7 @@ export function createApp() {
     allowCelebrate: true,
     lastCompletedKeys: new Set(),
     toastVisible: false,
+    toastHiding: false,
     chatPanelOpen: false,
     editorOpen: false,
     audioMounted: false,
@@ -1171,25 +1172,41 @@ export function createApp() {
       const newKeys = [...currentKeys].filter(k => !this.lastCompletedKeys.has(k));
       this.lastCompletedKeys = currentKeys;
 
-      // Collect all cell indices in new bingo lines
       const newIndices = new Set();
       newKeys.forEach(k => k.split(',').forEach(n => newIndices.add(Number(n))));
 
       if (newKeys.length > 0) {
+        this.toastHiding = false;
         this.toastVisible = true;
         clearTimeout(this._toastTimer);
-        this._toastTimer = setTimeout(() => { this.toastVisible = false; }, 1200);
+        clearTimeout(this._toastHideTimer);
+
+        const theme = document.body.getAttribute('data-theme') || 'twice';
+        launchBingoEmojis(theme);
         launchConfetti();
         bingoCellBurst([...newIndices]);
         sfxManager.play('bingo');
+
+        this._toastTimer = setTimeout(() => {
+          this.toastHiding = true;
+          this._toastHideTimer = setTimeout(() => {
+            this.toastVisible = false;
+            this.toastHiding = false;
+          }, 350);
+        }, 3000);
       }
 
-      // Toggle background particle intensity
       setBingoMode(currentKeys.size > 0);
     },
 
     hideToast() {
-      this.toastVisible = false;
+      if (this.toastHiding) return;
+      this.toastHiding = true;
+      clearTimeout(this._toastHideTimer);
+      this._toastHideTimer = setTimeout(() => {
+        this.toastVisible = false;
+        this.toastHiding = false;
+      }, 350);
     },
 
     saveToHistory() {

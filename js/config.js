@@ -138,6 +138,14 @@ export const PARTICLE_THEME_OPTIONS = {
   }
 };
 
+export const BINGO_EMOJIS = {
+  twice:      ['🎉', '🎊', '🥳', '💖', '🌟', '✨', '💫', '🎀'],
+  aespa:      ['⚡', '💎', '🔮', '✨', '💜', '🌌', '🎆', '🎇'],
+  nmixx:      ['🎉', '🌊', '🔥', '✨', '💎', '⭐', '🎆', '🎊'],
+  newjeans:   ['🐰', '🎀', '🌸', '✨', '💫', '🎶', '🌼', '💝'],
+  lesserafim: ['🔥', '⚔️', '🦅', '✨', '💫', '⭐', '🎆', '🖤'],
+};
+
 export const THEMES = Object.keys(PARTICLE_THEME_OPTIONS);
 
 export const DEFAULT_CARDS = [

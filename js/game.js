@@ -1,4 +1,4 @@
-import { PARTICLE_THEME_OPTIONS, PARTICLE_LIMITS } from './config.js';
+import { PARTICLE_THEME_OPTIONS, PARTICLE_LIMITS, BINGO_EMOJIS } from './config.js';
 
 function _calcMaxParticles() {
   const area = window.innerWidth * window.innerHeight;
@@ -118,6 +118,34 @@ export function launchConfetti() {
       setTimeout(() => c.remove(), 4000);
     }, i * 15);
   }
+}
+
+export function launchBingoEmojis(themeName) {
+  const container = document.getElementById('bingoEmojis');
+  if (!container) return;
+
+  const emojis = BINGO_EMOJIS[themeName] || BINGO_EMOJIS.twice || ['🎉', '✨', '🎊'];
+  const count = 24;
+
+  for (let i = 0; i < count; i++) {
+    const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+    const el = document.createElement('span');
+    el.className = 'bingo-emoji';
+    el.textContent = emoji;
+
+    const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
+    const distance = 120 + Math.random() * 280;
+    const dx = Math.cos(angle) * distance;
+    const dy = Math.sin(angle) * distance;
+    const rot = (Math.random() - 0.5) * 720;
+    const size = 22 + Math.random() * 20;
+    const delay = Math.random() * 1.2;
+
+    el.style.cssText = `--dx:${dx}px;--dy:${dy}px;--rot:${rot}deg;--size:${size}px;--delay:${delay}s;`;
+    container.appendChild(el);
+  }
+
+  setTimeout(() => { container.innerHTML = ''; }, 4000);
 }
 
 /**
