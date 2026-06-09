@@ -1220,6 +1220,21 @@ body {
   opacity: 1;
 }
 
+.player-volume.muted,
+.player-sfx-row.muted {
+  opacity: 0.4;
+}
+
+.player-volume.muted .player-vol-icon,
+.player-sfx-row.muted .player-vol-icon {
+  opacity: 0.5;
+}
+
+.player-volume.muted .player-vol-icon:hover,
+.player-sfx-row.muted .player-vol-icon:hover {
+  opacity: 0.8;
+}
+
 .player-vol-slider {
   -webkit-appearance: none;
   appearance: none;
