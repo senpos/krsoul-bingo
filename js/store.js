@@ -252,6 +252,11 @@ export function createApp() {
       return this.chatMessages.filter(m => !isKnownBot(m.username, this.chatHiddenBotsExtra));
     },
 
+    get isIOS() {
+      const ua = navigator.userAgent;
+      return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    },
+
     // ── Audio / Music ──
     audioVolume: 20,
     audioMusicMuted: false,

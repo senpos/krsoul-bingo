@@ -88,9 +88,6 @@ function loadYTApi() {
 
 class AudioManager {
   constructor() {
-    this._sfxCtx = null;
-    this._sfxGain = null;
-
     this._ytPlayer = null;
     this._ytReady = false;
     this._playerContainer = null;
@@ -476,18 +473,12 @@ class AudioManager {
 
   setFxVolume(v) {
     this._fxVolume = Math.max(0, Math.min(1, v));
-    if (this._sfxGain) {
-      this._sfxGain.gain.value = this._sfxMuted ? 0 : this._fxVolume;
-    }
     this._saveState();
     this._notify();
   }
 
   setSfxEnabled(enabled) {
     this._sfxMuted = !enabled;
-    if (this._sfxGain) {
-      this._sfxGain.gain.value = this._sfxMuted ? 0 : this._fxVolume;
-    }
     this._notify();
   }
 
@@ -521,17 +512,6 @@ class AudioManager {
     } else if (this._currentTheme) {
       this.playTheme(this._currentTheme);
     }
-  }
-
-  _ensureSfxCtx() {
-    if (this._sfxCtx && this._sfxCtx.state !== 'closed') {
-      if (this._sfxCtx.state === 'suspended') this._sfxCtx.resume();
-      return;
-    }
-    this._sfxCtx = new (window.AudioContext || window.webkitAudioContext)();
-    this._sfxGain = this._sfxCtx.createGain();
-    this._sfxGain.gain.value = this._sfxMuted ? 0 : this._fxVolume;
-    this._sfxGain.connect(this._sfxCtx.destination);
   }
 
   _startProgressPolling() {
