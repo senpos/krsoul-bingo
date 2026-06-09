@@ -133,7 +133,7 @@
                   </svg>
                 </template>
               </button>
-              <span class="player-vol-val" x-text="Math.round(audioVolume)"></span>
+              <span class="player-vol-val" x-show="!isIOS" x-text="Math.round(audioVolume)"></span>
               <input x-show="!isIOS" type="range" class="player-vol-slider" min="0" max="100" :value="audioVolume"
                 @input="setVolume(Number($event.target.value))">
             </div>
@@ -156,8 +156,8 @@
                   </svg>
                 </template>
               </button>
-              <span class="player-vol-val" x-text="Math.round(audioFxVolume)"></span>
-              <input type="range" class="player-vol-slider" min="0" max="100" :value="audioFxVolume"
+              <span class="player-vol-val" x-show="!isIOS" x-text="Math.round(audioFxVolume)"></span>
+              <input x-show="!isIOS" type="range" class="player-vol-slider" min="0" max="100" :value="audioFxVolume"
                 @input="setFxVolume(Number($event.target.value))">
             </div>
 
