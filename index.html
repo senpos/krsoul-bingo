@@ -21,7 +21,7 @@
 
   <div x-data="app" x-init="init()" x-cloak x-effect="document.body.classList.toggle('chat-open', chatPanelOpen)">
     <div class="toast" :class="{ show: toastVisible }" @click="hideToast()">
-      <span class="toast-title">BINGO!</span>
+      <span class="toast-title">BINGO</span>
     </div>
 
     <div class="notification-toast" :class="{ show: notificationVisible, error: notificationKind === 'error' }" x-text="notificationMsg"></div>

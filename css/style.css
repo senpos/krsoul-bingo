@@ -398,7 +398,7 @@ body[data-theme]:not([data-theme-mode]) {
 [data-theme-mode="light"] .theme-watermark { mix-blend-mode: multiply; opacity: .04; }
 
 [data-theme-mode="light"] .toast {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.35);
 }
 
 [data-theme-mode="light"] .context-menu {
@@ -2565,17 +2565,17 @@ body {
   left: 50%;
   z-index: 9999;
   transform: translate(-50%, -50%) scale(0);
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.2);
   border: 3px solid var(--pink);
   border-radius: 24px;
-  padding: 30px 60px;
+  padding: 16px 32px;
   box-shadow: 0 0 80px var(--pink), 0 0 150px var(--purple);
   pointer-events: none;
   transition: transform 0.2s cubic-bezier(.34, 1.56, .64, 1);
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  backdrop-filter: blur(20px);
+  display: grid;
+  place-items: center;
+  overflow: visible;
 }
 
 .toast.show { transform: translate(-50%, -50%) scale(1); }
@@ -2583,6 +2583,7 @@ body {
 .toast-title {
   font-family: var(--font-title);
   font-size: 64px;
+  text-align: center;
   background: linear-gradient(90deg, var(--pink), var(--cyan));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -2819,7 +2820,7 @@ body {
 
   .board-tab-name { max-width: 100px; font-size: 10px; }
 
-  .toast { padding: 20px 30px; }
+  .toast { padding: 12px 20px; }
   .toast-title { font-size: clamp(36px, 12vw, 60px); }
 
   .orb-1 { width: 320px; height: 320px; top: -140px; left: -110px; }
