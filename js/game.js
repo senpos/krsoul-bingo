@@ -1,54 +1,50 @@
-import { PARTICLE_THEME_OPTIONS, PARTICLE_LIMITS, BINGO_EMOJIS } from './config.js';
+import { PARTICLE_THEME_OPTIONS, BINGO_EMOJIS } from './config.js';
 
-function _isMobile() {
+const _cachedMobile = (() => {
   return window.matchMedia('(hover: none)').matches || window.matchMedia('(pointer: coarse)').matches;
-}
+})();
 
-function _isLiteMode() {
+const _cachedLite = (() => {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return true;
   const hw = navigator.hardwareConcurrency || 99;
   const mem = navigator.deviceMemory || 99;
   return hw <= 4 && mem < 4;
-}
+})();
 
-function _calcMaxParticles() {
-  const area = window.innerWidth * window.innerHeight;
-  const byDensity = Math.floor(area / PARTICLE_LIMITS.densityArea);
-  return Math.min(PARTICLE_LIMITS.maxParticles, byDensity);
-}
-
-function _clampParticleOptions(options) {
-  const max = _calcMaxParticles();
-  const cloned = JSON.parse(JSON.stringify(options));
-  if (cloned.particles?.number) {
-    cloned.particles.number.value = Math.min(cloned.particles.number.value, max);
+const _lineCache = new Map();
+function _getLines(size) {
+  if (!_lineCache.has(size)) {
+    const lines = [];
+    for (let i = 0; i < size; i++) {
+      lines.push(Array.from({ length: size }, (_, j) => i * size + j));
+      lines.push(Array.from({ length: size }, (_, j) => j * size + i));
+    }
+    lines.push(Array.from({ length: size }, (_, i) => i * size + i));
+    lines.push(Array.from({ length: size }, (_, i) => i * size + (size - 1 - i)));
+    _lineCache.set(size, lines);
   }
-  // Disable interactivity on touch devices even when running on desktop-capable hardware
-  if (_isMobile() && cloned.interactivity?.events) {
-    cloned.interactivity.events.onhover = { enable: false, mode: 'none' };
-    cloned.interactivity.events.onclick = { enable: false, mode: 'none' };
-  }
-  return cloned;
+  return _lineCache.get(size);
 }
 
 export function completedLineKeys(size, marks) {
-  const s = size;
-  const lines = [];
-  for (let i = 0; i < s; i++) {
-    lines.push(Array.from({ length: s }, (_, j) => i * s + j));
-    lines.push(Array.from({ length: s }, (_, j) => j * s + i));
-  }
-  lines.push(Array.from({ length: s }, (_, i) => i * s + i));
-  lines.push(Array.from({ length: s }, (_, i) => i * s + (s - 1 - i)));
+  const lines = _getLines(size);
   return new Set(lines.filter(l => l.every(idx => marks[idx])).map(l => l.join(',')));
 }
 
 const _lineMap = new Map();
 let _cellCache = [];
+let _cellCacheDirty = true;
+let _cachedBoardSize = 0;
 
 function _rebuildCellCache() {
   const grid = document.getElementById('bingoGrid');
   if (!grid) return;
+  const currentSize = Number(grid.dataset.size);
+  if (currentSize !== _cachedBoardSize) {
+    _cellCacheDirty = true;
+    _cachedBoardSize = currentSize;
+  }
+  if (!_cellCacheDirty) return;
   const cells = grid.querySelectorAll('.cell');
   _cellCache = Array.from(cells).map(cell => {
     const r = cell.getBoundingClientRect();
@@ -58,6 +54,7 @@ function _rebuildCellCache() {
       size: Math.min(r.width, r.height)
     };
   });
+  _cellCacheDirty = false;
 }
 
 function _cellCenter(index, svgRect) {
@@ -109,11 +106,13 @@ export function drawBingoLines(keys) {
 
   const keySet = new Set(keys);
 
-  for (const [key, data] of _lineMap) {
-    if (!keySet.has(key)) {
-      data.el.remove();
-      _lineMap.delete(key);
-    }
+  const toDelete = [];
+  for (const [key] of _lineMap) {
+    if (!keySet.has(key)) toDelete.push(key);
+  }
+  for (const key of toDelete) {
+    _lineMap.get(key).el.remove();
+    _lineMap.delete(key);
   }
 
   for (const key of keySet) {
@@ -138,34 +137,42 @@ export function updateLinePositions() {
 export function clearBingoLines() {
   for (const data of _lineMap.values()) data.el.remove();
   _lineMap.clear();
-  _cellCache = [];
 }
 
 export function launchConfetti() {
-  if (_isLiteMode()) return;
-  const isMobile = _isMobile();
-  const count = isMobile ? 40 : 140;
+  if (_cachedLite) return;
+  const count = _cachedMobile ? 40 : 140;
   const colors = ['#ff007f', '#00ffff', '#ffee00', '#5500ff', '#ffffff', '#ff0055'];
-  const stagger = isMobile ? 25 : 15;
+  const stagger = _cachedMobile ? 25 : 15;
+  const fragment = document.createDocumentFragment();
+  const pieces = [];
+  const maxDuration = 4000;
+  const maxDelay = (count - 1) * stagger;
+
   for (let i = 0; i < count; i++) {
-    setTimeout(() => {
-      const c = document.createElement('div');
-      c.className = 'confetti-piece';
-      c.style.cssText = `left:${Math.random() * 100}vw; width:${6 + Math.random() * 8}px; height:${6 + Math.random() * 8}px; background:${colors[Math.floor(Math.random() * colors.length)]}; animation-duration:${1.5 + Math.random() * 2.5}s;`;
-      document.body.appendChild(c);
-      setTimeout(() => c.remove(), 4000);
-    }, i * stagger);
+    const c = document.createElement('div');
+    c.className = 'confetti-piece';
+    const delay = i * stagger;
+    c.style.cssText = `left:${Math.random() * 100}vw; width:${6 + Math.random() * 8}px; height:${6 + Math.random() * 8}px; background:${colors[Math.floor(Math.random() * colors.length)]}; animation-duration:${1.5 + Math.random() * 2.5}s; animation-delay:${delay}ms;`;
+    fragment.appendChild(c);
+    pieces.push(c);
   }
+  document.body.appendChild(fragment);
+
+  setTimeout(() => {
+    for (const p of pieces) p.remove();
+  }, maxDelay + maxDuration + 500);
 }
 
 export function launchBingoEmojis(themeName) {
-  if (_isLiteMode()) return;
+  if (_cachedLite) return;
   const container = document.getElementById('bingoEmojis');
   if (!container) return;
 
   const emojis = BINGO_EMOJIS[themeName] || BINGO_EMOJIS.twice || ['🎉', '✨', '🎊'];
   const count = 24;
 
+  const fragment = document.createDocumentFragment();
   for (let i = 0; i < count; i++) {
     const emoji = emojis[Math.floor(Math.random() * emojis.length)];
     const el = document.createElement('span');
@@ -181,8 +188,9 @@ export function launchBingoEmojis(themeName) {
     const delay = Math.random() * 1.2;
 
     el.style.cssText = `--dx:${dx}px;--dy:${dy}px;--rot:${rot}deg;--size:${size}px;--delay:${delay}s;`;
-    container.appendChild(el);
+    fragment.appendChild(el);
   }
+  container.appendChild(fragment);
 
   setTimeout(() => { container.innerHTML = ''; }, 4000);
 }
@@ -192,7 +200,7 @@ export function launchBingoEmojis(themeName) {
  * Creates a temporary canvas overlay that is removed after animation.
  */
 export function bingoCellBurst(indices) {
-  if (_isLiteMode()) return;
+  if (_cachedLite) return;
   const grid = document.getElementById('bingoGrid');
   if (!grid) return;
 
@@ -227,7 +235,7 @@ export function bingoCellBurst(indices) {
   ctx.scale(dpr, dpr);
 
   const particles = [];
-  const PARTICLES_PER_CELL = _isMobile() ? 20 : 80;
+  const PARTICLES_PER_CELL = _cachedMobile ? 20 : 80;
   const GRAVITY = 0.25;
   const FRICTION = 0.96;
 
@@ -255,27 +263,35 @@ export function bingoCellBurst(indices) {
     ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
 
     let alive = false;
+
+    // Group by color to reduce Canvas 2D state thrash
+    const byColor = new Map();
     for (const p of particles) {
       if (p.alpha <= 0) continue;
       alive = true;
+      if (!byColor.has(p.color)) byColor.set(p.color, []);
+      byColor.get(p.color).push(p);
+    }
 
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vy += GRAVITY;
-      p.vx *= FRICTION;
-      p.vy *= FRICTION;
-      p.alpha -= p.decay;
-      p.size *= 0.995;
+    for (const [color, group] of byColor) {
+      ctx.fillStyle = color;
+      for (const p of group) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += GRAVITY;
+        p.vx *= FRICTION;
+        p.vy *= FRICTION;
+        p.alpha -= p.decay;
+        p.size *= 0.995;
 
-      ctx.globalAlpha = Math.max(0, p.alpha);
-      ctx.fillStyle = p.color;
-
-      if (p.shape === 'circle') {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
-        ctx.fill();
-      } else {
-        ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        if (p.shape === 'circle') {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+        }
       }
     }
 
@@ -300,34 +316,13 @@ export function bingoCellBurst(indices) {
   }, 4000);
 }
 
-let _bingoMode = false;
-
 /**
  * Toggle background particles.js intensity for bingo mode.
- * When active, increases particle count and speed.
+ * Now a no-op: CSS particles are the unconditional default.
  */
 export function setBingoMode(active) {
-  if (_bingoMode === active) return;
-  _bingoMode = active;
-
-  // Skip dynamic particle mutations on mobile/lite since we use CSS particles there
-  if (_isMobile() || _isLiteMode()) return;
-
-  if (!window.pJSDom || !window.pJSDom.length) return;
-  const pJS = window.pJSDom[0].pJS;
-  if (!pJS) return;
-
-  if (active) {
-    const maxBingo = Math.min(PARTICLE_LIMITS.maxParticlesBingo, _calcMaxParticles() * 2);
-    pJS.particles.number.value = Math.min(pJS.particles.number.value * 2.5, maxBingo);
-    pJS.particles.move.speed = pJS.particles.move.speed * 1.8;
-    pJS.particles.size.value = pJS.particles.size.value * 1.3;
-    pJS.particles.opacity.value = Math.min(pJS.particles.opacity.value * 1.4, 0.9);
-  } else {
-    // Re-apply normal theme to restore defaults
-    const theme = document.body.getAttribute('data-theme') || 'twice';
-    applyParticleTheme(theme);
-  }
+  // No-op: particles.js has been removed in favor of CSS particles.
+  // The visual bingo punch is handled by bingoCellBurst, launchConfetti, and launchBingoEmojis.
 }
 
 function _clearCssParticles(container) {
@@ -341,6 +336,7 @@ function _injectCssParticles(container, themeName) {
   const options = PARTICLE_THEME_OPTIONS[themeName] || PARTICLE_THEME_OPTIONS.twice;
   const colors = options?.particles?.color?.value || ['#ffffff'];
   const count = 15;
+  const fragment = document.createDocumentFragment();
   for (let i = 0; i < count; i++) {
     const el = document.createElement('div');
     el.className = 'css-particle';
@@ -351,53 +347,24 @@ function _injectCssParticles(container, themeName) {
     const duration = 8 + Math.random() * 12;
     const delay = Math.random() * 10;
     el.style.cssText = `background:${color};width:${size}px;height:${size}px;left:${left}%;top:${top}%;animation-duration:${duration}s;animation-delay:${delay}s;`;
-    container.appendChild(el);
+    fragment.appendChild(el);
   }
+  container.appendChild(fragment);
 }
 
 export function applyParticleTheme(name) {
   const container = document.getElementById('tsparticles');
-  const base = PARTICLE_THEME_OPTIONS[name] || PARTICLE_THEME_OPTIONS.twice;
-
-  if (_isMobile() || _isLiteMode()) {
-    if (window.pJSDom && window.pJSDom.length) {
-      for (const item of window.pJSDom) {
-        if (item?.pJS?.fn?.vendors?.destroypJS) {
-          item.pJS.fn.vendors.destroypJS();
-        }
-      }
-      window.pJSDom = [];
-    }
-    _injectCssParticles(container, name);
-    return;
-  }
-
-  _clearCssParticles(container);
-
-  const options = _clampParticleOptions(base);
-  if (window.particlesJS) {
-    if (window.pJSDom && window.pJSDom.length) {
-      for (const item of window.pJSDom) {
-        if (item?.pJS?.fn?.vendors?.destroypJS) {
-          item.pJS.fn.vendors.destroypJS();
-        }
-      }
-      window.pJSDom = [];
-    }
-    window.particlesJS('tsparticles', options);
-  }
+  _injectCssParticles(container, name);
 }
 
 let _resizeTimer = null;
 window.addEventListener('resize', () => {
   clearTimeout(_resizeTimer);
   _resizeTimer = setTimeout(() => {
+    _cellCacheDirty = true;
     const theme = document.body.getAttribute('data-theme') || 'twice';
     applyParticleTheme(theme);
     _rebuildCellCache();
     updateLinePositions();
-    if (_bingoMode) {
-      setBingoMode(true);
-    }
   }, 300);
 });
