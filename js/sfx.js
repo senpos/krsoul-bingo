@@ -1,6 +1,7 @@
 const EFFECTS = {
   bingo: ['papapupipupupupu.opus'],
   logout: ['skatina.opus'],
+  login: ['ah.opus'],
 };
 
 const FADE_DURATION = 150;
@@ -42,6 +43,23 @@ class SfxManager {
     this._currentSfx = clone;
     this._fadeIn(clone, this._volume);
     clone.play().catch(() => {});
+  }
+
+  playBlocking(action) {
+    return new Promise((resolve) => {
+      const audios = this._pool.get(action);
+      if (!audios?.length || this._muted) {
+        resolve();
+        return;
+      }
+      const src = audios[Math.floor(Math.random() * audios.length)];
+      const clone = src.cloneNode();
+      clone.volume = this._volume;
+      const done = () => resolve();
+      clone.addEventListener('ended', done, { once: true });
+      clone.addEventListener('error', done, { once: true });
+      clone.play().catch(done);
+    });
   }
 
   _fadeOut(audio) {
