@@ -2854,15 +2854,13 @@ body {
 
 /* ── Vibe Credit ── */
 .vibe-credit {
-  position: fixed;
-  bottom: 4px;
-  right: 8px;
+  max-width: 800px;
+  margin: 0;
+  padding: 4px 12px 12px;
   font-size: 9px;
-  color: rgba(255, 255, 255, 0.12);
-  font-family: var(--font-body, sans-serif);
-  pointer-events: none;
-  z-index: 1;
+  color: rgba(255, 255, 255, 0.15);
   letter-spacing: 0.3px;
+  flex-shrink: 0;
 }
 
 /* ── Responsive: Tablet ── */
