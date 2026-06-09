@@ -813,6 +813,7 @@ export function createApp() {
       const board = this.activeBoard;
       if (!board) return;
       board.size = newSize;
+      if (newSize === 7) sfxManager.play('skoka');
       const total = newSize * newSize;
       while (board.cards.length < total) board.cards.push('');
       board.cards = board.cards.slice(0, total);

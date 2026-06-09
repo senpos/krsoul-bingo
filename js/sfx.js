@@ -2,6 +2,7 @@ const EFFECTS = {
   bingo: ['papapupipupupupu.opus'],
   logout: ['skatina.opus'],
   login: ['ah.opus'],
+  skoka: ['skoka.opus'],
 };
 
 const FADE_DURATION = 0.15;
