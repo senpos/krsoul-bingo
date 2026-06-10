@@ -1,4 +1,4 @@
-import { STORAGE_KEYS, DEFAULT_TWITCH_USER_IDS, DEFAULT_CARDS, TWITCH_CLIENT_ID, generateBoardId, DEFAULT_CHAT_HIDDEN_BOTS, THEMES } from './config.js';
+import { STORAGE_KEYS, DEFAULT_TWITCH_USER_IDS, DEFAULT_CARDS, TWITCH_CLIENT_ID, generateBoardId, DEFAULT_CHAT_HIDDEN_BOTS, THEMES, DEFAULT_THEME } from './config.js';
 import { shareBoard, unshareBoard } from './codec.js';
 import { state, loadBoards, saveBoards, saveActiveBoardId, saveState } from './state.js';
 import { getEmoteEntry, splitCard, getAllEmotes, getEmotesBySource, scheduleEmoteRefresh, queueInitialEmoteRefresh, onEmoteRefresh, onEmoteStatus } from './emotes.js';
@@ -46,7 +46,7 @@ export function createApp() {
       if (b) b.size = val;
     },
 
-    get theme() { return this.activeBoard?.theme ?? 'twice'; },
+    get theme() { return this.activeBoard?.theme ?? DEFAULT_THEME; },
     set theme(val) {
       const b = this.activeBoard;
       if (b) b.theme = val;
@@ -762,7 +762,7 @@ export function createApp() {
         size: 5,
         cards: [...DEFAULT_CARDS],
         marks: Array(25).fill(false),
-        theme: this.theme || 'twice'
+        theme: this.theme || DEFAULT_THEME
       };
       this.boards.push(newBoard);
       this.activeBoardId = newBoard.id;
@@ -938,7 +938,7 @@ export function createApp() {
         const userId = String(payload.userId || '');
         const name = String(payload.name || 'Імпортовано').slice(0, 50);
         const size = Number(payload.size) || 5;
-        const theme = THEMES.includes(payload.theme) ? payload.theme : 'twice';
+        const theme = THEMES.includes(payload.theme) ? payload.theme : DEFAULT_THEME;
         const total = size * size;
         const cards = payload.cards.slice(0, total).map(c => String(c || ''));
         while (cards.length < total) cards.push('');
@@ -1109,7 +1109,7 @@ export function createApp() {
 
             const cards = board.cards.map(c => String(c || ''));
             const marks = board.marks.map(m => Boolean(m));
-            const theme = validThemes.includes(board.theme) ? board.theme : 'twice';
+            const theme = validThemes.includes(board.theme) ? board.theme : DEFAULT_THEME;
             const name = String(board.name || 'Без назви').slice(0, 50);
 
             validatedBoards.push({
@@ -1245,7 +1245,7 @@ export function createApp() {
         clearTimeout(this._toastTimer);
         clearTimeout(this._toastHideTimer);
 
-        const theme = document.body.getAttribute('data-theme') || 'twice';
+        const theme = document.body.getAttribute('data-theme') || DEFAULT_THEME;
         requestAnimationFrame(() => {
           launchBingoEmojis(theme);
           launchConfetti();

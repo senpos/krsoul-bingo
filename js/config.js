@@ -147,6 +147,7 @@ export const BINGO_EMOJIS = {
 };
 
 export const THEMES = Object.keys(PARTICLE_THEME_OPTIONS);
+export const DEFAULT_THEME = 'nmixx';
 
 export const DEFAULT_CARDS = [
   '💀 DeS on PC', '🩸 Bloodborne', '⚡ GoW 3', '🔥 New Fromsoft Game', '🗡️ DS2/3 Remaster',

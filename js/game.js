@@ -1,4 +1,4 @@
-import { PARTICLE_THEME_OPTIONS, BINGO_EMOJIS } from './config.js';
+import { PARTICLE_THEME_OPTIONS, BINGO_EMOJIS, DEFAULT_THEME } from './config.js';
 
 const _cachedMobile = (() => {
   return window.matchMedia('(hover: none)').matches || window.matchMedia('(pointer: coarse)').matches;
@@ -81,7 +81,7 @@ export function launchBingoEmojis(themeName) {
   const container = document.getElementById('bingoEmojis');
   if (!container || container.childElementCount > 0) return;
 
-  const emojis = BINGO_EMOJIS[themeName] || BINGO_EMOJIS.twice || ['🎉', '✨', '🎊'];
+  const emojis = BINGO_EMOJIS[themeName] || BINGO_EMOJIS[DEFAULT_THEME] || ['🎉', '✨', '🎊'];
   const count = 24;
 
   const fragment = document.createDocumentFragment();
@@ -244,7 +244,7 @@ function _clearCssParticles(container) {
 function _injectCssParticles(container, themeName) {
   if (!container) return;
   _clearCssParticles(container);
-  const options = PARTICLE_THEME_OPTIONS[themeName] || PARTICLE_THEME_OPTIONS.twice;
+  const options = PARTICLE_THEME_OPTIONS[themeName] || PARTICLE_THEME_OPTIONS[DEFAULT_THEME];
   const colors = options?.particles?.color?.value || ['#ffffff'];
   const count = 15;
   const fragment = document.createDocumentFragment();
@@ -272,7 +272,7 @@ let _resizeTimer = null;
 window.addEventListener('resize', () => {
   clearTimeout(_resizeTimer);
   _resizeTimer = setTimeout(() => {
-    const theme = document.body.getAttribute('data-theme') || 'twice';
+    const theme = document.body.getAttribute('data-theme') || DEFAULT_THEME;
     applyParticleTheme(theme);
   }, 300);
 });

@@ -1,4 +1,4 @@
-import { THEMES } from './config.js';
+import { THEMES, DEFAULT_THEME } from './config.js';
 
 const MAGIC = 0x4B;
 const VER = 1;
@@ -103,7 +103,7 @@ function unpackBoard(bytes) {
   const b2 = bytes[o++];
   const size = (b2 >> 4) + 3;
   const themeIdx = b2 & 0xF;
-  const theme = THEMES[themeIdx] || 'twice';
+  const theme = THEMES[themeIdx] || DEFAULT_THEME;
 
   const nameLen = bytes[o++];
   const name = new TextDecoder().decode(bytes.slice(o, o + nameLen));

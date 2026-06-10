@@ -1,4 +1,4 @@
-import { STORAGE_KEYS, DEFAULT_TWITCH_USER_IDS, DEFAULT_TWITCH_CHANNEL_NAMES, DEFAULT_CARDS, generateBoardId } from './config.js';
+import { STORAGE_KEYS, DEFAULT_TWITCH_USER_IDS, DEFAULT_TWITCH_CHANNEL_NAMES, DEFAULT_CARDS, generateBoardId, DEFAULT_THEME } from './config.js';
 
 export const state = {
   twitchUserIds: [...DEFAULT_TWITCH_USER_IDS],
@@ -34,7 +34,7 @@ export function loadBoards() {
       size: 5,
       cards: [...DEFAULT_CARDS],
       marks: Array(25).fill(false),
-      theme: 'twice'
+      theme: DEFAULT_THEME
     }];
     saveBoards(boards);
   }
