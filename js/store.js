@@ -3,7 +3,7 @@ import { shareBoard, unshareBoard } from './codec.js';
 import { state, loadBoards, saveBoards, saveActiveBoardId, saveState } from './state.js';
 import { getEmoteEntry, splitCard, getAllEmotes, getEmotesBySource, scheduleEmoteRefresh, queueInitialEmoteRefresh, onEmoteRefresh, onEmoteStatus } from './emotes.js';
 import { loginWithTwitch, logout as authLogout, initAuth } from './auth.js';
-import { completedLineKeys, drawBingoLines, updateLinePositions, clearBingoLines, launchConfetti, applyParticleTheme, bingoCellBurst, setBingoMode, launchBingoEmojis } from './game.js';
+import { completedLineKeys, getLineInfo, launchConfetti, applyParticleTheme, bingoCellBurst, setBingoMode, launchBingoEmojis } from './game.js';
 import { audioManager } from './audio.js';
 import { sfxManager } from './sfx.js';
 import { chatManager, isKnownBot, renderMessageFromFragments, formatChatTime, formatChatTimeFull, refreshBadgesCache, resolveBadgeUrls } from './chat.js';
@@ -153,7 +153,11 @@ export function createApp() {
     markEmoteError(url) {
       if (!url) return;
       state.emotes.assetCache.set(url, { status: 'error' });
-      this.emoteVersion++;
+      if (this._erroredEmoteUrls) {
+        this._erroredEmoteUrls.add(url);
+      } else {
+        this._erroredEmoteUrls = new Set([url]);
+      }
     },
 
     channelNameForId(id) {
@@ -274,10 +278,7 @@ export function createApp() {
     },
 
     get visibleChatMessages() {
-      const msgs = this.chatShowBots
-        ? this.chatMessages
-        : this.chatMessages.filter(m => !isKnownBot(m.username, this.chatHiddenBotsExtra));
-      return msgs.slice(-50);
+      return this.chatMessages;
     },
 
     get isIOS() {
@@ -336,9 +337,11 @@ export function createApp() {
       return this.cards.map(c => (c || '').replace(/\n/g, ' ')).join('\n');
     },
     set cardsText(val) {
-      this.cards = (val || '').replace(/\r/g, '').split('\n');
-      this.persist();
-      this.emoteVersion++;
+      clearTimeout(this._cardsTextTimer);
+      this._cardsTextTimer = setTimeout(() => {
+        this.cards = (val || '').replace(/\r/g, '').split('\n');
+        this.persist();
+      }, 300);
     },
 
     get markedCount() {
@@ -479,12 +482,11 @@ export function createApp() {
 
     // ── Cells for grid ──
     get cells() {
-      this.emoteVersion;
       const total = this.cellCount;
       const marksStr = this.marks.slice(0, total).map(m => m ? 1 : 0).join('');
       const cardsStr = this.cards.slice(0, total).join('\n');
       const lastKeysStr = [...this.lastCompletedKeys].sort().join(';');
-      const cacheKey = `${this.size}|${this.emoteVersion}|${this.allowCelebrate ? 1 : 0}|${marksStr}|${cardsStr}|${lastKeysStr}`;
+      const cacheKey = `${this.size}|${this.allowCelebrate ? 1 : 0}|${marksStr}|${cardsStr}|${lastKeysStr}`;
 
       if (this._cellsCacheKey === cacheKey && this._cachedCells) {
         return this._cachedCells;
@@ -504,6 +506,10 @@ export function createApp() {
           .forEach(k => k.split(',').forEach(n => newSet.add(Number(n))));
       }
 
+      if (!this._erroredEmoteUrls) this._erroredEmoteUrls = new Set();
+
+      const lineInfo = getLineInfo(this.size, this.marks);
+
       const result = displayed.map((entry, i) => {
         const { icon, label, iconIsEmote } = splitCard(entry);
         const iconWords = (icon || '').split(/\s+/).filter(Boolean);
@@ -518,7 +524,8 @@ export function createApp() {
         }
         const firstEmote = iconParts.find(p => p.isEmote);
         const firstUrl = firstEmote?.url || '';
-        const isErrored = firstUrl ? state.emotes.assetCache.get(firstUrl)?.status === 'error' : false;
+        const isErrored = firstUrl && (this._erroredEmoteUrls.has(firstUrl) || state.emotes.assetCache.get(firstUrl)?.status === 'error');
+        const types = lineInfo.get(i);
         return {
           icon, label, iconIsEmote, iconParts,
           emoteUrl: isErrored ? '' : firstUrl,
@@ -526,6 +533,10 @@ export function createApp() {
           bingoActive: activeSet.has(i),
           bingoNew: newSet.has(i),
           index: i,
+          lineH: types?.has('h') || false,
+          lineV: types?.has('v') || false,
+          lineD1: types?.has('d1') || false,
+          lineD2: types?.has('d2') || false,
         };
       });
 
@@ -571,15 +582,11 @@ export function createApp() {
         this.emoteStatusKind = kind;
       });
 
-      const drawLines = () => requestAnimationFrame(() => drawBingoLines([...this.bingoKeys]));
-
-      this.$watch('marks', () => this.$nextTick(drawLines));
-      this.$watch('cards', () => this.$nextTick(() => { clearBingoLines(); drawLines(); }));
-      this.$watch('size', () => this.$nextTick(() => { clearBingoLines(); drawLines(); }));
       this.$watch('pickerOpen', val => { document.body.style.overflow = val ? 'hidden' : ''; });
-      const ro = new ResizeObserver(() => requestAnimationFrame(updateLinePositions));
-      ro.observe(document.getElementById('bingoGrid'));
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape') this.cancelDelete(); });
+      document.addEventListener('visibilitychange', () => {
+        document.body.classList.toggle('document-hidden', document.hidden);
+      });
       document.addEventListener('click', (e) => { if (this.pendingDeleteBoardId && !e.target.closest('.board-tabs')) this.cancelDelete(); });
 
       this.$watch('chatFontSize', val => {
@@ -593,9 +600,10 @@ export function createApp() {
 
       chatManager.onMessage = (msg) => {
         if (msg.messageId && this._chatMessageIds.has(msg.messageId)) return;
+        if (!this.chatShowBots && isKnownBot(msg.username, this.chatHiddenBotsExtra)) return;
         this.chatMessages.push(msg);
         if (msg.messageId) this._chatMessageIds.add(msg.messageId);
-        if (this.chatMessages.length > 200) {
+        if (this.chatMessages.length > 50) {
           const removed = this.chatMessages.shift();
           if (removed.messageId) this._chatMessageIds.delete(removed.messageId);
         }
@@ -696,14 +704,17 @@ export function createApp() {
         this.audioSongIndex = audioManager.currentSongIndex;
         this.audioLoopMode = audioManager.loopMode;
         this.audioMounted = audioManager.mounted;
-      }, 250);
+      }, 1000);
 
       this.checkImportUrl();
     },
 
     persist() {
-      saveBoards(this.boards);
-      saveActiveBoardId(this.activeBoardId);
+      clearTimeout(this._persistTimer);
+      this._persistTimer = setTimeout(() => {
+        saveBoards(this.boards);
+        saveActiveBoardId(this.activeBoardId);
+      }, 200);
     },
 
     cancelDelete() {
@@ -1235,10 +1246,12 @@ export function createApp() {
         clearTimeout(this._toastHideTimer);
 
         const theme = document.body.getAttribute('data-theme') || 'twice';
-        launchBingoEmojis(theme);
-        launchConfetti();
-        bingoCellBurst([...newIndices]);
-        sfxManager.play('bingo');
+        requestAnimationFrame(() => {
+          launchBingoEmojis(theme);
+          launchConfetti();
+          bingoCellBurst([...newIndices]);
+          sfxManager.play('bingo');
+        });
 
         this._toastTimer = setTimeout(() => {
           this.toastHiding = true;
@@ -1528,6 +1541,18 @@ export function createApp() {
     toggleChatBots() {
       this.chatShowBots = !this.chatShowBots;
       try { localStorage.setItem(STORAGE_KEYS.chatShowBots, String(this.chatShowBots)); } catch { }
+      if (!this.chatShowBots) {
+        this.$nextTick(() => {
+          const filtered = this.chatMessages.filter(m => !isKnownBot(m.username, this.chatHiddenBotsExtra));
+          if (filtered.length !== this.chatMessages.length) {
+            this.chatMessages = filtered;
+            this._chatMessageIds.clear();
+            for (const m of filtered) {
+              if (m.messageId) this._chatMessageIds.add(m.messageId);
+            }
+          }
+        });
+      }
     },
     toggleChatBadges() {
       this.chatShowBadges = !this.chatShowBadges;
@@ -1548,28 +1573,31 @@ export function createApp() {
 
     _persistChatHistory() {
       if (!this.isLoggedIn) return;
-      const seen = new Set();
-      const toSave = [];
-      for (let i = this.chatMessages.length - 1; i >= 0 && toSave.length < 100; i--) {
-        const m = this.chatMessages[i];
-        if (isKnownBot(m.username, this.chatHiddenBotsExtra)) continue;
-        if (!m.messageId || seen.has(m.messageId)) continue;
-        seen.add(m.messageId);
-        toSave.unshift({
-          messageId: m.messageId,
-          displayName: m.displayName,
-          username: m.username,
-          color: m.color,
-          rawColor: m.rawColor,
-          text: m.text,
-          fragments: m.fragments || [],
-          badges: m.badges || [],
-          timestamp: m.timestamp,
-        });
-      }
-      try {
-        localStorage.setItem(this._chatHistoryKey(), JSON.stringify(toSave));
-      } catch { }
+      clearTimeout(this._chatPersistTimer);
+      this._chatPersistTimer = setTimeout(() => {
+        const seen = new Set();
+        const toSave = [];
+        for (let i = this.chatMessages.length - 1; i >= 0 && toSave.length < 100; i--) {
+          const m = this.chatMessages[i];
+          if (isKnownBot(m.username, this.chatHiddenBotsExtra)) continue;
+          if (!m.messageId || seen.has(m.messageId)) continue;
+          seen.add(m.messageId);
+          toSave.unshift({
+            messageId: m.messageId,
+            displayName: m.displayName,
+            username: m.username,
+            color: m.color,
+            rawColor: m.rawColor,
+            text: m.text,
+            fragments: m.fragments || [],
+            badges: m.badges || [],
+            timestamp: m.timestamp,
+          });
+        }
+        try {
+          localStorage.setItem(this._chatHistoryKey(), JSON.stringify(toSave));
+        } catch { }
+      }, 1500);
     },
 
     loadChatHistory() {

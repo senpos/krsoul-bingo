@@ -1,5 +1,6 @@
 import { state, loadEmoteSourceCache, saveEmoteSourceCache } from './state.js';
 import { EMOTE_CACHE_TTL_MS, EMOTE_CACHE_FAIL_TTL_MS, TWITCH_CLIENT_ID } from './config.js';
+import { lruCache } from './utils.js';
 
 const emoteRequestCache = new Map();
 
@@ -364,28 +365,39 @@ export function getEmoteEntry(token) {
   return state.emotes.lookup.get(String(token || '').trim()) || null;
 }
 
+const _splitCardCache = lruCache(200);
+
 export function splitCard(line) {
+  const cached = _splitCardCache.get(line);
+  if (cached) return cached;
+
   const text = String(line || '').trim();
-  if (!text) return { icon: '\u2726', label: '', iconIsEmote: false };
-
-  const pipeIdx = text.indexOf('|');
-  if (pipeIdx !== -1) {
-    const rawIcon = text.slice(0, pipeIdx).trim();
-    const label = text.slice(pipeIdx + 1).trim();
-    const iconWords = rawIcon.split(/\s+/).filter(Boolean);
-    const hasEmote = iconWords.some(w => getEmoteEntry(w) || looksLikeEmoji(w));
-    return { icon: rawIcon, label, iconIsEmote: hasEmote };
+  let result;
+  if (!text) {
+    result = { icon: '\u2726', label: '', iconIsEmote: false };
+  } else {
+    const pipeIdx = text.indexOf('|');
+    if (pipeIdx !== -1) {
+      const rawIcon = text.slice(0, pipeIdx).trim();
+      const label = text.slice(pipeIdx + 1).trim();
+      const iconWords = rawIcon.split(/\s+/).filter(Boolean);
+      const hasEmote = iconWords.some(w => getEmoteEntry(w) || looksLikeEmoji(w));
+      result = { icon: rawIcon, label, iconIsEmote: hasEmote };
+    } else {
+      const clean = text.replace(/\s+/g, ' ').trim();
+      const parts = clean.split(' ');
+      const first = parts[0];
+      const rest = parts.slice(1).join(' ').trim();
+      const firstIsEmote = Boolean(getEmoteEntry(first));
+      if (looksLikeEmoji(first) || firstIsEmote) {
+        result = { icon: first, label: rest, iconIsEmote: firstIsEmote || looksLikeEmoji(first) };
+      } else {
+        result = { icon: '\u2726', label: text, iconIsEmote: false };
+      }
+    }
   }
-
-  const clean = text.replace(/\s+/g, ' ').trim();
-  const parts = clean.split(' ');
-  const first = parts[0];
-  const rest = parts.slice(1).join(' ').trim();
-  const firstIsEmote = Boolean(getEmoteEntry(first));
-  if (looksLikeEmoji(first) || firstIsEmote) {
-    return { icon: first, label: rest, iconIsEmote: firstIsEmote || looksLikeEmoji(first) };
-  }
-  return { icon: '\u2726', label: text, iconIsEmote: false };
+  _splitCardCache.set(line, result);
+  return result;
 }
 
 export function getAllEmotes() {

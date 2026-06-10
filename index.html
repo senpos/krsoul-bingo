@@ -331,6 +331,10 @@
                   'marked': cell.marked,
                   'bingo-active': cell.bingoActive,
                   'bingo-new': cell.bingoNew,
+                  'line-h': cell.lineH,
+                  'line-v': cell.lineV,
+                  'line-d1': cell.lineD1,
+                  'line-d2': cell.lineD2,
                 }">
                   <span class="cell-icon">
                     <img x-show="cell.emoteUrl" :src="cell.emoteUrl" :alt="cell.icon" class="emote" loading="lazy"
@@ -340,7 +344,6 @@
                   <span class="cell-text" x-text="cell.label"></span>
                 </div>
               </template>
-              <svg id="bingoLines" class="bingo-lines-overlay"></svg>
             </div>
           </div>
 

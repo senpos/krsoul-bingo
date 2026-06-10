@@ -31,117 +31,29 @@ export function completedLineKeys(size, marks) {
   return new Set(lines.filter(l => l.every(idx => marks[idx])).map(l => l.join(',')));
 }
 
-const _lineMap = new Map();
-let _cellCache = [];
-let _cellCacheDirty = true;
-let _cachedBoardSize = 0;
-
-function _rebuildCellCache() {
-  const grid = document.getElementById('bingoGrid');
-  if (!grid) return;
-  const currentSize = Number(grid.dataset.size);
-  if (currentSize !== _cachedBoardSize) {
-    _cellCacheDirty = true;
-    _cachedBoardSize = currentSize;
-  }
-  if (!_cellCacheDirty) return;
-  const cells = grid.querySelectorAll('.cell');
-  _cellCache = Array.from(cells).map(cell => {
-    const r = cell.getBoundingClientRect();
-    return {
-      x: r.left + r.width / 2,
-      y: r.top + r.height / 2,
-      size: Math.min(r.width, r.height)
-    };
-  });
-  _cellCacheDirty = false;
-}
-
-function _cellCenter(index, svgRect) {
-  const cached = _cellCache[index];
-  if (!cached) return null;
-  return { x: cached.x - svgRect.left, y: cached.y - svgRect.top };
-}
-
-function _createLineEl(indices, svg) {
-  const svgRect = svg.getBoundingClientRect();
-  const a = _cellCenter(indices[0], svgRect);
-  const b = _cellCenter(indices[indices.length - 1], svgRect);
-  if (!a || !b) return null;
-
-  const len = Math.hypot(b.x - a.x, b.y - a.y);
-  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  line.setAttribute('class', 'bingo-line');
-  line.setAttribute('x1', a.x);
-  line.setAttribute('y1', a.y);
-  line.setAttribute('x2', b.x);
-  line.setAttribute('y2', b.y);
-  line.style.strokeDasharray = len;
-  line.style.setProperty('--line-length', len);
-  svg.appendChild(line);
-  return line;
-}
-
-function _updateLineEl(el, indices, svg) {
-  const svgRect = svg.getBoundingClientRect();
-  const a = _cellCenter(indices[0], svgRect);
-  const b = _cellCenter(indices[indices.length - 1], svgRect);
-  if (!a || !b) return;
-
-  const len = Math.hypot(b.x - a.x, b.y - a.y);
-  el.setAttribute('x1', a.x);
-  el.setAttribute('y1', a.y);
-  el.setAttribute('x2', b.x);
-  el.setAttribute('y2', b.y);
-  el.style.strokeDasharray = len;
-  el.style.strokeDashoffset = '0';
-}
-
-export function drawBingoLines(keys) {
-  const svg = document.getElementById('bingoLines');
-  const grid = document.getElementById('bingoGrid');
-  if (!svg || !grid) return;
-
-  _rebuildCellCache();
-
-  const keySet = new Set(keys);
-
-  const toDelete = [];
-  for (const [key] of _lineMap) {
-    if (!keySet.has(key)) toDelete.push(key);
-  }
-  for (const key of toDelete) {
-    _lineMap.get(key).el.remove();
-    _lineMap.delete(key);
-  }
-
-  for (const key of keySet) {
-    if (!_lineMap.has(key)) {
-      const indices = key.split(',').map(Number);
-      const el = _createLineEl(indices, svg);
-      if (el) _lineMap.set(key, { el, indices });
+export function getLineInfo(size, marks) {
+  const lines = _getLines(size);
+  const cellLines = new Map();
+  for (const indices of lines) {
+    if (!indices.every(idx => marks[idx])) continue;
+    const dir = indices[1] - indices[0];
+    let type;
+    if (dir === 1) type = 'h';
+    else if (dir === size) type = 'v';
+    else if (dir === size + 1) type = 'd1';
+    else type = 'd2';
+    for (let i = 0; i < indices.length; i++) {
+      const idx = indices[i];
+      if (!cellLines.has(idx)) cellLines.set(idx, new Set());
+      cellLines.get(idx).add(type);
     }
   }
-}
-
-export function updateLinePositions() {
-  const svg = document.getElementById('bingoLines');
-  const grid = document.getElementById('bingoGrid');
-  if (!svg || !grid || _lineMap.size === 0) return;
-  _rebuildCellCache();
-  for (const data of _lineMap.values()) {
-    _updateLineEl(data.el, data.indices, svg);
-  }
-}
-
-export function clearBingoLines() {
-  for (const data of _lineMap.values()) data.el.remove();
-  _lineMap.clear();
+  return cellLines;
 }
 
 export function launchConfetti() {
   if (_cachedLite) return;
-  const count = _cachedMobile ? 40 : 140;
+  const count = _cachedMobile ? 40 : 80;
   const colors = ['#ff007f', '#00ffff', '#ffee00', '#5500ff', '#ffffff', '#ff0055'];
   const stagger = _cachedMobile ? 25 : 15;
   const fragment = document.createDocumentFragment();
@@ -167,7 +79,7 @@ export function launchConfetti() {
 export function launchBingoEmojis(themeName) {
   if (_cachedLite) return;
   const container = document.getElementById('bingoEmojis');
-  if (!container) return;
+  if (!container || container.childElementCount > 0) return;
 
   const emojis = BINGO_EMOJIS[themeName] || BINGO_EMOJIS.twice || ['🎉', '✨', '🎊'];
   const count = 24;
@@ -204,17 +116,16 @@ export function bingoCellBurst(indices) {
   const grid = document.getElementById('bingoGrid');
   if (!grid) return;
 
-  _rebuildCellCache();
-  if (_cellCache.length === 0) return;
-
+  const cells = grid.querySelectorAll('.cell');
   const origins = [];
   indices.forEach(i => {
-    const cached = _cellCache[i];
-    if (!cached) return;
+    const cell = cells[i];
+    if (!cell) return;
+    const r = cell.getBoundingClientRect();
     origins.push({
-      x: cached.x,
-      y: cached.y,
-      size: cached.size
+      x: r.left + r.width / 2,
+      y: r.top + r.height / 2,
+      size: Math.min(r.width, r.height)
     });
   });
 
@@ -235,7 +146,7 @@ export function bingoCellBurst(indices) {
   ctx.scale(dpr, dpr);
 
   const particles = [];
-  const PARTICLES_PER_CELL = _cachedMobile ? 20 : 80;
+  const PARTICLES_PER_CELL = _cachedMobile ? 10 : 80;
   const GRAVITY = 0.25;
   const FRICTION = 0.96;
 
@@ -361,10 +272,7 @@ let _resizeTimer = null;
 window.addEventListener('resize', () => {
   clearTimeout(_resizeTimer);
   _resizeTimer = setTimeout(() => {
-    _cellCacheDirty = true;
     const theme = document.body.getAttribute('data-theme') || 'twice';
     applyParticleTheme(theme);
-    _rebuildCellCache();
-    updateLinePositions();
   }, 300);
 });
