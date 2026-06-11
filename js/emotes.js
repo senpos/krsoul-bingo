@@ -19,7 +19,14 @@ export function setEmoteStatus(message, kind = '') {
 }
 
 function looksLikeEmoji(ch) {
-  return ch && (/[\u2600-\u27BF]/.test(ch) || /\p{Extended_Pictographic}/u.test(ch));
+  if (!ch) return false;
+  if (/[\u2600-\u27BF]/.test(ch)) return true;
+  if (/\p{Extended_Pictographic}/u.test(ch)) return true;
+  // Regional indicator pairs (flags like 🇺🇸, 🇺🇦)
+  if (/[\u{1F1E6}-\u{1F1FF}]{2}/u.test(ch)) return true;
+  // Keycap sequences (1️⃣, 2️⃣, *️⃣, #️⃣, 0️⃣)
+  if (/^[0-9*#]\uFE0F?\u20E3$/.test(ch)) return true;
+  return false;
 }
 
 // ── Normalizers ──────────────────────────────────

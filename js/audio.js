@@ -121,6 +121,7 @@ class AudioManager {
     this._focusContainer = null;
     this._focusTimer = null;
     this._focusMode = false;
+    this._autoSkip = true;
   }
 
   get currentTrack() {
@@ -178,6 +179,7 @@ class AudioManager {
   get focusIndex() { return this._focusIndex; }
   get focusCount() { return FOCUS_VIDEOS.length; }
   get focusMode() { return this._focusMode; }
+  get autoSkip() { return this._autoSkip; }
   get focusVideoUrl() {
     const v = FOCUS_VIDEOS[this._focusIndex];
     return v ? `https://www.youtube.com/watch?v=${v.videoId}` : '';
@@ -196,6 +198,7 @@ class AudioManager {
         loopMode: this._loopMode,
         focusIndex: this._focusIndex,
         focusMode: this._focusMode,
+        autoSkip: this._autoSkip,
         focusPositions: this._focusPositions,
       }));
     } catch {}
@@ -218,6 +221,7 @@ class AudioManager {
         this._focusIndex = s.focusIndex;
       }
       if (s.focusMode !== undefined) this._focusMode = !!s.focusMode;
+      if (s.autoSkip !== undefined) this._autoSkip = !!s.autoSkip;
       if (s.focusPositions && typeof s.focusPositions === 'object') this._focusPositions = s.focusPositions;
     } catch {}
   }
@@ -582,12 +586,14 @@ class AudioManager {
         songs: this.songs,
         currentSongIndex: this._currentSongIndex,
         mounted: this._mounted,
+        autoSkip: this._autoSkip,
       });
     }
   }
 
   // ── Focus Mode Player ──
-  async mountFocusPlayer(containerEl) {
+  async mountFocusPlayer(containerEl, startTimer = true) {
+    console.log('[AUDIO] mountFocusPlayer start, startTimer:', startTimer);
     await loadYTApi();
     if (this._focusPlayer) {
       try { this._focusPlayer.destroy(); } catch {}
@@ -595,6 +601,7 @@ class AudioManager {
     }
     this._focusContainer = containerEl;
     const video = FOCUS_VIDEOS[this._focusIndex];
+    console.log('[AUDIO] Loading video:', video.videoId, video.label);
 
     this._focusPlayer = new window.YT.Player(containerEl, {
       videoId: video.videoId,
@@ -608,13 +615,16 @@ class AudioManager {
       },
       events: {
         onReady: (e) => {
+          console.log('[AUDIO] YT Player onReady — video loaded');
           e.target.mute();
           const savedPos = this._focusPositions[video.videoId] || 0;
           if (savedPos > 0) {
             e.target.seekTo(savedPos, true);
           }
           e.target.playVideo();
-          this._startFocusTimer();
+          if (startTimer) {
+            this._startFocusTimer();
+          }
         },
       },
     });
@@ -634,13 +644,15 @@ class AudioManager {
   }
 
   focusNext() {
+    console.log('[AUDIO] focusNext() called');
     if (this._focusPlayer?.getCurrentTime) {
       const video = FOCUS_VIDEOS[this._focusIndex];
       this._focusPositions[video.videoId] = this._focusPlayer.getCurrentTime();
     }
     this._focusIndex = (this._focusIndex + 1) % FOCUS_VIDEOS.length;
+    console.log('[AUDIO] New focusIndex:', this._focusIndex);
     this._saveState();
-    if (this._focusContainer) this.mountFocusPlayer(this._focusContainer);
+    if (this._focusContainer) this.mountFocusPlayer(this._focusContainer, false);
   }
 
   focusPrev() {
@@ -650,7 +662,14 @@ class AudioManager {
     }
     this._focusIndex = (this._focusIndex - 1 + FOCUS_VIDEOS.length) % FOCUS_VIDEOS.length;
     this._saveState();
-    if (this._focusContainer) this.mountFocusPlayer(this._focusContainer);
+    if (this._focusContainer) this.mountFocusPlayer(this._focusContainer, false);
+  }
+
+  toggleAutoSkip() {
+    this._autoSkip = !this._autoSkip;
+    this._saveState();
+    console.log('[AUDIO] autoSkip toggled:', this._autoSkip);
+    return this._autoSkip;
   }
 
   setFocusMode(enabled) {
@@ -660,16 +679,29 @@ class AudioManager {
 
   _startFocusTimer() {
     this._stopFocusTimer();
-    this._focusTimer = setInterval(() => {
-      this.focusNext();
-    }, 5 * 60 * 1000);
+    if (!this._autoSkip) {
+      console.log('[AUDIO] _startFocusTimer — autoSkip off, skipping timer');
+      return;
+    }
+    console.log('[AUDIO] _startFocusTimer — setTimeout 10min');
+    this._focusTimer = setTimeout(() => {
+      console.log('[AUDIO] Timer fired — dispatching focus-video-change');
+      this._focusTimer = null;
+      window.dispatchEvent(new CustomEvent('focus-video-change'));
+    }, 10 * 60 * 1000);
   }
 
   _stopFocusTimer() {
     if (this._focusTimer) {
-      clearInterval(this._focusTimer);
+      console.log('[AUDIO] _stopFocusTimer — clearing timer');
+      clearTimeout(this._focusTimer);
       this._focusTimer = null;
     }
+  }
+
+  startFocusTimer() {
+    console.log('[AUDIO] startFocusTimer() called');
+    this._startFocusTimer();
   }
 }
 

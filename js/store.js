@@ -29,6 +29,72 @@ function loadThemeFonts(theme) {
   document.head.appendChild(link);
 }
 
+const tlog = (msg) => console.log(`[${new Date().toISOString().split('T')[1].split('.')[0]}] [FOCUS] ${msg}`);
+let _focusTransitioning = false;
+
+async function onFocusVideoChange() {
+  if (!audioManager.autoSkip) {
+    tlog('EVENT blocked: autoSkip disabled');
+    return;
+  }
+  if (_focusTransitioning) { tlog('EVENT blocked: still transitioning'); return; }
+  _focusTransitioning = true;
+  tlog('=== TRANSITION START ===');
+
+  const video = document.querySelector('.focus-mode-video');
+  if (!video) {
+    tlog('No video element found, aborting');
+    _focusTransitioning = false;
+    audioManager.startFocusTimer();
+    return;
+  }
+
+  // 1. Start glow
+  tlog('GLOW start');
+  video.classList.add('glow-warn');
+
+  // 2. After 0.5s of glow, start shake + sound simultaneously
+  await new Promise(r => setTimeout(r, 500));
+  tlog('SHAKE start');
+  const shakeDur = 0.6 + Math.random() * 0.4;
+  video.style.setProperty('--shake-dur', shakeDur + 's');
+  video.classList.add('shake');
+
+  // 3. Play sound immediately (while shaking)
+  tlog('SOUND start');
+  await sfxManager.playBlocking('videoChange');
+  tlog('SOUND end');
+
+  // 4. Remove glow + shake, start swipe
+  tlog('SWIPE start');
+  video.classList.remove('glow-warn', 'shake');
+
+  const onSwipeEnd = () => {
+    tlog('SWIPE end');
+    video.removeEventListener('animationend', onSwipeEnd);
+    video.classList.remove('swipe-up');
+    setTimeout(() => {
+      tlog('focusNext() call');
+      audioManager.focusNext();
+      requestAnimationFrame(() => {
+        tlog('SLIDE-IN start');
+        video.classList.add('slide-in');
+        video.addEventListener('animationend', () => {
+          tlog('SLIDE-IN end');
+          video.classList.remove('slide-in');
+          _focusTransitioning = false;
+          tlog('=== TRANSITION COMPLETE ===');
+          tlog('Restarting timer...');
+          audioManager.startFocusTimer();
+        }, { once: true });
+      });
+    }, 300);
+  };
+
+  video.classList.add('swipe-up');
+  video.addEventListener('animationend', onSwipeEnd, { once: true });
+}
+
 export function createApp() {
   return {
     boards: [],
@@ -224,6 +290,7 @@ export function createApp() {
     chatPanelOpen: false,
     editorOpen: false,
     focusMode: false,
+    audioFocusAutoSkip: true,
     audioMounted: false,
 
     // ── Context Menu ──
@@ -683,11 +750,15 @@ export function createApp() {
         this.audioSongIndex = state.currentSongIndex;
         this.audioLoopMode = state.loopMode;
         this.audioMounted = state.mounted;
+        this.audioFocusAutoSkip = state.autoSkip;
       });
 
       sfxManager.init(audioManager);
       sfxManager.setVolume(this.audioFxVolume / 100);
       sfxManager.setMuted(!this.audioSfxEnabled);
+
+      window.removeEventListener('focus-video-change', onFocusVideoChange);
+      window.addEventListener('focus-video-change', onFocusVideoChange);
 
       this.audioMounted = true;
 
@@ -719,6 +790,7 @@ export function createApp() {
         this.audioFocusIndex = audioManager.focusIndex;
         this.audioFocusCount = audioManager.focusCount;
         this.audioFocusVideoUrl = audioManager.focusVideoUrl;
+        this.audioFocusAutoSkip = audioManager.autoSkip;
       }, 1000);
 
       this.checkImportUrl();
@@ -1374,6 +1446,10 @@ export function createApp() {
 
     focusNext() { audioManager.focusNext(); },
     focusPrev() { audioManager.focusPrev(); },
+    toggleAutoSkip() {
+      this.audioFocusAutoSkip = audioManager.toggleAutoSkip();
+      return this.audioFocusAutoSkip;
+    },
 
     // ── Audio Controls ──
     mountPlayer() {
@@ -1522,6 +1598,8 @@ export function createApp() {
     // ── Twitch ID Input (replaced by addChannel/removeChannel) ──
     migrateCards() {
       if (this._cardsMigrated) return;
+      // Wait for all emote sources to finish so getEmoteEntry is accurate
+      if (!state.emotes.ready) return;
       this._cardsMigrated = true;
       for (const b of this.boards) {
         b.cards = b.cards.map(c => {

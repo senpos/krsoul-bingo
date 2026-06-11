@@ -3,6 +3,7 @@ const EFFECTS = {
   logout: ['skatina.opus'],
   login: ['ah.opus'],
   skoka: ['skoka.opus'],
+  videoChange: ['nashotiktok.opus', 'swipeup.opus'],
 };
 
 const FADE_DURATION = 0.15;
@@ -15,6 +16,7 @@ class SfxManager {
     this._volume = 1;
     this._muted = false;
     this._currentSource = null;
+    this._blockingSource = null;
     this._loaded = false;
   }
 
@@ -71,6 +73,10 @@ class SfxManager {
       this._fadeOut(this._currentSource);
       this._currentSource = null;
     }
+    if (this._blockingSource) {
+      this._fadeOut(this._blockingSource);
+      this._blockingSource = null;
+    }
 
     const buf = buffers[Math.floor(Math.random() * buffers.length)];
     const source = ctx.createBufferSource();
@@ -95,32 +101,71 @@ class SfxManager {
   }
 
   async playBlocking(action) {
+    console.log('[SFX] playBlocking start:', action);
     const buffers = this._buffers.get(action);
-    if (!buffers?.length || this._muted) return;
+    if (!buffers?.length || this._muted) {
+      console.log('[SFX] playBlocking aborted — muted or no buffers');
+      return;
+    }
 
     const ctx = this._ensureCtx();
     if (!ctx) return;
     await this._resumeCtx();
 
+    if (this._currentSource) {
+      console.log('[SFX] Stopping currentSource (non-blocking)');
+      this._fadeOut(this._currentSource);
+      this._currentSource = null;
+    }
+    if (this._blockingSource) {
+      console.log('[SFX] Stopping _blockingSource');
+      this._fadeOut(this._blockingSource);
+      this._blockingSource = null;
+    }
+
     const buf = buffers[Math.floor(Math.random() * buffers.length)];
     const source = ctx.createBufferSource();
     source.buffer = buf;
-    source.connect(this._gain);
+
+    const srcGain = ctx.createGain();
+    srcGain.gain.value = 0;
+    source.connect(srcGain);
+    srcGain.connect(this._gain);
     source.start(0);
 
+    const now = ctx.currentTime;
+    srcGain.gain.linearRampToValueAtTime(this._volume, now + FADE_DURATION);
+
+    console.log('[SFX] playBlocking playing, duration:', buf.duration);
+
     return new Promise((resolve) => {
-      source.onended = () => resolve();
-      source.addEventListener('error', () => resolve(), { once: true });
+      let _resolved = false;
+      const cleanup = () => {
+        if (_resolved) return;
+        _resolved = true;
+        console.log('[SFX] playBlocking ended');
+        if (this._blockingSource?.source === source) {
+          this._blockingSource = null;
+        }
+        resolve();
+      };
+      source.addEventListener('ended', cleanup, { once: true });
+      this._blockingSource = { source, gain: srcGain, resolve: cleanup };
     });
   }
 
   _fadeOut(entry) {
     if (!entry?.source || !this._ctx) return;
+    console.log('[SFX] _fadeOut called');
     const now = this._ctx.currentTime;
     try {
       entry.gain.gain.linearRampToValueAtTime(0, now + FADE_DURATION);
       entry.source.stop(now + FADE_DURATION + 0.01);
     } catch {}
+    if (entry.resolve) {
+      console.log('[SFX] _fadeOut calling resolve()');
+      entry.resolve();
+    }
   }
 
   setVolume(v) {

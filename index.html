@@ -187,6 +187,9 @@
                 <button class="focus-nav-btn" @click="focusPrev()">&#9664;</button>
                 <span class="focus-nav-label" x-text="(audioFocusIndex + 1) + ' / ' + audioFocusCount"></span>
                 <button class="focus-nav-btn" @click="focusNext()">&#9654;</button>
+                <button class="focus-nav-btn"
+                  @click="toggleAutoSkip()"
+                  :title="audioFocusAutoSkip ? 'Автоперемикання: увімкнено' : 'Автоперемикання: вимкнено'">&#9654;&#9654;</button>
               </div>
               <a x-show="audioFocusVideoUrl" :href="audioFocusVideoUrl" target="_blank" rel="noopener"
                 class="player-yt-link" title="Відкрити на YouTube">YT</a>
@@ -298,18 +301,24 @@
           </div>
           </div>
 
-          <div class="disclaimer">
-            <p>Вміст використовується в розважальних цілях. Авторські права на музику належать: <a
-                href="https://www.youtube.com/channel/UCO615czs48hYvhKdolnq_LQ" target="_blank"
-                rel="noopener">MasterJonald</a>, <a href="https://www.youtube.com/channel/UC3iCGU82DkLi2T4eYr-BiBg"
-                target="_blank" rel="noopener">Darnu-Pop</a>, <a
-                href="https://www.youtube.com/channel/UCWvrB8eZ18wB5o7QnzMAdcA" target="_blank" rel="noopener">정훈남JHN
-                STUDIO</a>, <a
-                href="https://www.youtube.com/channel/UCCy2h-z5yQoOF908Qa05ykA" target="_blank" rel="noopener">8-Bit
-                Arcade - Topic</a>, <a
-                href="https://www.youtube.com/channel/UCWwGasPlVy3CjrO4Pfu9_zg" target="_blank" rel="noopener">PiXL
-                라디오</a>.</p>
-            <p>vibe-coded with OpenCode by Senpos</p>
+          <div class="disclaimer" x-data="{ show: false }">
+            <button class="disclaimer-toggle" @click="show = !show">
+              <span x-text="show ? '&#9660;' : '&#9658;'" style="font-size: 8px;"></span>
+              <span>Про авторів</span>
+            </button>
+            <div class="disclaimer-content" x-show="show" x-cloak>
+              <p>Вміст використовується в розважальних цілях. Авторські права на музику належать: <a
+                  href="https://www.youtube.com/channel/UCO615czs48hYvhKdolnq_LQ" target="_blank"
+                  rel="noopener">MasterJonald</a>, <a href="https://www.youtube.com/channel/UC3iCGU82DkLi2T4eYr-BiBg"
+                  target="_blank" rel="noopener">Darnu-Pop</a>, <a
+                  href="https://www.youtube.com/channel/UCWvrB8eZ18wB5o7QnzMAdcA" target="_blank" rel="noopener">정훈남JHN
+                  STUDIO</a>, <a
+                  href="https://www.youtube.com/channel/UCCy2h-z5yQoOF908Qa05ykA" target="_blank" rel="noopener">8-Bit
+                  Arcade - Topic</a>, <a
+                  href="https://www.youtube.com/channel/UCWwGasPlVy3CjrO4Pfu9_zg" target="_blank" rel="noopener">PiXL
+                  라디오</a>.</p>
+              <p>vibe-coded with OpenCode by Senpos</p>
+            </div>
           </div>
         </aside>
 
