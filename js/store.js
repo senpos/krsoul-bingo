@@ -223,6 +223,7 @@ export function createApp() {
     toastHiding: false,
     chatPanelOpen: false,
     editorOpen: false,
+    focusMode: false,
     audioMounted: false,
 
     // ── Context Menu ──
@@ -293,6 +294,7 @@ export function createApp() {
     audioFxVolume: 80,
     audioSfxEnabled: true,
     audioCurrentTrack: null,
+    audioFocusVideoUrl: '',
     audioReady: false,
     audioProgress: null,
     audioCurrentTime: null,
@@ -688,6 +690,16 @@ export function createApp() {
       sfxManager.setMuted(!this.audioSfxEnabled);
 
       this.audioMounted = true;
+
+      // Restore focus mode
+      this.focusMode = audioManager.focusMode;
+      if (this.focusMode) {
+        this.$nextTick(() => {
+          const el = document.getElementById('focusPlayerContainer');
+          if (el) audioManager.mountFocusPlayer(el);
+        });
+      }
+
       this.$nextTick(() => {
         const el = document.getElementById('ytPlayerContainer');
         if (el) audioManager.mountPlayer(el);
@@ -704,6 +716,9 @@ export function createApp() {
         this.audioSongIndex = audioManager.currentSongIndex;
         this.audioLoopMode = audioManager.loopMode;
         this.audioMounted = audioManager.mounted;
+        this.audioFocusIndex = audioManager.focusIndex;
+        this.audioFocusCount = audioManager.focusCount;
+        this.audioFocusVideoUrl = audioManager.focusVideoUrl;
       }, 1000);
 
       this.checkImportUrl();
@@ -1341,6 +1356,22 @@ export function createApp() {
       document.body.setAttribute('data-theme-mode', this.themeMode);
       this.persist();
     },
+
+    toggleFocusMode() {
+      this.focusMode = !this.focusMode;
+      audioManager.setFocusMode(this.focusMode);
+      if (this.focusMode) {
+        this.$nextTick(() => {
+          const el = document.getElementById('focusPlayerContainer');
+          if (el) audioManager.mountFocusPlayer(el);
+        });
+      } else {
+        audioManager.destroyFocusPlayer();
+      }
+    },
+
+    focusNext() { audioManager.focusNext(); },
+    focusPrev() { audioManager.focusPrev(); },
 
     // ── Audio Controls ──
     mountPlayer() {

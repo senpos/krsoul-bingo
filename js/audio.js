@@ -63,6 +63,13 @@ const PLAYLISTS = {
   },
 };
 
+const FOCUS_VIDEOS = [
+  { videoId: 'QPW3XwBoQlw', label: 'Subway Surfers' },
+  { videoId: 'nqxmOqfMt28', label: 'Minecraft Parkour' },
+  { videoId: 'bEQTUMAPFZQ', label: 'GTA 5 Mega Ramp' },
+  { videoId: 'tXIusNFU_Ww', label: 'Hydraulic Press' },
+];
+
 for (const playlist of Object.values(PLAYLISTS)) {
   for (const song of playlist.songs) {
     song.videoId = extractYouTubeId(song.url) || '';
@@ -108,6 +115,12 @@ class AudioManager {
     this._onUpdate = null;
 
     this._progressTimer = null;
+
+    this._focusIndex = 0;
+    this._focusPositions = {};
+    this._focusContainer = null;
+    this._focusTimer = null;
+    this._focusMode = false;
   }
 
   get currentTrack() {
@@ -162,6 +175,13 @@ class AudioManager {
   get audioTheme() { return this._currentTheme; }
   get loopMode() { return this._loopMode; }
   get mounted() { return this._mounted; }
+  get focusIndex() { return this._focusIndex; }
+  get focusCount() { return FOCUS_VIDEOS.length; }
+  get focusMode() { return this._focusMode; }
+  get focusVideoUrl() {
+    const v = FOCUS_VIDEOS[this._focusIndex];
+    return v ? `https://www.youtube.com/watch?v=${v.videoId}` : '';
+  }
 
   _saveState() {
     try {
@@ -174,6 +194,9 @@ class AudioManager {
         fxVolume: this._fxVolume,
         sfxMuted: this._sfxMuted,
         loopMode: this._loopMode,
+        focusIndex: this._focusIndex,
+        focusMode: this._focusMode,
+        focusPositions: this._focusPositions,
       }));
     } catch {}
   }
@@ -191,6 +214,11 @@ class AudioManager {
       if (s.fxVolume !== undefined) this._fxVolume = s.fxVolume;
       if (s.sfxMuted !== undefined) this._sfxMuted = !!s.sfxMuted;
       if (s.loopMode === 'playlist' || s.loopMode === 'song' || s.loopMode === 'random') this._loopMode = s.loopMode;
+      if (s.focusIndex !== undefined && s.focusIndex >= 0 && s.focusIndex < FOCUS_VIDEOS.length) {
+        this._focusIndex = s.focusIndex;
+      }
+      if (s.focusMode !== undefined) this._focusMode = !!s.focusMode;
+      if (s.focusPositions && typeof s.focusPositions === 'object') this._focusPositions = s.focusPositions;
     } catch {}
   }
 
@@ -555,6 +583,92 @@ class AudioManager {
         currentSongIndex: this._currentSongIndex,
         mounted: this._mounted,
       });
+    }
+  }
+
+  // ── Focus Mode Player ──
+  async mountFocusPlayer(containerEl) {
+    await loadYTApi();
+    if (this._focusPlayer) {
+      try { this._focusPlayer.destroy(); } catch {}
+      this._focusPlayer = null;
+    }
+    this._focusContainer = containerEl;
+    const video = FOCUS_VIDEOS[this._focusIndex];
+
+    this._focusPlayer = new window.YT.Player(containerEl, {
+      videoId: video.videoId,
+      width: '100%',
+      height: '100%',
+      playerVars: {
+        autoplay: 1, mute: 1, loop: 1, playlist: video.videoId,
+        controls: 0, disablekb: 1, fs: 0, modestbranding: 1,
+        rel: 0, playsinline: 1, showinfo: 0, iv_load_policy: 3,
+        cc_load_policy: 0, color: 'white',
+      },
+      events: {
+        onReady: (e) => {
+          e.target.mute();
+          const savedPos = this._focusPositions[video.videoId] || 0;
+          if (savedPos > 0) {
+            e.target.seekTo(savedPos, true);
+          }
+          e.target.playVideo();
+          this._startFocusTimer();
+        },
+      },
+    });
+  }
+
+  destroyFocusPlayer() {
+    this._stopFocusTimer();
+    if (this._focusPlayer) {
+      if (this._focusPlayer.getCurrentTime) {
+        const video = FOCUS_VIDEOS[this._focusIndex];
+        this._focusPositions[video.videoId] = this._focusPlayer.getCurrentTime();
+        this._saveState();
+      }
+      try { this._focusPlayer.destroy(); } catch {}
+      this._focusPlayer = null;
+    }
+  }
+
+  focusNext() {
+    if (this._focusPlayer?.getCurrentTime) {
+      const video = FOCUS_VIDEOS[this._focusIndex];
+      this._focusPositions[video.videoId] = this._focusPlayer.getCurrentTime();
+    }
+    this._focusIndex = (this._focusIndex + 1) % FOCUS_VIDEOS.length;
+    this._saveState();
+    if (this._focusContainer) this.mountFocusPlayer(this._focusContainer);
+  }
+
+  focusPrev() {
+    if (this._focusPlayer?.getCurrentTime) {
+      const video = FOCUS_VIDEOS[this._focusIndex];
+      this._focusPositions[video.videoId] = this._focusPlayer.getCurrentTime();
+    }
+    this._focusIndex = (this._focusIndex - 1 + FOCUS_VIDEOS.length) % FOCUS_VIDEOS.length;
+    this._saveState();
+    if (this._focusContainer) this.mountFocusPlayer(this._focusContainer);
+  }
+
+  setFocusMode(enabled) {
+    this._focusMode = enabled;
+    this._saveState();
+  }
+
+  _startFocusTimer() {
+    this._stopFocusTimer();
+    this._focusTimer = setInterval(() => {
+      this.focusNext();
+    }, 5 * 60 * 1000);
+  }
+
+  _stopFocusTimer() {
+    if (this._focusTimer) {
+      clearInterval(this._focusTimer);
+      this._focusTimer = null;
     }
   }
 }

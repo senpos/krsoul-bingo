@@ -50,7 +50,9 @@
       <header class="app-header">
         <div class="header-left">
           <div class="badge">KRSoul BINGO</div>
-          <h1 class="title">BINGO</h1>
+          <button class="zoomer-mode-btn" @click="toggleFocusMode()" :class="{ active: focusMode }">
+            👶 6 7
+          </button>
         </div>
         <div class="header-right">
           <div class="theme-bar">
@@ -175,6 +177,21 @@
                   <span class="pli-title" x-text="song.title"></span>
                 </button>
               </template>
+            </div>
+          </div>
+
+          <div x-show="focusMode" x-cloak class="focus-mode-card">
+            <div class="focus-mode-nav">
+              <div class="focus-mode-nav-left">
+                <button class="focus-nav-btn" @click="focusPrev()">&#9664;</button>
+                <span class="focus-nav-label" x-text="(audioFocusIndex + 1) + ' / ' + audioFocusCount"></span>
+                <button class="focus-nav-btn" @click="focusNext()">&#9654;</button>
+              </div>
+              <a x-show="audioFocusVideoUrl" :href="audioFocusVideoUrl" target="_blank" rel="noopener"
+                class="player-yt-link" title="Відкрити на YouTube">YT</a>
+            </div>
+            <div class="focus-mode-video">
+              <div id="focusPlayerContainer" class="focus-player-frame"></div>
             </div>
           </div>
 
