@@ -1364,6 +1364,8 @@ export function createApp() {
         this.$nextTick(() => {
           const el = document.getElementById('focusPlayerContainer');
           if (el) audioManager.mountFocusPlayer(el);
+          const card = document.querySelector('.focus-mode-card');
+          if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
       } else {
         audioManager.destroyFocusPlayer();
