@@ -703,6 +703,16 @@ class AudioManager {
     console.log('[AUDIO] startFocusTimer() called');
     this._startFocusTimer();
   }
+
+  stopProgressPolling() {
+    this._stopProgressPolling();
+  }
+
+  startProgressPolling() {
+    if (this._ytPlayer?.getPlayerState) {
+      this._startProgressPolling();
+    }
+  }
 }
 
 export const audioManager = new AudioManager();

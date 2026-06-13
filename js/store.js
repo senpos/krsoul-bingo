@@ -1,4 +1,4 @@
-import { STORAGE_KEYS, DEFAULT_TWITCH_USER_IDS, DEFAULT_CARDS, TWITCH_CLIENT_ID, generateBoardId, DEFAULT_CHAT_HIDDEN_BOTS, THEMES, DEFAULT_THEME } from './config.js';
+import { STORAGE_KEYS, DEFAULT_TWITCH_USER_IDS, DEFAULT_CARDS, TWITCH_CLIENT_ID, generateBoardId, DEFAULT_CHAT_HIDDEN_BOTS, THEMES, DEFAULT_THEME, isPigeonSlopActive } from './config.js';
 import { shareBoard, unshareBoard } from './codec.js';
 import { state, loadBoards, saveBoards, saveActiveBoardId, saveState } from './state.js';
 import { getEmoteEntry, splitCard, getAllEmotes, getEmotesBySource, scheduleEmoteRefresh, queueInitialEmoteRefresh, onEmoteRefresh, onEmoteStatus } from './emotes.js';
@@ -7,6 +7,7 @@ import { completedLineKeys, getLineInfo, launchConfetti, applyParticleTheme, bin
 import { audioManager } from './audio.js';
 import { sfxManager } from './sfx.js';
 import { chatManager, isKnownBot, renderMessageFromFragments, formatChatTime, formatChatTimeFull, refreshBadgesCache, resolveBadgeUrls } from './chat.js';
+import { initPigeon, activatePigeonSlopMode, deactivatePigeonSlopMode, stopPigeonSpawning, resumePigeonSpawning, syncPigeonVideoAudio, setPigeonDisabled } from './pigeon.js';
 
 const THEME_FONT_FAMILIES = {
   twice:      ['Literata:wght@400;600;700', 'Lobster'],
@@ -14,6 +15,7 @@ const THEME_FONT_FAMILIES = {
   nmixx:      ['Exo+2:wght@400;600;700', 'Alumni+Sans:wght@400;600;700;900'],
   newjeans:   ['Pixelify+Sans:wght@400;500;600;700', 'Press+Start+2P'],
   lesserafim: ['Spectral:wght@400;600;700', 'Playfair+Display:wght@400;700;900'],
+  pigeon:     ['Rubik+Dirt'],
 };
 
 function loadThemeFonts(theme) {
@@ -292,6 +294,12 @@ export function createApp() {
     focusMode: false,
     audioFocusAutoSkip: true,
     audioMounted: false,
+
+    // ── Pigeon Slop Mode ──
+    pigeonSlopActive: false,
+    pigeonModalVisible: false,
+    pigeonVideoPlaying: false,
+    pigeonDisabled: localStorage.getItem('krsoul-bingo-pigeon-disabled') === 'true',
 
     // ── Context Menu ──
     ctxMenu: { show: false, x: 0, y: 0, cellIndex: -1 },
@@ -776,6 +784,9 @@ export function createApp() {
         if (el) audioManager.mountPlayer(el);
       });
 
+      // Init pigeon spawning
+      initPigeon(this, this.pigeonDisabled);
+
       this._pollTimer = setInterval(() => {
         this.audioProgress = audioManager.progress;
         this.audioCurrentTime = audioManager.currentTime;
@@ -873,6 +884,7 @@ export function createApp() {
       this.redoHistory = [];
       this.persist();
       this.$nextTick(() => this.ensureActiveTabVisible());
+      if (this.pigeonSlopActive) return;
       document.body.setAttribute('data-theme', this.theme);
       document.body.setAttribute('data-theme-mode', this.themeMode);
       applyParticleTheme(this.theme);
@@ -1414,6 +1426,10 @@ export function createApp() {
     },
 
     setTheme(name) {
+      if (name === 'pigeon') return;
+      if (this.pigeonSlopActive) {
+        deactivatePigeonSlopMode(this);
+      }
       this.theme = name;
       document.body.setAttribute('data-theme', name);
       document.body.setAttribute('data-theme-mode', this.themeMode);
@@ -1430,6 +1446,7 @@ export function createApp() {
     },
 
     toggleFocusMode() {
+      if (this.pigeonSlopActive) return;
       this.focusMode = !this.focusMode;
       audioManager.setFocusMode(this.focusMode);
       if (this.focusMode) {
@@ -1451,6 +1468,39 @@ export function createApp() {
       return this.audioFocusAutoSkip;
     },
 
+    // ── Pigeon Slop Mode ──
+    pigeonAccept() {
+      this.pigeonModalVisible = false;
+      activatePigeonSlopMode(this);
+    },
+
+    pigeonDecline() {
+      this.pigeonModalVisible = false;
+      resumePigeonSpawning();
+    },
+
+    exitPigeonSlop() {
+      deactivatePigeonSlopMode(this);
+    },
+
+    togglePigeonVideoPlay() {
+      const v = document.getElementById('pigeonVideo');
+      if (!v) return;
+      if (v.paused) {
+        v.play();
+        this.pigeonVideoPlaying = true;
+      } else {
+        v.pause();
+        this.pigeonVideoPlaying = false;
+      }
+    },
+
+    togglePigeonDisabled() {
+      this.pigeonDisabled = !this.pigeonDisabled;
+      try { localStorage.setItem('krsoul-bingo-pigeon-disabled', String(this.pigeonDisabled)); } catch {}
+      setPigeonDisabled(this.pigeonDisabled);
+    },
+
     // ── Audio Controls ──
     mountPlayer() {
       this.audioMounted = true;
@@ -1464,11 +1514,13 @@ export function createApp() {
     setVolume(v) {
       this.audioVolume = v;
       audioManager.setVolume(v);
+      syncPigeonVideoAudio(this.audioMusicMuted, v);
     },
 
     toggleMusicMute() {
       this.audioMusicMuted = !this.audioMusicMuted;
       audioManager.setMusicMuted(this.audioMusicMuted);
+      syncPigeonVideoAudio(this.audioMusicMuted, this.audioVolume);
     },
 
     togglePlay() {

@@ -18,7 +18,7 @@
   <link rel="shortcut icon" href="favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Alumni+Sans:wght@400;700&family=Exo+2:wght@400;700&family=Jura:wght@400;700&family=Literata:wght@400;700&family=Lobster&family=Noto+Sans:wght@400;600;700;900&family=Noto+Sans+KR:wght@400;700;900&family=Noto+Serif:wght@400;700&family=Noto+Serif+KR:wght@400;700&family=Oranienbaum&family=Pixelify+Sans&family=Playfair+Display:wght@400;700&family=Press+Start+2P&family=Russo+One&family=Spectral:wght@400;700&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=Alumni+Sans:wght@400;700&family=Rubik+Dirt&family=Exo+2:wght@400;700&family=Jura:wght@400;700&family=Literata:wght@400;700&family=Lobster&family=Noto+Sans:wght@400;600;700;900&family=Noto+Sans+KR:wght@400;700;900&family=Noto+Serif:wght@400;700&family=Noto+Serif+KR:wght@400;700&family=Oranienbaum&family=Pixelify+Sans&family=Playfair+Display:wght@400;700&family=Press+Start+2P&family=Russo+One&family=Spectral:wght@400;700&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -45,6 +45,25 @@
     </div>
 
     <div class="notification-toast" :class="{ show: notificationVisible, error: notificationKind === 'error' }" x-text="notificationMsg"></div>
+
+    <div id="pigeonContainer"></div>
+
+    <div x-show="pigeonModalVisible" x-cloak class="pigeon-modal-overlay" @click.self="pigeonDecline()">
+      <div class="pigeon-modal">
+        <div class="pigeon-modal-icon">🕊️</div>
+        <div class="pigeon-modal-text">
+          Ви збираєтесь побачити AI slop у найвищій концентрації.
+        </div>
+        <div class="pigeon-modal-btns">
+          <button @click="pigeonAccept()" class="btn btn-pigeon-accept">Так, давай</button>
+          <button @click="pigeonDecline()" class="btn">Ні, занадто</button>
+        </div>
+      </div>
+    </div>
+
+    <button x-show="pigeonSlopActive" x-cloak class="pigeon-exit-btn" @click="exitPigeonSlop()">
+      🕊️ Вийти з pigeon slop
+    </button>
 
     <div class="app-wrapper">
       <header class="app-header">
@@ -76,13 +95,18 @@
       <div class="game-view">
         <aside class="left-col">
           <div class="player-card">
-            <div class="player-header">
+            <div class="player-header" x-show="!pigeonSlopActive">
               <span class="player-label">ПЛЕЄР</span>
               <a x-show="audioCurrentTrack?.url" :href="audioCurrentTrack?.url" target="_blank" rel="noopener"
                 class="player-yt-link" title="Відкрити на YouTube">YT</a>
             </div>
 
-            <div class="player-video">
+            <div class="player-header" x-show="pigeonSlopActive" x-cloak>
+              <span class="player-label">ПЛЕЄР</span>
+              <span class="player-yt-link" style="opacity:0.5">PIGEON SLOP</span>
+            </div>
+
+            <div class="player-video" x-show="!pigeonSlopActive">
               <div id="ytPlayerContainer" class="player-yt-frame"></div>
               <div x-show="audioMounted && audioMusicMuted && audioPlaying"
                    class="player-mute-hint" @click="toggleMusicMute()">
@@ -91,12 +115,23 @@
               </div>
             </div>
 
-            <div class="player-track-info">
+            <div class="pigeon-video-card" x-show="pigeonSlopActive" x-cloak>
+              <video id="pigeonVideo" class="pigeon-video" loop playsinline preload="none"></video>
+              <button class="pigeon-video-play-btn" @click="togglePigeonVideoPlay()"
+                x-text="pigeonVideoPlaying ? '\u23F8' : '\u25B6'"></button>
+            </div>
+
+            <div class="player-track-info" x-show="!pigeonSlopActive">
               <div class="player-track-title" x-text="audioCurrentTrack?.title || '—'"></div>
               <div class="player-track-artist" x-text="audioCurrentTrack?.artist || ''"></div>
             </div>
 
-            <div class="player-progress-row">
+            <div class="player-track-info" x-show="pigeonSlopActive" x-cloak>
+              <div class="player-track-title">pidulgi_4opt</div>
+              <div class="player-track-artist">AI Slop Mixtape</div>
+            </div>
+
+            <div class="player-progress-row" x-show="!pigeonSlopActive">
               <div class="player-progress-bar" @click="seekToPosition($event)">
                 <div class="player-progress-fill" :style="'width:' + ((audioProgress || 0) * 100) + '%'"></div>
               </div>
@@ -107,7 +142,7 @@
               </div>
             </div>
 
-            <div class="player-controls">
+            <div class="player-controls" x-show="!pigeonSlopActive">
               <button class="player-btn" @click="prevTrack()" :disabled="!audioHasPrev">&#9664;</button>
 <button class="player-btn player-btn-play" @click="togglePlay()"
     :class="{ 'is-paused': audioPlaying }"
@@ -165,12 +200,12 @@
                 @input="setFxVolume(Number($event.target.value))">
             </div>
 
-            <div class="player-playlist-toggle" @click="audioPlaylistOpen = !audioPlaylistOpen">
+            <div class="player-playlist-toggle" x-show="!pigeonSlopActive" @click="audioPlaylistOpen = !audioPlaylistOpen">
               <span>Плейлист</span>
               <span class="player-playlist-arrow" :class="{ open: audioPlaylistOpen }">&#9660;</span>
             </div>
 
-            <div x-show="audioPlaylistOpen" class="player-playlist">
+            <div x-show="audioPlaylistOpen && !pigeonSlopActive" class="player-playlist">
               <template x-for="(song, i) in audioSongs" :key="song.id">
                 <button class="player-playlist-item" @click="selectSong(i)" :class="{ current: i === audioSongIndex }">
                   <span class="pli-idx" x-text="i === audioSongIndex ? '&#9654;' : (i + 1)"></span>
@@ -287,6 +322,14 @@
                     <button class="chat-bot-add-btn" @click="addChatHiddenBot()">+</button>
                   </div>
                 </div>
+              </div>
+
+              <div class="editor-section">
+                <div class="editor-section-title">Прибулець</div>
+                <label class="pigeon-toggle-row">
+                  <input type="checkbox" :checked="pigeonDisabled" @change="togglePigeonDisabled()">
+                  <span>Вимкнути прибульця (підживлення AI slop)</span>
+                </label>
               </div>
 
               <div class="editor-section">

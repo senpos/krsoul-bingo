@@ -1,4 +1,4 @@
-import { PARTICLE_THEME_OPTIONS, BINGO_EMOJIS, DEFAULT_THEME } from './config.js';
+import { PARTICLE_THEME_OPTIONS, BINGO_EMOJIS, DEFAULT_THEME, isPigeonSlopActive } from './config.js';
 
 const _cachedMobile = (() => {
   return window.matchMedia('(hover: none)').matches || window.matchMedia('(pointer: coarse)').matches;
@@ -54,7 +54,9 @@ export function getLineInfo(size, marks) {
 export function launchConfetti() {
   if (_cachedLite) return;
   const count = _cachedMobile ? 40 : 80;
-  const colors = ['#ff007f', '#00ffff', '#ffee00', '#5500ff', '#ffffff', '#ff0055'];
+  const colors = isPigeonSlopActive()
+    ? ['#8e8e8e', '#6b7b8d', '#a8b5a0', '#c8a84e', '#ffffff', '#d4d4d4']
+    : ['#ff007f', '#00ffff', '#ffee00', '#5500ff', '#ffffff', '#ff0055'];
   const stagger = _cachedMobile ? 25 : 15;
   const fragment = document.createDocumentFragment();
   const pieces = [];
@@ -81,7 +83,9 @@ export function launchBingoEmojis(themeName) {
   const container = document.getElementById('bingoEmojis');
   if (!container || container.childElementCount > 0) return;
 
-  const emojis = BINGO_EMOJIS[themeName] || BINGO_EMOJIS[DEFAULT_THEME] || ['🎉', '✨', '🎊'];
+  const emojis = isPigeonSlopActive()
+    ? BINGO_EMOJIS.pigeon
+    : (BINGO_EMOJIS[themeName] || BINGO_EMOJIS[DEFAULT_THEME] || ['🎉', '✨', '🎊']);
   const count = 24;
 
   const fragment = document.createDocumentFragment();
@@ -132,8 +136,12 @@ export function bingoCellBurst(indices) {
   if (origins.length === 0) return;
 
   // Get theme bingo color from computed style
-  const bingoColor = getComputedStyle(document.body).getPropertyValue('--bingo').trim() || '#ffee00';
-  const colors = [bingoColor, '#ffffff', '#ff007f', '#00ffff', '#a020ff'];
+  const bingoColor = isPigeonSlopActive()
+    ? '#c8a84e'
+    : (getComputedStyle(document.body).getPropertyValue('--bingo').trim() || '#ffee00');
+  const colors = isPigeonSlopActive()
+    ? ['#c8a84e', '#8e8e8e', '#6b7b8d', '#a8b5a0', '#ffffff']
+    : [bingoColor, '#ffffff', '#ff007f', '#00ffff', '#a020ff'];
 
   const canvas = document.createElement('canvas');
   canvas.style.cssText = 'position:fixed;inset:0;z-index:9998;pointer-events:none;';
