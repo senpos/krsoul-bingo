@@ -1,5 +1,6 @@
 import { state } from './state.js';
 import { TWITCH_CLIENT_ID, DEFAULT_CHAT_HIDDEN_BOTS } from './config.js';
+import { emoteImageHtml } from './emotes.js';
 
 const EVENTSUB_URL = 'wss://eventsub.wss.twitch.tv/ws?keepalive_timeout_seconds=30';
 const KEEPALIVE_BUFFER_MS = 5000;
@@ -113,6 +114,26 @@ function emoteImgUrl(emoteId, format) {
   return `https://static-cdn.jtvnw.net/emoticons/v2/${emoteId}/${f}/dark/2.0`;
 }
 
+function renderTextWithEmotes(text) {
+  const lookup = state.emotes?.lookup;
+  if (!lookup || !lookup.size) return escapeHtml(text || '');
+
+  return (text || '').split(/(\s+)/).map(token => {
+    if (/^\s+$/.test(token)) return token;
+
+    let entry = lookup.get(token);
+    if (entry) return emoteImageHtml(entry);
+
+    const stripped = token.replace(/[,.\!?;:]+$/, '');
+    if (stripped !== token) {
+      entry = lookup.get(stripped);
+      if (entry) return emoteImageHtml(entry) + escapeHtml(token.slice(stripped.length));
+    }
+
+    return escapeHtml(token);
+  }).join('');
+}
+
 function renderFragment(frag) {
   if (frag.type === 'emote' && frag.emote) {
     const url = emoteImgUrl(frag.emote.id, frag.emote.format);
@@ -124,7 +145,7 @@ function renderFragment(frag) {
   if (frag.type === 'mention' && frag.mention) {
     return `<span class="chat-mention">@${escapeHtml(frag.mention.user_name || frag.text.replace(/^@/, ''))}</span>`;
   }
-  return escapeHtml(frag.text || '');
+  return renderTextWithEmotes(frag.text);
 }
 
 function renderChatMessage(event) {
