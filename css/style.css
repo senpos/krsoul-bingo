@@ -2358,7 +2358,7 @@ body {
 .chat-name { font-weight: 700; margin-right: 3px; white-space: nowrap; }
 .chat-colon { color: var(--dim); margin-right: 4px; }
 .chat-text { color: var(--text); }
-.chat-text img.emote.chat-emote { width: 1.2em; height: 1.2em; vertical-align: text-bottom; display: inline; object-fit: contain; }
+.chat-text img.emote.chat-emote { max-height: 1.2em; max-width: 4em; width: auto; height: auto; vertical-align: text-bottom; display: inline; object-fit: contain; }
 
 .chat-footer {
   display: flex;
