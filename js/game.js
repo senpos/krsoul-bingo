@@ -1,4 +1,5 @@
 import { PARTICLE_THEME_OPTIONS, BINGO_EMOJIS, DEFAULT_THEME, isPigeonSlopActive } from './config.js';
+import { getEmoteEntry } from './emotes.js';
 
 const _cachedMobile = (() => {
   return window.matchMedia('(hover: none)').matches || window.matchMedia('(pointer: coarse)').matches;
@@ -91,9 +92,10 @@ export function launchBingoEmojis(themeName) {
   const fragment = document.createDocumentFragment();
   for (let i = 0; i < count; i++) {
     const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-    const el = document.createElement('span');
-    el.className = 'bingo-emoji';
-    el.textContent = emoji;
+    const entry = getEmoteEntry(emoji);
+    const el = entry
+      ? Object.assign(document.createElement('img'), { className: 'bingo-emoji', src: entry.url, alt: entry.code })
+      : Object.assign(document.createElement('span'), { className: 'bingo-emoji', textContent: emoji });
 
     const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
     const distance = 120 + Math.random() * 280;
@@ -103,7 +105,7 @@ export function launchBingoEmojis(themeName) {
     const size = 22 + Math.random() * 20;
     const delay = Math.random() * 1.2;
 
-    el.style.cssText = `--dx:${dx}px;--dy:${dy}px;--rot:${rot}deg;--size:${size}px;--delay:${delay}s;`;
+    el.style.cssText = `--dx:${dx}px;--dy:${dy}px;--rot:${rot}deg;--size:${size}px;--delay:${delay}s;${entry ? `height:${size}px;width:auto;` : ''}`;
     fragment.appendChild(el);
   }
   container.appendChild(fragment);
