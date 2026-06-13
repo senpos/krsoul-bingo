@@ -50,7 +50,7 @@ function normalizeEmoteArray(entries, provider, scope, priority, channelId) {
 
     if (!url) continue;
 
-    out.push({ provider, scope, priority, id, code, url, animated: Boolean(entry?.animated), channelId });
+    out.push({ provider, scope, priority, id, code, url, animated: Boolean(entry?.animated ?? entry?.data?.animated), channelId });
   }
   return out;
 }
@@ -90,6 +90,17 @@ function normalizeTwitchEmoteArray(entries, scope, priority, channelId) {
     out.push({ provider: 'twitch', scope, priority, id, code, url, animated: format === 'animated', channelId });
   }
   return out;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+export function emoteImageHtml(entry, extraClasses = 'chat-emote') {
+  const cls = ['emote', ...extraClasses.split(/\s+/).filter(Boolean)].join(' ');
+  return `<img src="${escapeHtml(entry.url)}" alt="${escapeHtml(entry.code)}" class="${escapeHtml(cls)}" title="${escapeHtml(entry.code)}" loading="lazy">`;
 }
 
 function collectEmoteArrays(payload) {
