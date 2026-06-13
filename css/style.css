@@ -3326,6 +3326,9 @@ body {
   animation: pigeonWobble 2s ease-in-out infinite;
   filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
 }
+.pigeon-img-wrap {
+  display: flex;
+}
 .pigeon-bubble {
   position: absolute;
   top: -30px;
@@ -3354,6 +3357,27 @@ body {
   border-right: 6px solid transparent;
   border-top: 6px solid #fff;
 }
+
+/* Per-corner — bubble below the pigeon for top corners */
+.pigeon-container.corner-tl .pigeon-bubble,
+.pigeon-container.corner-tr .pigeon-bubble {
+  top: auto;
+  bottom: -45px;
+}
+.pigeon-container.corner-tl .pigeon-bubble::after,
+.pigeon-container.corner-tr .pigeon-bubble::after {
+  bottom: auto;
+  top: -6px;
+  border-top: none;
+  border-bottom: 6px solid #fff;
+}
+
+/* Per-corner — pigeon faces toward centre (opposite direction of corner) */
+.pigeon-container.corner-tr .pigeon-img-wrap,
+.pigeon-container.corner-br .pigeon-img-wrap {
+  transform: scaleX(-1);
+}
+
 .pigeon-container.leaving {
   animation: pigeonFadeOut 0.5s ease-in forwards;
   pointer-events: none;

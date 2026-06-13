@@ -67,6 +67,9 @@ function _spawnPigeon() {
   wrapper.setAttribute('tabindex', '0');
   wrapper.setAttribute('aria-label', 'Pigeon');
 
+  const imgWrap = document.createElement('div');
+  imgWrap.className = 'pigeon-img-wrap';
+
   const img = document.createElement('img');
   img.src = 'images/pigeon.webp';
   img.alt = 'Pigeon';
@@ -77,8 +80,9 @@ function _spawnPigeon() {
   bubble.className = 'pigeon-bubble';
   bubble.textContent = 'slop slop';
 
+  imgWrap.appendChild(img);
   wrapper.appendChild(bubble);
-  wrapper.appendChild(img);
+  wrapper.appendChild(imgWrap);
   container.appendChild(wrapper);
 
   _pigeonEl = wrapper;
