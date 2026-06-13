@@ -160,30 +160,112 @@ export function renderMessageFromFragments(fragments, fallbackText) {
   return fragments.map(renderFragment).join('');
 }
 
+const _normalizeCache = new Map();
+
+function _rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d === 0) return [0, 0, l];
+  const s = l > 0.5 ? d / (2 - 2 * l) : d / (2 * l);
+  let h;
+  switch (max) {
+    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+    case g: h = ((b - r) / d + 2) / 6; break;
+    case b: h = ((r - g) / d + 4) / 6; break;
+  }
+  return [h, s, l];
+}
+
+function _hslToRgb(h, s, l) {
+  const hue2rgb = (p, q, t) => {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  };
+  if (s === 0) {
+    const v = Math.round(Math.min(Math.max(0, 255 * l), 255));
+    return [v, v, v];
+  }
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  return [
+    Math.round(Math.min(Math.max(0, 255 * hue2rgb(p, q, h + 1 / 3)), 255)),
+    Math.round(Math.min(Math.max(0, 255 * hue2rgb(p, q, h)), 255)),
+    Math.round(Math.min(Math.max(0, 255 * hue2rgb(p, q, h - 1 / 3)), 255)),
+  ];
+}
+
+function _yiq(r, g, b) {
+  return (r * 299 + g * 587 + b * 114) / 1000;
+}
+
+function _hexToRgb(hex) {
+  return {
+    r: parseInt(hex.slice(0, 2), 16),
+    g: parseInt(hex.slice(2, 4), 16),
+    b: parseInt(hex.slice(4, 6), 16),
+  };
+}
+
+function _rgbToHex(r, g, b) {
+  const toHex = (c) => `00${Math.round(c).toString(16)}`.slice(-2);
+  return toHex(r) + toHex(g) + toHex(b);
+}
+
+function _adjustColorLightness(hex, worksOnDark) {
+  const { r, g, b } = _hexToRgb(hex);
+  const hsl = _rgbToHsl(r, g, b);
+  const factor = 0.1;
+  let newL;
+  if (worksOnDark) {
+    newL = (1 - factor) * hsl[2];
+  } else {
+    newL = 1 - (1 - factor) * (1 - hsl[2]);
+  }
+  newL = Math.min(Math.max(0, newL), 1);
+  const rgb = _hslToRgb(hsl[0], hsl[1], newL);
+  return _rgbToHex(rgb[0], rgb[1], rgb[2]);
+}
+
 function normalizeColor(color) {
   if (!color || color === '#888' || color === '') return null;
   let hex = color.replace(/^#/, '');
   if (hex.length === 3) hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
   if (hex.length !== 6) return null;
-  const r = parseInt(hex.slice(0, 2), 16);
-  const g = parseInt(hex.slice(2, 4), 16);
-  const b = parseInt(hex.slice(4, 6), 16);
+  const { r, g, b } = _hexToRgb(hex);
   if (isNaN(r) || isNaN(g) || isNaN(b)) return null;
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  let nr = r, ng = g, nb = b;
-  if (luminance < 0.18) {
-    const boost = 1.6;
-    nr = Math.min(255, Math.round(r * boost));
-    ng = Math.min(255, Math.round(g * boost));
-    nb = Math.min(255, Math.round(b * boost));
+
+  const themeMode = document.body.getAttribute('data-theme-mode') || 'dark';
+  const cacheKey = `${hex}_${themeMode}`;
+  if (_normalizeCache.has(cacheKey)) return _normalizeCache.get(cacheKey);
+
+  const isDarkBg = themeMode === 'dark';
+  let currentHex = hex;
+
+  for (let i = 0; i < 20; i++) {
+    const { r: cr, g: cg, b: cb } = _hexToRgb(currentHex);
+    const yiq = _yiq(cr, cg, cb);
+    const worksOnDark = yiq >= 128;
+
+    if (isDarkBg && worksOnDark) break;
+    if (!isDarkBg && !worksOnDark) break;
+
+    currentHex = _adjustColorLightness(currentHex, worksOnDark);
   }
-  if (luminance > 0.8) {
-    const dim = 0.65;
-    nr = Math.round(r * dim);
-    ng = Math.round(g * dim);
-    nb = Math.round(b * dim);
+
+  const { r: nr, g: ng, b: nb } = _hexToRgb(currentHex);
+  const result = `rgb(${nr}, ${ng}, ${nb})`;
+  _normalizeCache.set(cacheKey, result);
+  if (_normalizeCache.size > 1000) {
+    const firstKey = _normalizeCache.keys().next().value;
+    _normalizeCache.delete(firstKey);
   }
-  return `rgb(${nr}, ${ng}, ${nb})`;
+  return result;
 }
 
 export function isKnownBot(username, extraBots = []) {
