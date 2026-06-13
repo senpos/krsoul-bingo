@@ -3,7 +3,7 @@ import { shareBoard, unshareBoard } from './codec.js';
 import { state, loadBoards, saveBoards, saveActiveBoardId, saveState } from './state.js';
 import { getEmoteEntry, splitCard, getAllEmotes, getEmotesBySource, scheduleEmoteRefresh, queueInitialEmoteRefresh, onEmoteRefresh, onEmoteStatus } from './emotes.js';
 import { loginWithTwitch, logout as authLogout, initAuth } from './auth.js';
-import { completedLineKeys, getLineInfo, launchConfetti, applyParticleTheme, bingoCellBurst, setBingoMode, launchBingoEmojis } from './game.js';
+import { completedLineKeys, getLineInfo, getEffectManager, groupsFromKeys, applyParticleTheme, setBingoMode } from './game.js';
 import { audioManager } from './audio.js';
 import { sfxManager } from './sfx.js';
 import { chatManager, isKnownBot, renderMessageFromFragments, formatChatTime, formatChatTimeFull, refreshBadgesCache, resolveBadgeUrls } from './chat.js';
@@ -816,6 +816,13 @@ export function createApp() {
       }, 1000);
 
       this.checkImportUrl();
+
+      this.$nextTick(() => {
+        const keys = this.lastCompletedKeys;
+        if (keys.size > 0) {
+          getEffectManager().drawBingoLines(groupsFromKeys(keys, this.size));
+        }
+      });
     },
 
     persist() {
@@ -895,7 +902,11 @@ export function createApp() {
       this.redoHistory = stored ? stored.redoHistory : [];
       this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
       this.persist();
-      this.$nextTick(() => this.ensureActiveTabVisible());
+      this.$nextTick(() => {
+        const keys = this.lastCompletedKeys;
+        getEffectManager().drawBingoLines(keys.size > 0 ? groupsFromKeys(keys, this.size) : []);
+        this.ensureActiveTabVisible();
+      });
       if (this.pigeonSlopActive) return;
       document.body.setAttribute('data-theme', this.theme);
       document.body.setAttribute('data-theme-mode', this.themeMode);
@@ -932,7 +943,11 @@ export function createApp() {
         audioManager.playTheme(this.theme);
       }
       this.persist();
-      this.$nextTick(() => this.ensureActiveTabVisible());
+      this.$nextTick(() => {
+        this.ensureActiveTabVisible();
+        const keys = this.lastCompletedKeys;
+        getEffectManager().drawBingoLines(keys.size > 0 ? groupsFromKeys(keys, this.size) : []);
+      });
     },
 
     setSize(newSize) {
@@ -947,7 +962,14 @@ export function createApp() {
       while (board.marks.length < total) board.marks.push(false);
       board.marks = board.marks.slice(0, total);
       this.lastCompletedKeys = new Set(completedLineKeys(newSize, board.marks));
+      getEffectManager().drawBingoLines([]);
       this.persist();
+      this.$nextTick(() => {
+        const keys = this.lastCompletedKeys;
+        if (keys.size > 0) {
+          getEffectManager().drawBingoLines(groupsFromKeys(keys, this.size));
+        }
+      });
     },
 
     // ── Export / Import ──
@@ -1363,10 +1385,9 @@ export function createApp() {
         clearTimeout(this._toastHideTimer);
 
         const theme = document.body.getAttribute('data-theme') || DEFAULT_THEME;
+        const lines = groupsFromKeys(newKeys, this.size);
         requestAnimationFrame(() => {
-          launchBingoEmojis(theme);
-          launchConfetti();
-          bingoCellBurst([...newIndices]);
+          getEffectManager().onBingo([...newIndices], lines, theme);
           sfxManager.play('bingo');
         });
 
@@ -1376,10 +1397,13 @@ export function createApp() {
             this.toastVisible = false;
             this.toastHiding = false;
           }, 350);
-        }, 3000);
+        }, 2000);
       }
 
       setBingoMode(currentKeys.size > 0);
+
+      const allLines = currentKeys.size > 0 ? groupsFromKeys(currentKeys, this.size) : [];
+      getEffectManager().drawBingoLines(allLines);
     },
 
     hideToast() {
@@ -1412,6 +1436,7 @@ export function createApp() {
       this.lastCompletedKeys = new Set();
       this.persist();
       setBingoMode(false);
+      getEffectManager().drawBingoLines([]);
     },
 
     shuffle() {
@@ -1427,6 +1452,13 @@ export function createApp() {
       this.marks = pairs.map(p => p.mark);
       this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
       this.persist();
+      getEffectManager().drawBingoLines([]);
+      this.$nextTick(() => {
+        const keys = this.lastCompletedKeys;
+        if (keys.size > 0) {
+          getEffectManager().drawBingoLines(groupsFromKeys(keys, this.size));
+        }
+      });
     },
 
     undo() {
@@ -1439,6 +1471,13 @@ export function createApp() {
       this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
       this.persist();
       setBingoMode(this.lastCompletedKeys.size > 0);
+      getEffectManager().drawBingoLines([]);
+      this.$nextTick(() => {
+        const keys = this.lastCompletedKeys;
+        if (keys.size > 0) {
+          getEffectManager().drawBingoLines(groupsFromKeys(keys, this.size));
+        }
+      });
     },
 
     redo() {
@@ -1451,6 +1490,13 @@ export function createApp() {
       this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
       this.persist();
       setBingoMode(this.lastCompletedKeys.size > 0);
+      getEffectManager().drawBingoLines([]);
+      this.$nextTick(() => {
+        const keys = this.lastCompletedKeys;
+        if (keys.size > 0) {
+          getEffectManager().drawBingoLines(groupsFromKeys(keys, this.size));
+        }
+      });
     },
 
     setTheme(name) {

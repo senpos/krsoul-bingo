@@ -1,16 +1,10 @@
 import { PARTICLE_THEME_OPTIONS, BINGO_EMOJIS, DEFAULT_THEME, isPigeonSlopActive } from './config.js';
 import { getEmoteEntry } from './emotes.js';
+import { ParticleRenderer } from './particles-gl.js';
 
-const _cachedMobile = (() => {
-  return window.matchMedia('(hover: none)').matches || window.matchMedia('(pointer: coarse)').matches;
-})();
+const _reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const _cachedLite = (() => {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return true;
-  const hw = navigator.hardwareConcurrency || 99;
-  const mem = navigator.deviceMemory || 99;
-  return hw <= 4 && mem < 4;
-})();
+// ── Bingo line utilities ──
 
 const _lineCache = new Map();
 function _getLines(size) {
@@ -52,13 +46,524 @@ export function getLineInfo(size, marks) {
   return cellLines;
 }
 
+export function getLineDirection(indices, size) {
+  if (indices.length < 2) return 'h';
+  const d = indices[1] - indices[0];
+  if (d === 1) return 'h';
+  if (d === size) return 'v';
+  if (d === size + 1) return 'd1';
+  return 'd2';
+}
+
+export function groupsFromKeys(keys, size) {
+  const groups = [];
+  for (const key of keys) {
+    const indices = key.split(',').map(Number);
+    groups.push({ indices, dir: getLineDirection(indices, size) });
+  }
+  return groups;
+}
+
+// ── Color utilities ──
+
+function hexToRGB(hex) {
+  const v = parseInt(hex.replace('#', ''), 16);
+  return [(v >> 16) & 255, (v >> 8) & 255, v & 255].map(c => c / 255);
+}
+
+function getThemeBingoRGB() {
+  if (isPigeonSlopActive()) return [0.78, 0.66, 0.31];
+  const raw = getComputedStyle(document.body).getPropertyValue('--bingo').trim() || '#ffee00';
+  return hexToRGB(raw);
+}
+
+function getBurstColors(bingoRGB) {
+  if (isPigeonSlopActive()) {
+    return [[0.78, 0.66, 0.31], [0.56, 0.48, 0.55], [0.42, 0.48, 0.35], [0.66, 0.71, 0.63], [1, 1, 1]];
+  }
+  return [bingoRGB, [1, 1, 1], [1, 0, 0.5], [0, 1, 1], [0.63, 0, 1]];
+}
+
+// ── Effect Manager ──
+
+class EffectManager {
+  constructor() {
+    this.renderer = null;
+    this._ro = null;
+    this._lastEffectTime = 0;
+    this._lineEls = new Set();
+    this._lineElmByKey = new Map();
+    this._activeLineKeys = new Set();
+  }
+
+  init() {
+    if (_reducedMotion) return;
+    try {
+      this.renderer = new ParticleRenderer();
+      if (!this.renderer.init()) this.renderer = null;
+    } catch {
+      this.renderer = null;
+    }
+
+    this._ro = new ResizeObserver(() => {
+      this.renderer?.resize();
+      this._updateLinePositions();
+    });
+    const grid = document.getElementById('bingoGrid');
+    if (grid) this._ro.observe(grid);
+
+    window.addEventListener('resize', () => {
+      this.renderer?.resize();
+      this._updateLinePositions();
+    });
+  }
+
+  // ── Public API ──
+
+  onBingo(indices, lines, theme) {
+    if (_reducedMotion) return;
+
+    const now = performance.now();
+    if (now - this._lastEffectTime < 400) return;
+    this._lastEffectTime = now;
+
+    const rectsMap = this._getCellRects(indices);
+    if (rectsMap.size === 0) return;
+
+    const linePaths = this._buildLinePaths(lines);
+    if (linePaths.length === 0) return;
+
+    if (this.renderer) {
+      this._cellBurst(rectsMap, linePaths, lines);
+      this._sparkleBurst(linePaths);
+      this._bannerBurst();
+    }
+    launchBingoEmojis(theme, linePaths);
+    launchConfetti();
+  }
+
+  // ── Line path builder ──
+
+  _buildLinePaths(lines) {
+    const grid = document.getElementById('bingoGrid');
+    if (!grid) return [];
+    const allCells = grid.querySelectorAll('.cell');
+
+    return lines.map(line => {
+      const cells = line.indices.map(i => allCells[i]).filter(Boolean);
+      if (cells.length < 2) return null;
+
+      const rects = cells.map(c => c.getBoundingClientRect());
+      let sorted;
+      if (line.dir === 'h' || line.dir === 'd1') {
+        sorted = [...rects].sort((a, b) => a.left - b.left);
+      } else if (line.dir === 'v') {
+        sorted = [...rects].sort((a, b) => a.top - b.top);
+      } else {
+        sorted = [...rects].sort((a, b) => b.left - a.left);
+      }
+
+      const s = sorted[0], e = sorted[sorted.length - 1];
+      const ax = s.left + s.width / 2, ay = s.top + s.height / 2;
+      const bx = e.left + e.width / 2, by = e.top + e.height / 2;
+      const dx = bx - ax, dy = by - ay;
+      const len = Math.sqrt(dx * dx + dy * dy) || 1;
+      const nx = dx / len, ny = dy / len;
+      const thick = Math.min(s.width, s.height) * 0.7;
+
+      return { ax, ay, bx, by, dx, dy, nx, ny, thick, len };
+    }).filter(Boolean);
+  }
+
+  // ── Scatter helper ──
+
+  _scatterAlongPaths(paths, total, genFn) {
+    const per = Math.ceil(total / paths.length);
+    const result = [];
+    for (const p of paths) {
+      for (let i = 0; i < per; i++) {
+        const t = Math.random();
+        const px = p.ax + p.dx * t;
+        const py = p.ay + p.dy * t;
+        const j = (Math.random() - 0.5) * p.thick;
+        const fx = px - p.ny * j;
+        const fy = py + p.nx * j;
+        result.push(genFn(fx, fy, p));
+      }
+    }
+    return result;
+  }
+
+  // ── Cell burst ──
+
+  _cellBurst(rectsMap, linePaths, lines) {
+    const bingoRGB = getThemeBingoRGB();
+    const colors = getBurstColors(bingoRGB);
+    const particles = [];
+
+    // Particles at each cell center
+    for (const [idx, r] of rectsMap) {
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      const cellSize = Math.min(r.width, r.height);
+      for (let i = 0; i < 22; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 80 + Math.random() * 280;
+        const c = colors[Math.floor(Math.random() * colors.length)];
+        particles.push({
+          x: cx + (Math.random() - 0.5) * cellSize * 0.4,
+          y: cy + (Math.random() - 0.5) * cellSize * 0.4,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 80,
+          r: c[0], g: c[1], b: c[2],
+          alpha: 0.8 + Math.random() * 0.2,
+          size: 3 + Math.random() * 5,
+          decay: 0.4 + Math.random() * 0.6,
+          age: 0, delay: 0,
+        });
+      }
+    }
+
+    // Fill particles scattered along line paths
+    const fillParts = this._scatterAlongPaths(linePaths, 50, (fx, fy, p) => {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 60 + Math.random() * 200;
+      const c = colors[Math.floor(Math.random() * colors.length)];
+      return {
+        x: fx, y: fy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 60,
+        r: c[0], g: c[1], b: c[2],
+        alpha: 0.7 + Math.random() * 0.3,
+        size: 2 + Math.random() * 4,
+        decay: 0.5 + Math.random() * 0.7,
+        age: 0, delay: 0,
+      };
+    });
+    for (const p of fillParts) particles.push(p);
+
+    // Sweep particles
+    for (const line of lines) {
+      const sp = this._createSweep(line, bingoRGB);
+      for (const p of sp) particles.push(p);
+    }
+
+    this.renderer.emit(particles);
+  }
+
+  // ── Sparkle burst ──
+
+  _sparkleBurst(linePaths) {
+    const bingoRGB = getThemeBingoRGB();
+    const colors = [bingoRGB, [1, 1, 1], [1, 0.9, 0.5], [0.8, 0.9, 1]];
+
+    const particles = this._scatterAlongPaths(linePaths, 60, (fx, fy, p) => {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 150 + Math.random() * 350;
+      const c = colors[Math.floor(Math.random() * colors.length)];
+      return {
+        x: fx, y: fy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 120,
+        r: c[0], g: c[1], b: c[2],
+        alpha: 1,
+        size: 2 + Math.random() * 3,
+        decay: 0.8 + Math.random() * 0.8,
+        age: 0,
+        delay: Math.random() * 0.3,
+      };
+    });
+
+    this.renderer.emit(particles);
+  }
+
+  // ── Banner burst ──
+
+  _bannerBurst() {
+    const bingoRGB = getThemeBingoRGB();
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    const colors = [bingoRGB, [1, 1, 1], [1, 0.95, 0.6]];
+    const particles = [];
+
+    for (let i = 0; i < 30; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 100 + Math.random() * 250;
+      const c = colors[Math.floor(Math.random() * colors.length)];
+      particles.push({
+        x: cx + (Math.random() - 0.5) * 80,
+        y: cy + (Math.random() - 0.5) * 40,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 50,
+        r: c[0], g: c[1], b: c[2],
+        alpha: 1,
+        size: 4 + Math.random() * 6,
+        decay: 0.6 + Math.random() * 0.5,
+        age: 0, delay: 0.15 + Math.random() * 0.4,
+      });
+    }
+    // Ring burst
+    for (let i = 0; i < 16; i++) {
+      const a = (Math.PI * 2 * i) / 16;
+      const speed = 180;
+      const c = bingoRGB;
+      particles.push({
+        x: cx, y: cy,
+        vx: Math.cos(a) * speed,
+        vy: Math.sin(a) * speed,
+        r: c[0], g: c[1], b: c[2],
+        alpha: 0.8,
+        size: 3,
+        decay: 0.3,
+        age: 0, delay: 0.1,
+      });
+    }
+
+    this.renderer.emit(particles);
+  }
+
+  // ── Sweep wave ──
+
+  _createSweep(line, bingoRGB) {
+    const grid = document.getElementById('bingoGrid');
+    if (!grid) return [];
+    const allCells = grid.querySelectorAll('.cell');
+    const cells = line.indices.map(i => allCells[i]).filter(Boolean);
+    if (cells.length < 2) return [];
+
+    const rects = cells.map(c => c.getBoundingClientRect());
+    const dir = line.dir;
+
+    let sorted;
+    if (dir === 'h') {
+      sorted = rects.sort((a, b) => a.left - b.left);
+    } else if (dir === 'v') {
+      sorted = rects.sort((a, b) => a.top - b.top);
+    } else if (dir === 'd1') {
+      sorted = rects.sort((a, b) => a.left - b.left);
+    } else {
+      sorted = rects.sort((a, b) => b.left - a.left);
+    }
+
+    const s = sorted[0], e = sorted[sorted.length - 1];
+    const sx = s.left + s.width / 2, sy = s.top + s.height / 2;
+    const ex = e.left + e.width / 2, ey = e.top + e.height / 2;
+    const dx = ex - sx, dy = ey - sy;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    const nx = dx / len, ny = dy / len;
+
+    const COUNT = 24;
+    const PERP = 20;
+    const particles = [];
+
+    for (let i = 0; i < COUNT; i++) {
+      const t = i / COUNT;
+      const delay = t * 0.7;
+      const px = sx + dx * t;
+      const py = sy + dy * t;
+      const jitter = (Math.random() - 0.5) * PERP;
+      const jx = -ny * jitter;
+      const jy = nx * jitter;
+      const spread = (Math.random() - 0.5) * Math.PI * 0.6;
+      const spd = 60 + Math.random() * 120;
+      const a = Math.atan2(ny, nx) + spread;
+
+      particles.push({
+        x: px + jx, y: py + jy,
+        vx: Math.cos(a) * spd,
+        vy: Math.sin(a) * spd - 40,
+        r: bingoRGB[0], g: bingoRGB[1], b: bingoRGB[2],
+        alpha: 0.9 + Math.random() * 0.1,
+        size: 4 + Math.random() * 5,
+        decay: 0.5 + Math.random() * 0.3,
+        age: 0, delay,
+      });
+    }
+    return particles;
+  }
+
+  // ── Cell rects ──
+
+  _getCellRects(indices) {
+    const grid = document.getElementById('bingoGrid');
+    if (!grid) return new Map();
+    const allCells = grid.querySelectorAll('.cell');
+    const map = new Map();
+    for (const i of indices) {
+      const cell = allCells[i];
+      if (!cell) continue;
+      map.set(i, cell.getBoundingClientRect());
+    }
+    return map;
+  }
+
+  // ── Bingo line overlays ──
+
+  _clearLineOverlays() {
+    for (const el of this._lineEls) {
+      el._lineAnim?.cancel();
+      el.remove();
+    }
+    this._lineEls.clear();
+    this._lineElmByKey.clear();
+  }
+
+  _lineKey(line) {
+    return line.indices.slice().sort((a, b) => a - b).join(',');
+  }
+
+  drawBingoLines(lines) {
+    const newKeys = new Set((lines || []).map(l => this._lineKey(l)));
+
+    if (newKeys.size === this._activeLineKeys.size &&
+        [...newKeys].every(k => this._activeLineKeys.has(k))) {
+      return;
+    }
+
+    // Remove lines no longer active
+    for (const key of this._activeLineKeys) {
+      if (!newKeys.has(key)) {
+        const el = this._lineElmByKey.get(key);
+        if (el) {
+          el._lineAnim?.cancel();
+          el.remove();
+          this._lineEls.delete(el);
+          this._lineElmByKey.delete(key);
+        }
+      }
+    }
+
+    this._activeLineKeys = newKeys;
+    if (!lines || lines.length === 0) return;
+
+    const grid = document.getElementById('bingoGrid');
+    if (!grid) return;
+    const allCells = grid.querySelectorAll('.cell');
+
+    for (const line of lines) {
+      const key = this._lineKey(line);
+      if (this._lineElmByKey.has(key)) continue;
+
+      const cells = line.indices.map(i => allCells[i]).filter(Boolean);
+      if (cells.length < 2) continue;
+
+      const rects = cells.map(c => c.getBoundingClientRect());
+      const gridRect = grid.getBoundingClientRect();
+
+      let sorted;
+      if (line.dir === 'h' || line.dir === 'd1') {
+        sorted = [...rects].sort((a, b) => a.left - b.left);
+      } else if (line.dir === 'v') {
+        sorted = [...rects].sort((a, b) => a.top - b.top);
+      } else {
+        sorted = [...rects].sort((a, b) => b.left - a.left);
+      }
+
+      const first = sorted[0];
+      const last = sorted[sorted.length - 1];
+
+      const x1 = first.left + first.width / 2;
+      const y1 = first.top + first.height / 2;
+      const x2 = last.left + last.width / 2;
+      const y2 = last.top + last.height / 2;
+
+      const rx1 = x1 - gridRect.left;
+      const ry1 = y1 - gridRect.top;
+      const rx2 = x2 - gridRect.left;
+      const ry2 = y2 - gridRect.top;
+
+      const dx = rx2 - rx1;
+      const dy = ry2 - ry1;
+      const len = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+      const el = document.createElement('div');
+      el.className = 'bingo-line';
+      el.style.cssText = `left:${rx1}px;top:${ry1}px;width:${len}px;`;
+      el.dataset.lineDir = line.dir;
+      el.dataset.lineIndices = line.indices.join(',');
+      el.dataset.lineKey = key;
+      grid.appendChild(el);
+
+      el._lineAnim = el.animate([
+        { transform: `translateY(-50%) rotate(${angle}deg) scaleX(0)`, opacity: 0 },
+        { transform: `translateY(-50%) rotate(${angle}deg) scaleX(1.05)`, opacity: 0.8 },
+        { transform: `translateY(-50%) rotate(${angle}deg) scaleX(1)`, opacity: 1 },
+      ], { duration: 500, easing: 'ease-out', fill: 'forwards' });
+
+      this._lineEls.add(el);
+      this._lineElmByKey.set(key, el);
+    }
+  }
+
+  _updateLinePositions() {
+    if (this._lineEls.size === 0) return;
+    const grid = document.getElementById('bingoGrid');
+    if (!grid) return;
+    const allCells = grid.querySelectorAll('.cell');
+
+    for (const el of this._lineEls) {
+      el._lineAnim?.cancel();
+      const indices = el.dataset.lineIndices.split(',').map(Number);
+      const dir = el.dataset.lineDir;
+      const cells = indices.map(i => allCells[i]).filter(Boolean);
+      if (cells.length < 2) continue;
+
+      const rects = cells.map(c => c.getBoundingClientRect());
+      const gridRect = grid.getBoundingClientRect();
+
+      let sorted;
+      if (dir === 'h' || dir === 'd1') {
+        sorted = [...rects].sort((a, b) => a.left - b.left);
+      } else if (dir === 'v') {
+        sorted = [...rects].sort((a, b) => a.top - b.top);
+      } else {
+        sorted = [...rects].sort((a, b) => b.left - a.left);
+      }
+
+      const first = sorted[0];
+      const last = sorted[sorted.length - 1];
+      const x1 = first.left + first.width / 2;
+      const y1 = first.top + first.height / 2;
+      const x2 = last.left + last.width / 2;
+      const y2 = last.top + last.height / 2;
+      const rx1 = x1 - gridRect.left;
+      const ry1 = y1 - gridRect.top;
+      const rx2 = x2 - gridRect.left;
+      const ry2 = y2 - gridRect.top;
+      const dx = rx2 - rx1;
+      const dy = ry2 - ry1;
+      const len = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+      el.style.left = rx1 + 'px';
+      el.style.top = ry1 + 'px';
+      el.style.width = len + 'px';
+      el.style.transform = `translateY(-50%) rotate(${angle}deg) scaleX(1)`;
+    }
+  }
+}
+
+// ── Singleton instance ──
+
+let _effectManager = null;
+export function getEffectManager() {
+  if (!_effectManager) {
+    _effectManager = new EffectManager();
+    _effectManager.init();
+  }
+  return _effectManager;
+}
+
+// ── Confetti ──
+
 export function launchConfetti() {
-  if (_cachedLite) return;
-  const count = _cachedMobile ? 40 : 80;
+  if (_reducedMotion) return;
+  const count = 80;
   const colors = isPigeonSlopActive()
     ? ['#8e8e8e', '#6b7b8d', '#a8b5a0', '#c8a84e', '#ffffff', '#d4d4d4']
     : ['#ff007f', '#00ffff', '#ffee00', '#5500ff', '#ffffff', '#ff0055'];
-  const stagger = _cachedMobile ? 25 : 15;
+  const stagger = 15;
   const fragment = document.createDocumentFragment();
   const pieces = [];
   const maxDuration = 4000;
@@ -68,28 +573,31 @@ export function launchConfetti() {
     const c = document.createElement('div');
     c.className = 'confetti-piece';
     const delay = i * stagger;
-    c.style.cssText = `left:${Math.random() * 100}vw; width:${6 + Math.random() * 8}px; height:${6 + Math.random() * 8}px; background:${colors[Math.floor(Math.random() * colors.length)]}; animation-duration:${1.5 + Math.random() * 2.5}s; animation-delay:${delay}ms;`;
+    c.style.cssText = `left:${Math.random() * 100}vw;width:${6 + Math.random() * 8}px;height:${6 + Math.random() * 8}px;background:${colors[Math.floor(Math.random() * colors.length)]};animation-duration:${1.5 + Math.random() * 2.5}s;animation-delay:${delay}ms;`;
     fragment.appendChild(c);
     pieces.push(c);
   }
   document.body.appendChild(fragment);
-
   setTimeout(() => {
     for (const p of pieces) p.remove();
   }, maxDelay + maxDuration + 500);
 }
 
-export function launchBingoEmojis(themeName) {
-  if (_cachedLite) return;
+// ── Emoji burst ──
+
+export function launchBingoEmojis(themeName, linePaths) {
+  if (_reducedMotion) return;
   const container = document.getElementById('bingoEmojis');
-  if (!container || container.childElementCount > 0) return;
+  if (!container) return;
+  container.innerHTML = '';
+  clearTimeout(container._emojiTimer);
 
   const emojis = isPigeonSlopActive()
     ? BINGO_EMOJIS.pigeon
     : (BINGO_EMOJIS[themeName] || BINGO_EMOJIS[DEFAULT_THEME] || ['🎉', '✨', '🎊']);
-  const count = 24;
-
+  const count = 64;
   const fragment = document.createDocumentFragment();
+
   for (let i = 0; i < count; i++) {
     const emoji = emojis[Math.floor(Math.random() * emojis.length)];
     const entry = getEmoteEntry(emoji);
@@ -97,154 +605,54 @@ export function launchBingoEmojis(themeName) {
       ? Object.assign(document.createElement('img'), { className: 'bingo-emoji', src: entry.url, alt: entry.code })
       : Object.assign(document.createElement('span'), { className: 'bingo-emoji', textContent: emoji });
 
-    const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
-    const distance = 120 + Math.random() * 280;
+    // Scatter along all winning line paths
+    const path = linePaths[Math.floor(Math.random() * linePaths.length)];
+    const t = Math.random();
+    const ox = path.ax + path.dx * t;
+    const oy = path.ay + path.dy * t;
+    const j = (Math.random() - 0.5) * path.thick;
+    const fx = ox - path.ny * j;
+    const fy = oy + path.nx * j;
+
+    const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.4;
+    const distance = 80 + Math.random() * 160;
     const dx = Math.cos(angle) * distance;
     const dy = Math.sin(angle) * distance;
-    const rot = (Math.random() - 0.5) * 720;
-    const size = 22 + Math.random() * 20;
-    const delay = Math.random() * 1.2;
+    const rot = (Math.random() - 0.5) * 1080;
+    const size = 24 + Math.random() * 20;
+    const delay = Math.random() * 0.5;
 
-    el.style.cssText = `--dx:${dx}px;--dy:${dy}px;--rot:${rot}deg;--size:${size}px;--delay:${delay}s;${entry ? `height:${size}px;width:auto;` : ''}`;
+    el.style.cssText =
+      `left:${fx}px;top:${fy}px;` +
+      `--dx:${dx}px;--dy:${dy}px;--rot:${rot}deg;--size:${size}px;--delay:${delay}s;` +
+      (entry ? `height:${size}px;width:auto;` : '');
     fragment.appendChild(el);
   }
-  container.appendChild(fragment);
 
-  setTimeout(() => { container.innerHTML = ''; }, 4000);
-}
-
-/**
- * Spawn a burst of particles at the center of each bingo cell.
- * Creates a temporary canvas overlay that is removed after animation.
- */
-export function bingoCellBurst(indices) {
-  if (_cachedLite) return;
-  const grid = document.getElementById('bingoGrid');
-  if (!grid) return;
-
-  const cells = grid.querySelectorAll('.cell');
-  const origins = [];
-  indices.forEach(i => {
-    const cell = cells[i];
-    if (!cell) return;
-    const r = cell.getBoundingClientRect();
-    origins.push({
-      x: r.left + r.width / 2,
-      y: r.top + r.height / 2,
-      size: Math.min(r.width, r.height)
-    });
-  });
-
-  if (origins.length === 0) return;
-
-  // Get theme bingo color from computed style
-  const bingoColor = isPigeonSlopActive()
-    ? '#c8a84e'
-    : (getComputedStyle(document.body).getPropertyValue('--bingo').trim() || '#ffee00');
-  const colors = isPigeonSlopActive()
-    ? ['#c8a84e', '#8e8e8e', '#6b7b8d', '#a8b5a0', '#ffffff']
-    : [bingoColor, '#ffffff', '#ff007f', '#00ffff', '#a020ff'];
-
-  const canvas = document.createElement('canvas');
-  canvas.style.cssText = 'position:fixed;inset:0;z-index:9998;pointer-events:none;';
-  document.body.appendChild(canvas);
-
-  const ctx = canvas.getContext('2d');
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.width = window.innerWidth * dpr;
-  canvas.height = window.innerHeight * dpr;
-  ctx.scale(dpr, dpr);
-
-  const particles = [];
-  const PARTICLES_PER_CELL = _cachedMobile ? 10 : 80;
-  const GRAVITY = 0.25;
-  const FRICTION = 0.96;
-
-  origins.forEach(o => {
-    for (let i = 0; i < PARTICLES_PER_CELL; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 2 + Math.random() * 6;
-      particles.push({
-        x: o.x + (Math.random() - 0.5) * o.size * 0.5,
-        y: o.y + (Math.random() - 0.5) * o.size * 0.5,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 2,
-        size: 2 + Math.random() * 4,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        alpha: 0.8 + Math.random() * 0.2,
-        decay: 0.008 + Math.random() * 0.012,
-        shape: Math.random() > 0.5 ? 'circle' : 'square'
-      });
-    }
-  });
-
-  let running = true;
-  function draw() {
-    if (!running) return;
-    ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
-
-    let alive = false;
-
-    // Group by color to reduce Canvas 2D state thrash
-    const byColor = new Map();
-    for (const p of particles) {
-      if (p.alpha <= 0) continue;
-      alive = true;
-      if (!byColor.has(p.color)) byColor.set(p.color, []);
-      byColor.get(p.color).push(p);
-    }
-
-    for (const [color, group] of byColor) {
-      ctx.fillStyle = color;
-      for (const p of group) {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += GRAVITY;
-        p.vx *= FRICTION;
-        p.vy *= FRICTION;
-        p.alpha -= p.decay;
-        p.size *= 0.995;
-
-        ctx.globalAlpha = Math.max(0, p.alpha);
-        if (p.shape === 'circle') {
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
-        }
-      }
-    }
-
-    ctx.globalAlpha = 1;
-
-    if (alive) {
-      requestAnimationFrame(draw);
-    } else {
-      running = false;
-      canvas.remove();
-    }
+  // CSS sparkle rings along line paths
+  for (let i = 0; i < 12; i++) {
+    const s = document.createElement('div');
+    s.className = 'emoji-sparkle';
+    const path = linePaths[Math.floor(Math.random() * linePaths.length)];
+    const t = Math.random();
+    const sx = path.ax + path.dx * t;
+    const sy = path.ay + path.dy * t;
+    const sj = (Math.random() - 0.5) * path.thick;
+    const sfx = sx - path.ny * sj;
+    const sfy = sy + path.nx * sj;
+    const ss = 4 + Math.random() * 12;
+    const sd = Math.random() * 0.6;
+    s.style.cssText = `left:${sfx}px;top:${sfy}px;width:${ss}px;height:${ss}px;--sd:${sd}s;`;
+    fragment.appendChild(s);
   }
 
-  requestAnimationFrame(draw);
-
-  // Safety cleanup
-  setTimeout(() => {
-    if (running) {
-      running = false;
-      canvas.remove();
-    }
-  }, 4000);
+  container.appendChild(fragment);
+  container._emojiTimer = setTimeout(() => { container.innerHTML = ''; }, 3500);
 }
 
-/**
- * Toggle background particles.js intensity for bingo mode.
- * Now a no-op: CSS particles are the unconditional default.
- */
-export function setBingoMode(active) {
-  // No-op: particles.js has been removed in favor of CSS particles.
-  // The visual bingo punch is handled by bingoCellBurst, launchConfetti, and launchBingoEmojis.
-}
+// ── CSS background particles ──
+
+export function setBingoMode(active) {}
 
 function _clearCssParticles(container) {
   if (!container) return;
