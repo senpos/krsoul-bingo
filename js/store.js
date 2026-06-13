@@ -382,6 +382,7 @@ export function createApp() {
     audioLoopMode: 'playlist',
 
     // ── Undo/Redo (session only — not persisted) ──
+    _historyByBoard: {},
     history: [],
     redoHistory: [],
     get canUndo() { return this.history.length > 0; },
@@ -416,6 +417,7 @@ export function createApp() {
     set cardsText(val) {
       clearTimeout(this._cardsTextTimer);
       this._cardsTextTimer = setTimeout(() => {
+        this.saveToHistory();
         this.cards = (val || '').replace(/\r/g, '').split('\n');
         this.persist();
       }, 300);
@@ -638,7 +640,6 @@ export function createApp() {
       if (board) {
         const total = board.size * board.size;
         while (board.cards.length < total) board.cards.push('');
-        board.cards = board.cards.slice(0, total);
         while (board.marks.length < total) board.marks.push(false);
         board.marks = board.marks.slice(0, total);
       }
@@ -660,7 +661,17 @@ export function createApp() {
       });
 
       this.$watch('pickerOpen', val => { document.body.style.overflow = val ? 'hidden' : ''; });
-      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') this.cancelDelete(); });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') this.cancelDelete();
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+          e.preventDefault();
+          if (e.shiftKey) this.redo(); else this.undo();
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+          e.preventDefault();
+          this.redo();
+        }
+      });
       document.addEventListener('visibilitychange', () => {
         document.body.classList.toggle('document-hidden', document.hidden);
       });
@@ -863,10 +874,9 @@ export function createApp() {
         theme: this.theme || DEFAULT_THEME
       };
       this.boards.push(newBoard);
+      this._historyByBoard[this.activeBoardId] = { history: this.history, redoHistory: this.redoHistory };
       this.activeBoardId = newBoard.id;
       this.lastCompletedKeys = new Set();
-      this.history = [];
-      this.redoHistory = [];
       this.persist();
       this.$nextTick(() => {
         document.body.setAttribute('data-theme', this.theme);
@@ -878,10 +888,12 @@ export function createApp() {
     switchBoard(id) {
       if (id === this.activeBoardId) return;
       this.cancelDelete();
+      this._historyByBoard[this.activeBoardId] = { history: this.history, redoHistory: this.redoHistory };
       this.activeBoardId = id;
+      const stored = this._historyByBoard[id];
+      this.history = stored ? stored.history : [];
+      this.redoHistory = stored ? stored.redoHistory : [];
       this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
-      this.history = [];
-      this.redoHistory = [];
       this.persist();
       this.$nextTick(() => this.ensureActiveTabVisible());
       if (this.pigeonSlopActive) return;
@@ -902,12 +914,17 @@ export function createApp() {
       const idx = this.boards.findIndex(b => b.id === id);
       if (idx === -1) return;
       const wasActive = this.activeBoardId === id;
+      if (wasActive) {
+        this._historyByBoard[this.activeBoardId] = { history: this.history, redoHistory: this.redoHistory };
+      }
+      delete this._historyByBoard[id];
       this.boards.splice(idx, 1);
       if (wasActive) {
         this.activeBoardId = this.boards[0].id;
+        const stored = this._historyByBoard[this.activeBoardId];
+        this.history = stored ? stored.history : [];
+        this.redoHistory = stored ? stored.redoHistory : [];
         this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
-        this.history = [];
-        this.redoHistory = [];
         document.body.setAttribute('data-theme', this.theme);
         document.body.setAttribute('data-theme-mode', this.themeMode);
         applyParticleTheme(this.theme);
@@ -922,16 +939,14 @@ export function createApp() {
       if (newSize < 3 || newSize > 7) return;
       const board = this.activeBoard;
       if (!board) return;
+      this.saveToHistory();
       board.size = newSize;
       if (newSize === 7) sfxManager.play('skoka');
       const total = newSize * newSize;
       while (board.cards.length < total) board.cards.push('');
-      board.cards = board.cards.slice(0, total);
       while (board.marks.length < total) board.marks.push(false);
       board.marks = board.marks.slice(0, total);
       this.lastCompletedKeys = new Set(completedLineKeys(newSize, board.marks));
-      this.history = [];
-      this.redoHistory = [];
       this.persist();
     },
 
@@ -1081,10 +1096,12 @@ export function createApp() {
           existing.cards = cards;
           existing.marks = marks;
           existing.theme = theme;
+          this._historyByBoard[this.activeBoardId] = { history: this.history, redoHistory: this.redoHistory };
           this.activeBoardId = existing.id;
-          this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
+          this._historyByBoard[existing.id] = { history: [], redoHistory: [] };
           this.history = [];
           this.redoHistory = [];
+          this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
           this.persist();
           this._showImportToast(`Дошку "${name}" оновлено`);
           this._applyThemeForActiveBoard();
@@ -1101,11 +1118,10 @@ export function createApp() {
 
         const newId = id && !this.boards.some(b => b.id === id) ? id : generateBoardId();
         const newBoard = { id: newId, userId, name: finalName, size, cards, marks, theme };
+        this._historyByBoard[this.activeBoardId] = { history: this.history, redoHistory: this.redoHistory };
         this.boards.push(newBoard);
         this.activeBoardId = newBoard.id;
         this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
-        this.history = [];
-        this.redoHistory = [];
         this.persist();
         this._showImportToast(`Імпортовано як "${finalName}"`);
         this._applyThemeForActiveBoard();
@@ -1306,6 +1322,7 @@ export function createApp() {
 
           this.persist();
           this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
+          this._historyByBoard = {};
           this.history = [];
           this.redoHistory = [];
 
@@ -1325,6 +1342,7 @@ export function createApp() {
 
     // ── Actions ──
     toggleMark(i) {
+      this.saveToHistory();
       this.marks[i] = !this.marks[i];
       this.persist();
       this.checkBingo();
@@ -1375,8 +1393,16 @@ export function createApp() {
     },
 
     saveToHistory() {
-      this.history.push({ cards: [...this.cards], marks: [...this.marks] });
-      if (this.history.length > 50) this.history.shift();
+      const last = this.history[this.history.length - 1];
+      if (
+        last &&
+        last.size === this.size &&
+        last.cards.length === this.cards.length &&
+        last.cards.every((c, i) => c === this.cards[i]) &&
+        last.marks.every((m, i) => m === this.marks[i])
+      ) return;
+      this.history.push({ cards: [...this.cards], marks: [...this.marks], size: this.size });
+      if (this.history.length > 100) this.history.shift();
       this.redoHistory = [];
     },
 
@@ -1405,10 +1431,11 @@ export function createApp() {
 
     undo() {
       if (!this.canUndo) return;
-      this.redoHistory.push({ cards: [...this.cards], marks: [...this.marks] });
+      this.redoHistory.push({ cards: [...this.cards], marks: [...this.marks], size: this.size });
       const prev = this.history.pop();
       this.cards = prev.cards;
       this.marks = prev.marks;
+      if (prev.size !== undefined) this.size = prev.size;
       this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
       this.persist();
       setBingoMode(this.lastCompletedKeys.size > 0);
@@ -1416,10 +1443,11 @@ export function createApp() {
 
     redo() {
       if (!this.canRedo) return;
-      this.history.push({ cards: [...this.cards], marks: [...this.marks] });
+      this.history.push({ cards: [...this.cards], marks: [...this.marks], size: this.size });
       const next = this.redoHistory.pop();
       this.cards = next.cards;
       this.marks = next.marks;
+      if (next.size !== undefined) this.size = next.size;
       this.lastCompletedKeys = new Set(completedLineKeys(this.size, this.marks));
       this.persist();
       setBingoMode(this.lastCompletedKeys.size > 0);
@@ -1591,6 +1619,7 @@ export function createApp() {
         const hasIcon = iconIsEmote || icon !== '\u2726';
         const result = prompt('Редагувати картку:', hasIcon && label ? label : this.cards[i]);
         if (result !== null) {
+          this.saveToHistory();
           const v = hasIcon ? `${icon || ''} | ${result}` : (result || '');
           const nc = this.cards.slice();
           nc[i] = v;
@@ -1609,6 +1638,7 @@ export function createApp() {
       this.pickerCallback = (emote) => {
         const i = this.ctxMenu.cellIndex;
         if (i < 0 || i >= this.cards.length) return;
+        this.saveToHistory();
         const { label } = splitCard(this.cards[i]);
         const nc = this.cards.slice();
         nc[i] = `${emote.code} | ${label || ''}`;
