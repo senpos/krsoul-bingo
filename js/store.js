@@ -757,7 +757,7 @@ export function createApp() {
 
       audioManager.init(this.theme, (state) => {
         this.audioVolume = state.volume;
-        this.audioMusicMuted = state.musicMuted;
+        if (!this.pigeonSlopActive) this.audioMusicMuted = state.musicMuted;
         this.audioPlaying = state.playing;
         this.audioFxVolume = Math.round(state.fxVolume * 100);
         this.audioSfxEnabled = state.sfxEnabled;

@@ -142,8 +142,8 @@ export function resumePigeonSpawning() {
 export function syncPigeonVideoAudio(muted, volume) {
   const video = document.getElementById('pigeonVideo');
   if (!video || !_slopActive) return;
-  video.muted = !!muted;
-  video.volume = Math.max(0, Math.min(1, volume / 100));
+  const norm = Math.max(0, Math.min(1, volume / 100));
+  video.volume = muted ? 0 : norm;
 }
 
 export function activatePigeonSlopMode(app) {
@@ -175,16 +175,15 @@ export function activatePigeonSlopMode(app) {
     requestAnimationFrame(() => {
       const video = document.getElementById('pigeonVideo');
       if (video) {
-        video.muted = true;
-        video.volume = Math.max(0, Math.min(1, (app.audioVolume || 20) / 100));
+        const norm = Math.max(0, Math.min(1, (app.audioVolume || 20) / 100));
+        video.volume = app.audioMusicMuted ? 0 : norm;
         video.src = 'videos/pidulgi_4opt.mp4';
-        video.load();
         video.addEventListener('canplay', function onCanPlay() {
           video.removeEventListener('canplay', onCanPlay);
-          video.muted = false;
           video.play().catch(() => {});
           app.pigeonVideoPlaying = true;
         });
+        video.load();
       }
     });
   });
