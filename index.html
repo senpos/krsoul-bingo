@@ -52,7 +52,10 @@
       <div class="pigeon-modal">
         <div class="pigeon-modal-icon">🕊️</div>
         <div class="pigeon-modal-text">
-          Ви збираєтесь побачити AI slop у найвищій концентрації.
+          Ви збираєтесь побачити AI slop у найвищій концентрації.<br>
+          Це буде кринжово. Весь контент згенеровано штучно.<br>
+          Збіги з реальними людьми чи подіями — НЕ випадкові.<br>
+          Але ніякої шкоди не задумано.
         </div>
         <div class="pigeon-modal-btns">
           <button @click="pigeonAccept()" class="btn btn-pigeon-accept">Так, давай</button>
@@ -62,7 +65,7 @@
     </div>
 
     <button x-show="pigeonSlopActive" x-cloak class="pigeon-exit-btn" @click="exitPigeonSlop()">
-      🕊️ Вийти з pigeon slop
+      🕊️ Вийти з Slop Mode
     </button>
 
     <div class="app-wrapper">
@@ -325,10 +328,10 @@
               </div>
 
               <div class="editor-section">
-                <div class="editor-section-title">Прибулець</div>
+                <div class="editor-section-title">Slop Mode</div>
                 <label class="pigeon-toggle-row">
                   <input type="checkbox" :checked="pigeonDisabled" @change="togglePigeonDisabled()">
-                  <span>Вимкнути прибульця (підживлення AI slop)</span>
+                  <span>Вимкнути голуба (Slop Mode)</span>
                 </label>
               </div>
 
