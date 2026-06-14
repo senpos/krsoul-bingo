@@ -136,23 +136,6 @@ export const PARTICLE_THEME_OPTIONS = {
     },
     retina_detect: true
   },
-  pigeon: {
-    particles: {
-      number: { value: 30, density: { enable: true, value_area: 900 } },
-      color: { value: ['#8e8e8e', '#6b7b8d', '#a8b5a0', '#c8a84e', '#ffffff'] },
-      shape: { type: ['circle', 'edge'], stroke: { width: 0 } },
-      opacity: { value: 0.3, random: true, anim: { enable: true, speed: 0.8, opacity_min: 0.05, sync: false } },
-      size: { value: 5, random: true, anim: { enable: true, speed: 1.5, size_min: 2, sync: false } },
-      line_linked: { enable: false },
-      move: { enable: true, speed: 1.2, direction: 'none', random: true, straight: false, out_mode: 'out', bounce: false }
-    },
-    interactivity: {
-      detect_on: 'window',
-      events: { onhover: { enable: true, mode: 'bubble' }, onclick: { enable: true, mode: 'push' }, resize: true },
-      modes: { bubble: { distance: 120, size: 6, duration: 0.5, opacity: 0.4 }, push: { particles_nb: 3 } }
-    },
-    retina_detect: true
-  }
 };
 
 export const BINGO_EMOJIS = {
@@ -161,16 +144,10 @@ export const BINGO_EMOJIS = {
   nmixx:      ['🎉', '🌊', '🔥', '✨', '💎', '⭐', '🎆', '🎊'],
   newjeans:   ['🐰', '🎀', '🌸', '✨', '💫', '🎶', '🌼', '💝'],
   lesserafim: ['🔥', '⚔️', '🦅', '✨', '💫', '⭐', '🎆', '🖤'],
-  pigeon:     ['🕊️', '🪶', '🐦', '💨', '✨', '⭐', '🌫️', '🩶'],
 };
 
-export const THEMES = Object.keys(PARTICLE_THEME_OPTIONS).filter(t => t !== 'pigeon');
+export const THEMES = Object.keys(PARTICLE_THEME_OPTIONS);
 export const DEFAULT_THEME = 'nmixx';
-export const PIGEON_THEME = 'pigeon';
-
-let _pigeonSlopActive = false;
-export function setPigeonSlopActive(val) { _pigeonSlopActive = !!val; }
-export function isPigeonSlopActive() { return _pigeonSlopActive; }
 
 export const DEFAULT_CARDS = [
   '💀 DeS on PC', '🩸 Bloodborne', '⚡ GoW 3', '🔥 New Fromsoft Game', '🗡️ DS2/3 Remaster',

@@ -1,4 +1,4 @@
-import { PARTICLE_THEME_OPTIONS, BINGO_EMOJIS, DEFAULT_THEME, isPigeonSlopActive } from './config.js';
+import { PARTICLE_THEME_OPTIONS, BINGO_EMOJIS, DEFAULT_THEME } from './config.js';
 import { getEmoteEntry } from './emotes.js';
 import { ParticleRenderer } from './particles-gl.js';
 
@@ -72,15 +72,11 @@ function hexToRGB(hex) {
 }
 
 function getThemeBingoRGB() {
-  if (isPigeonSlopActive()) return [0.78, 0.66, 0.31];
   const raw = getComputedStyle(document.body).getPropertyValue('--bingo').trim() || '#ffee00';
   return hexToRGB(raw);
 }
 
 function getBurstColors(bingoRGB) {
-  if (isPigeonSlopActive()) {
-    return [[0.78, 0.66, 0.31], [0.56, 0.48, 0.55], [0.42, 0.48, 0.35], [0.66, 0.71, 0.63], [1, 1, 1]];
-  }
   return [bingoRGB, [1, 1, 1], [1, 0, 0.5], [0, 1, 1], [0.63, 0, 1]];
 }
 
@@ -560,9 +556,7 @@ export function getEffectManager() {
 export function launchConfetti() {
   if (_reducedMotion) return;
   const count = 80;
-  const colors = isPigeonSlopActive()
-    ? ['#8e8e8e', '#6b7b8d', '#a8b5a0', '#c8a84e', '#ffffff', '#d4d4d4']
-    : ['#ff007f', '#00ffff', '#ffee00', '#5500ff', '#ffffff', '#ff0055'];
+  const colors = ['#ff007f', '#00ffff', '#ffee00', '#5500ff', '#ffffff', '#ff0055'];
   const stagger = 15;
   const fragment = document.createDocumentFragment();
   const pieces = [];
@@ -592,9 +586,7 @@ export function launchBingoEmojis(themeName, linePaths) {
   container.innerHTML = '';
   clearTimeout(container._emojiTimer);
 
-  const emojis = isPigeonSlopActive()
-    ? BINGO_EMOJIS.pigeon
-    : (BINGO_EMOJIS[themeName] || BINGO_EMOJIS[DEFAULT_THEME] || ['🎉', '✨', '🎊']);
+  const emojis = BINGO_EMOJIS[themeName] || BINGO_EMOJIS[DEFAULT_THEME] || ['🎉', '✨', '🎊'];
   const count = 64;
   const fragment = document.createDocumentFragment();
 

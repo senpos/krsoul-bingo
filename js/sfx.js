@@ -4,7 +4,6 @@ const EFFECTS = {
   login: ['ah.opus'],
   skoka: ['skoka.opus'],
   videoChange: ['nashotiktok.opus', 'swipeup.opus'],
-  pigeon: ['pigeon.opus'],
 };
 
 const FADE_DURATION = 0.15;
