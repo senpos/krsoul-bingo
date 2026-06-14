@@ -25,15 +25,32 @@ function generateRandomString(length = 32) {
   return arrayBufferToBase64(bytes);
 }
 
-function storeToken(token) {
-  localStorage.setItem('twitch-access-token', token);
+function storeToken(token, expiresIn) {
+  const expiresAt = expiresIn ? Date.now() + expiresIn * 1000 : null;
+  const payload = JSON.stringify({ token, expiresAt });
+  localStorage.setItem('twitch-access-token', payload);
   state.twitch.token = token;
+  state.twitch.expiresAt = expiresAt;
+}
+
+function loadStoredToken() {
+  try {
+    const raw = localStorage.getItem('twitch-access-token');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.token === 'string') return parsed;
+    // Legacy plain-string token (no expiry)
+    return { token: parsed, expiresAt: null };
+  } catch {
+    return null;
+  }
 }
 
 function clearToken() {
   localStorage.removeItem('twitch-access-token');
   state.twitch.token = null;
   state.twitch.user = null;
+  state.twitch.expiresAt = null;
 }
 
 async function fetchUserInfo(token) {
@@ -86,6 +103,7 @@ export async function initAuth(app) {
   if (hashStr) {
     const hashParams = new URLSearchParams(hashStr);
     const accessToken = hashParams.get('access_token');
+    const expiresIn = parseInt(hashParams.get('expires_in'), 10) || null;
     const returnedState = hashParams.get('state');
     const storedState = sessionStorage.getItem('twitch-auth-state');
 
@@ -93,7 +111,7 @@ export async function initAuth(app) {
 
     if (accessToken && returnedState && returnedState === storedState) {
       sessionStorage.removeItem('twitch-auth-state');
-      storeToken(accessToken);
+      storeToken(accessToken, expiresIn);
 
       try {
         setEmoteStatus('Отримання інформації...');
@@ -119,18 +137,24 @@ export async function initAuth(app) {
   }
 
   // Check for existing stored token from localStorage
-  const token = localStorage.getItem('twitch-access-token');
-  if (token) {
+  const stored = loadStoredToken();
+  if (stored) {
+    if (stored.expiresAt && Date.now() > stored.expiresAt) {
+      clearToken();
+      if (app) app._showImportToast('Токен Twitch закінчився. Увійдіть знову.', 'error');
+      return;
+    }
     try {
-      state.twitch.token = token;
-      const user = await fetchUserInfo(token);
+      state.twitch.token = stored.token;
+      state.twitch.expiresAt = stored.expiresAt;
+      const user = await fetchUserInfo(stored.token);
       if (user) {
         state.twitch.user = user;
         ensureChannelId(user);
         saveState();
 
         if (app) {
-          app.twitchToken = token;
+          app.twitchToken = stored.token;
           app.twitchUser = user;
         }
         scheduleEmoteRefresh();

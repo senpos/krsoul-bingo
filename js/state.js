@@ -14,7 +14,8 @@ export const state = {
   },
   twitch: {
     token: null,
-    user: null
+    user: null,
+    expiresAt: null
   }
 };
 

@@ -7,7 +7,7 @@ import { completedLineKeys, getLineInfo, getEffectManager, groupsFromKeys, apply
 import { audioManager } from './audio.js';
 import { sfxManager } from './sfx.js';
 import { chatManager, isKnownBot, renderMessageFromFragments, formatChatTime, formatChatTimeFull, refreshBadgesCache, resolveBadgeUrls } from './chat.js';
-import { initPigeon, activatePigeonSlopMode, deactivatePigeonSlopMode, stopPigeonSpawning, resumePigeonSpawning, syncPigeonVideoAudio, setPigeonDisabled } from './pigeon.js';
+import { initPigeon, activatePigeonSlopMode, deactivatePigeonSlopMode, stopPigeonSpawning, syncPigeonVideoAudio, setPigeonDisabled } from './pigeon.js';
 
 const THEME_FONT_FAMILIES = {
   twice:      ['Literata:wght@400;600;700', 'Lobster'],
@@ -1550,7 +1550,10 @@ export function createApp() {
 
     pigeonDecline() {
       this.pigeonModalVisible = false;
-      resumePigeonSpawning();
+      this.pigeonDisabled = true;
+      try { localStorage.setItem('krsoul-bingo-pigeon-disabled', 'true'); } catch {}
+      setPigeonDisabled(true);
+      this._showImportToast('Голуб вимкнено. Можна увімкнути в налаштуваннях.', 'success');
     },
 
     exitPigeonSlop() {
